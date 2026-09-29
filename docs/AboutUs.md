@@ -28,8 +28,8 @@ You can reach us at the email `seer[at]comp.nus.edu.sg`
 [[github](http://github.com/ZhangHanzhongFox)]
 [[portfolio](team/johndoe.md)]
 
-* Role: Developer
-* Responsibilities: Documentation
+* Role: Documentation
+* Responsibilities: Responsible for the quality of various project documents.
 
 ### Johnny Doe
 
