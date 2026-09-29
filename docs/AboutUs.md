@@ -59,3 +59,12 @@ You can reach us at the email `seer[at]comp.nus.edu.sg`
 
 * Role: Developer
 * Responsibilities: UI
+
+### Han Yu Ding, Matthew
+
+<img src="images/matthewhanyd.png" width="200px">
+
+[[github](https://github.com/matthewhanyd)]
+
+* Role: Developer
+* Responsibilities: Scheduling and tracking, Deliverables and deadlines
