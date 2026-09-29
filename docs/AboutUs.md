@@ -40,14 +40,14 @@ You can reach us at the email `seer[at]comp.nus.edu.sg`
 * Role: Developer
 * Responsibilities: Data
 
-### Jean Doe
+### Joshua Sim
 
-<img src="images/johndoe.png" width="200px">
+<img src="images/sjyjoshua.png" width="200px">
 
-[[github](http://github.com/johndoe)]
-[[portfolio](team/johndoe.md)]
+[[github](http://github.com/sjyjoshua)]
+[[portfolio](team/sjyjoshua.md)]
 
-* Role: Developer
+* Role: Code Quality
 * Responsibilities: Dev Ops + Threading
 
 ### James Doe
