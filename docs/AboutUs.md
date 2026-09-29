@@ -66,5 +66,7 @@ You can reach us at the email `seer[at]comp.nus.edu.sg`
 
 [[github](https://github.com/matthewhanyd)]
 
-* Role: Developer
-* Responsibilities: Scheduling and tracking, Deliverables and deadlines
+* Role: Scheduling and tracking, Deliverables and deadlines
+* Responsibilities:
+  * Deliverables and deadlines: Ensures project deliverables are done on time and in the right format.
+  * Scheduling and tracking: In charge of defining, assigning, and tracking project tasks.
