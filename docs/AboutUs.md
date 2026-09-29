@@ -11,7 +11,7 @@ You can reach us at the email `seer[at]comp.nus.edu.sg`
 
 ## Project team
 
-### Stephen Zhu
+### Penglong
 
 <img src="images/stephen-118.png" width="200px">
 
