@@ -15,7 +15,7 @@ You can reach us at the email `seer[at]comp.nus.edu.sg`
 
 <img src="images/cjldylan.png" width="200px">
 
-[[github](https://github.com/johndoe)]
+[[github](https://github.com/cjldylan)]
 
 * Role: Team Lead
 
