@@ -29,18 +29,19 @@ You can reach us at the email `seer[at]comp.nus.edu.sg`
 * Role: Documentation
 * Responsibilities: Responsible for the quality of various project documents.
 
-### Johnny Doe
+### Joshua Sim
 
-<img src="images/johndoe.png" width="200px">
+<img src="images/sjyjoshua.png" width="200px">
 
-[[github](http://github.com/johndoe)] [[portfolio](team/johndoe.md)]
+[[github](http://github.com/sjyjoshua)]
+[[portfolio](team/sjyjoshua.md)]
 
-* Role: Developer
-* Responsibilities: Data
+* Role: Code Quality
+* Responsibilities: Dev Ops + Threading
 
 ### Penglong
 
-<<img src="images/stephen-118.png" width="200px">
+<img src="images/stephen-118.png" width="200px">
 
 [[github](https://github.com/stephen-118)]
 
@@ -55,16 +56,6 @@ You can reach us at the email `seer[at]comp.nus.edu.sg`
 
 * Role: Integration
 * Responsibilities: In charge of versioning the code, maintaining the code repository, and integrating various parts of the software to create a whole.
-
-### James Doe
-
-<img src="images/johndoe.png" width="200px">
-
-[[github](http://github.com/johndoe)]
-[[portfolio](team/johndoe.md)]
-
-* Role: Developer
-* Responsibilities: UI
 
 ### Han Yu Ding, Matthew
 
