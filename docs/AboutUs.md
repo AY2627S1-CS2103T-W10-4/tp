@@ -20,15 +20,15 @@ You can reach us at the email `seer[at]comp.nus.edu.sg`
 * Role: Testing
 * Responsibilities: Ensures the testing of the project is done properly and on time
 
-### Jane Doe
+### Zhang Hanzhong
 
-<img src="images/johndoe.png" width="200px">
+<img src="images/zhanghanzhongfox.png" width="200px">
 
-[[github](http://github.com/johndoe)]
+[[github](http://github.com/ZhangHanzhongFox)]
 [[portfolio](team/johndoe.md)]
 
-* Role: Team Lead
-* Responsibilities: UI
+* Role: Documentation
+* Responsibilities: Responsible for the quality of various project documents.
 
 ### Johnny Doe
 
