@@ -38,6 +38,15 @@ You can reach us at the email `seer[at]comp.nus.edu.sg`
 * Role: Developer
 * Responsibilities: Data
 
+### Penglong
+
+<<img src="images/stephen-118.png" width="200px">
+
+[[github](https://github.com/stephen-118)]
+
+* Role: Testing
+* Responsibilities: Ensures the testing of the project is done properly and on time
+
 ### Lee Wei Zhi
 
 <img src="images/lee-wz.png" width="200px">
