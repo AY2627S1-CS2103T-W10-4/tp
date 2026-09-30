@@ -11,14 +11,13 @@ You can reach us at the email `seer[at]comp.nus.edu.sg`
 
 ## Project team
 
-### Stephen Zhu
+### Dylan Chew
 
-<img src="images/stephen-118.png" width="200px">
+<img src="images/cjldylan.png" width="200px">
 
-[[github](https://github.com/stephen-118)]
+[[github](https://github.com/cjldylan)]
 
-* Role: Testing
-* Responsibilities: Ensures the testing of the project is done properly and on time
+* Role: Team Lead
 
 ### Zhang Hanzhong
 
