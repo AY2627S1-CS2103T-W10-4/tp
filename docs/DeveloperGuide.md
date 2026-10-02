@@ -283,14 +283,24 @@ _{Explain here how the data archiving feature will be implemented}_
 
 Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unlikely to have) - `*`
 
-| Priority | As a …                                    | I want to …                 | So that I can…                                                        |
-|----------|--------------------------------------------|------------------------------|------------------------------------------------------------------------|
-| `* * *`  | new user                                   | see usage instructions       | refer to instructions when I forget how to use the App                 |
-| `* * *`  | user                                       | add a new person             |                                                                        |
-| `* * *`  | user                                       | delete a person              | remove entries that I no longer need                                   |
-| `* * *`  | user                                       | find a person by name        | locate details of persons without having to go through the entire list |
-| `* *`    | user                                       | hide private contact details | minimize chance of someone else seeing them by accident                |
-| `*`      | user with many persons in the address book | sort persons by name         | locate a person easily                                                 |
+| Priority | As a … | I can … | So that I can … |
+|----------|--------|---------|-----------------|
+| `* * *` | First-time user | See usage instructions and a list of available commands | Learn what the app does without reading a separate manual |
+| `* * *` | First-time user | Be shown the correct command format when I mistype something | Correct my mistake without looking up the syntax |
+| `* *` | Beginner user | Undo commands | Easily restore a correct state after I made a mistake |
+| `* * *` | Beginner user | View the information I have about an employee | Answer questions concerning that employee |
+| `*` | Expert user | Create command shortcuts | Save time on long winded commands that I frequently use |
+| `*` | Expert user | View recent workforce changes | Stay aware of how the organisation is changing |
+| `*` | Expert user | Compare department sizes | Understand how employees are distributed across the organisation |
+| `*` | Expert user | View an employee’s relation to other employees | Understand how they fit into the organisation |
+| `*` | Expert user | Record HR-related meetings or follow-up tasks | Keep track of actions related to employees |
+| `*` | Expert user | View an overall workforce summary | Understand the state of the workforce without checking employees one by one |
+| `*` | Expert user | Identify employees with missing information | Maintain complete records |
+| `*` | Expert user | Record who an employee reports to | Understand the company’s reporting structure |
+| `*` | Expert user | Update who an employee reports to | Keep records correct after a reorganisation or resignation |
+| `* * *` | Long-time user | Easily search up contact details with the commands | Save time instead of using traditional address / contact books |
+| `* *` | Long-time user | Import employee data from a supported file | Initialise or restore the company’s records efficiently |
+| `* *` | Long-time user | Filter employees by search criteria | Gather specific organisation-wide data efficiently |
 
 *{More to be added}*
 
