@@ -270,13 +270,14 @@ _{Explain here how the data archiving feature will be implemented}_
 
 **Target user profile**:
 
-* has a need to manage a significant number of contacts
-* prefers desktop apps over other types of applications
+* is the sole HR administrator at a small or medium-sized company
+* has no HR team or dedicated HR software, and keeps employee records in spreadsheets or shared files
+* is the only person who maintains these records, on a single computer
+* manages records for up to a few hundred employees
+* often has to answer ad-hoc questions about individual employees, reporting lines and team sizes within minutes
 * can type fast
-* prefers typing to mouse interactions
-* is reasonably comfortable using CLI apps
 
-**Value proposition**: Manage contacts faster than with a typical mouse-driven GUI application.
+**Value proposition**: HuntR helps the sole HR administrator keep employee records accurate, see how staff relate to each other, such as reporting lines and team membership, and get an overall picture of the workforce, all through typed commands.
 
 
 ### User stories
