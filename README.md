@@ -33,17 +33,17 @@ HuntR allows HR administrators to remove an employee from the workforce records 
 Example:
 `delete id/E0123`
 
-## Find employees
+### Find employees
 
 HuntR allows HR administrators to find employees whose names contain any of the given keywords using the `find` command. Matching is case-insensitive and matches full words only.
 
 Example: `find John`
 
-## Automatic data persistence
+### Automatic data persistence
 
 HuntR automatically saves your workforce records to disk after every change, and reloads them the next time the application is launched — no manual save or load required.
 
-## Exit
+### Exit
 
 HuntR allows HR administrators to close the application using the `exit` command, ensuring all workforce records are safely saved before the session ends.
 
