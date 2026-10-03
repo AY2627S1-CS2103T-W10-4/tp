@@ -312,9 +312,9 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 
 **MSS**
 
-1. User requests to add an employee and provides the employee's details.
+1. User requests to add an employee and provides the employee ID, name, phone number, email, department, and role.
 2. HuntR validates the provided details.
-3. HuntR adds the employee to the employee list.
+3. HuntR adds the employee and saves the updated employee records.
 4. HuntR displays the added employee's details.
 
    Use case ends.
@@ -333,9 +333,15 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 
     Use case resumes at step 1.
 
-* 2b. An employee with the same identifying details already exists.
+* 2b. An employee with the same employee ID already exists.
 
-  * 2b1. HuntR informs the user that the employee already exists.
+  * 2b1. HuntR informs the user that an employee with the same employee ID already exists.
+
+    Use case ends.
+
+* 3a. HuntR is unable to save the updated employee records.
+
+  * 3a1. HuntR informs the user that the employee could not be saved successfully.
 
     Use case ends.
 
@@ -347,7 +353,7 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 2. HuntR displays the employee list.
 3. User selects an employee and provides the details to update.
 4. HuntR validates the provided details.
-5. HuntR updates the selected employee's record.
+5. HuntR updates the selected employee's record and saves the updated employee records.
 6. HuntR displays the updated employee's details.
 
    Use case ends.
@@ -381,6 +387,12 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 * 4b. The update would make the employee identical to another existing employee.
 
   * 4b1. HuntR informs the user that the employee already exists.
+
+    Use case ends.
+
+* 5a. HuntR is unable to save the updated employee records.
+
+  * 5a1. HuntR informs the user that the employee changes could not be saved successfully.
 
     Use case ends.
 
