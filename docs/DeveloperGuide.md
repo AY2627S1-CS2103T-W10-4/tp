@@ -302,8 +302,18 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 | `* * *` | Long-time user | Easily search up contact details with the commands | Save time instead of using traditional address / contact books |
 | `* *` | Long-time user | Import employee data from a supported file | Initialise or restore the company’s records efficiently |
 | `* *` | Long-time user | Filter employees by search criteria | Gather specific organisation-wide data efficiently |
-
-*{More to be added}*
+| `* * *` | Basic user | Add an employee's information | the app reflects my company's workforce |
+| `* * *` | Basic user | List all employees | see the full roster in one place |
+| `* * *` | Basic user | Delete an employee's record | my workforce records remain current |
+| `* * *` | Basic user | Find an employee by name | quickly retrieve their information without browsing the whole list |
+| `* * *` | Basic user | Have my data saved automatically after every change | I don't lose records if the app closes unexpectedly |
+| `* * *` | Basic user | Exit the application with a command | close it safely knowing my data is saved |
+| `* *` | Basic user | Edit an employee's details | keep records accurate when someone's role or contact info changes |
+| `* *` | Careful user | Be asked to confirm before a record is deleted | avoid losing a record to a mistyped command |
+| `* *` | Busy user | Filter employees using multiple criteria at once (e.g. department and role) | narrow down results faster than one field at a time |
+| `* *` | Busy user | View an entire team's roster with one command | prepare for a team meeting without assembling the list myself |
+| `*` | Busy user | Sort employees by a chosen field (e.g. name or department) | scan records in the order that's useful to me |
+| `*` | Busy user | Look up an employee's leave
 
 ### Use cases
 
