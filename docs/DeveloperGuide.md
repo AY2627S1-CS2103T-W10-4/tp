@@ -313,7 +313,9 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 | `* *` | Busy user | Filter employees using multiple criteria at once (e.g. department and role) | narrow down results faster than one field at a time |
 | `* *` | Busy user | View an entire team's roster with one command | prepare for a team meeting without assembling the list myself |
 | `*` | Busy user | Sort employees by a chosen field (e.g. name or department) | scan records in the order that's useful to me |
-| `*` | Busy user | Look up an employee's leave
+| `*` | Busy user | Look up an employee's leave status with one command | check quickly if they're available for a meeting |
+| `*` | Long-time user | Identify employees who don't appear connected to anyone else in the organisation | investigate whether my workforce information is incomplete |
+| `*` | Long-time user | Count employees by department | quickly see the size of each team |
 
 ### Use cases
 
