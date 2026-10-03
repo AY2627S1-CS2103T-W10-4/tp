@@ -335,16 +335,63 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 
 ### Non-Functional Requirements
 
-1.  Should work on any _mainstream OS_ as long as it has Java `25` or above installed.
-2.  Should be able to hold up to 1000 persons without noticeable sluggishness in performance for typical usage.
-3.  A user with above average typing speed for regular English text (i.e. not code, not system admin commands) should be able to accomplish most of the tasks faster using commands than using the mouse.
+The following requirements describe the intended HuntR product, including capabilities that are not yet implemented. Performance limits are acceptance targets, not measured results for the current version. Platform, packaging, storage, and display requirements incorporate the applicable [course project constraints](https://nus-cs2103-ay2627-s1.github.io/website/admin/tp-constraints.html).
 
-*{More to be added}*
+HuntR is intended for one HR administrator managing workforce records locally. Shared access to the same data by different users, including taking turns on a shared installation, is outside the supported usage.
+
+1. **NFR-01: Platform compatibility.** HuntR must launch and support its employee-management commands on Windows, Linux, and macOS with Java `25` installed, without requiring another Java version. Verify the same release on each operating system by adding, listing, finding, and deleting an employee, then exiting and relaunching.
+
+2. **NFR-02: Portable distribution.** HuntR must be distributed as a single executable JAR containing its application dependencies and resources. With Java `25` already installed, a user must be able to copy the JAR into a writable folder and launch it using `java -jar addressbook.jar`, without an installer or separate library installation.
+
+3. **NFR-03: Offline operation.** Adding, listing, finding, deleting, saving, and reloading employee records must work with the network disconnected. These operations must not require a remote server or an online account, and HuntR must not transmit employee records over the network.
+
+4. **NFR-04: Human-editable storage.** Workforce records must be stored locally in a human-readable, human-editable JSON file, without a database management system. When the application is closed, a user must be able to edit the file in a text editor; valid changes that satisfy the employee field and uniqueness constraints must appear on the next launch. When launched from the JAR's folder, the default file is `data/addressbook.json` in that folder.
+
+5. **NFR-05: Capacity.** HuntR must support at least 1,000 valid employee records with distinct employee IDs. Saving and reloading a dataset of this size must preserve every record and its employee ID, name, phone number, email, department, and role. This is a minimum supported capacity, not a limit on the employee ID format.
+
+6. **NFR-06: Command response time.** Each `add`, `list`, `find`, and `delete` command must display its result and finish updating the employee list within 2 seconds of pressing Enter, including any automatic save. Verify 20 executions of each command under the performance conditions below, including searches with zero matches and searches matching all employees; every execution must meet the limit.
+
+7. **NFR-07: Startup time.** HuntR must load the saved records, display the employee list, and accept command input within 5 seconds of starting the JAR process under the performance conditions below. Verify this over five separate launches; every launch must meet the limit.
+
+8. **NFR-08: Keyboard usability.** After launch, an HR administrator must be able to add an employee, list employees, find an employee, delete an employee, access help, and exit using only the keyboard. Each of `add`, `list`, `find`, and `delete` must accept its required input in one command submission, without requiring mouse interaction or a sequence of input dialogs.
+
+9. **NFR-09: Recoverable input errors.** Rejected commands with invalid syntax, invalid field values, a duplicate employee ID, or a nonexistent target employee ID must leave stored records and the displayed employee list unchanged. The application must remain open and accept the next valid command. The English error message must identify the problem and provide the expected command format or field constraint where applicable.
+
+10. **NFR-10: Persistence reliability.** A data-changing command must save its changes before reporting success. After a successful command followed by normal shutdown and relaunch, all employee records and field values must match the saved state without a manual save. Verify additions and deletions, including deletion of the last employee. If saving fails, such as because the data folder is not writable, HuntR must report the save failure instead of reporting success.
+
+11. **NFR-11: Invalid-file handling.** If the employee data file contains malformed JSON or an employee that violates the field or uniqueness constraints, HuntR must reject the whole dataset, start with an empty employee list, and record a warning in the log. It must not load only the valid entries from that file. A missing or malformed preferences file must cause HuntR to use default preferences without preventing startup.
+
+12. **NFR-12: Display usability.** At resolutions of 1920 x 1080 and higher with 100% or 125% display scaling, the command box, result display, and employee list must remain accessible, with their text readable directly or through scrolling. All functions must also remain usable at resolutions of 1280 x 720 and higher with 150% scaling. Verify each resolution/scaling combination with the application maximised, including long employee details and error messages.
+
+**Performance verification conditions:** Use Java `25`, a computer with at least two CPU cores and 8 GB RAM, a local SSD, and no other resource-intensive applications running. Use 1,000 valid employee records with distinct IDs and up to 100 characters in each other text field. Restore this dataset before each command trial. Record the operating system, processor, Java version, dataset, and timings with the test results. These fixture sizes do not introduce new field-validation limits.
 
 ### Glossary
 
-* **Mainstream OS**: Windows, Linux, Unix, or macOS
-* **Private contact detail**: A contact detail that is not meant to be shared with others
+These definitions describe HuntR's employee-management domain. The inherited codebase still uses names such as `Person` and `AddressBook` for the underlying records and their collection.
+
+| Term | Definition |
+|------|------------|
+| **AB3** | AddressBook Level 3, the contact-management application from which HuntR is adapted. |
+| **Command-line interface (CLI)** | An interface controlled by typing text commands. In HuntR, commands are entered in the GUI's command box and submitted with Enter. |
+| **Data file** | The local JSON file containing workforce records. The default is `data/addressbook.json`, relative to the application's working directory. It is separate from the preferences file. |
+| **Data persistence** | Saving records to disk so that they remain available after the application closes and are restored in a later session. |
+| **Department** | The organisational unit to which an employee belongs, such as Engineering or Finance; supplied using `d/`. |
+| **Displayed index** | An employee's position in the currently displayed list, starting at 1. It can change when the list changes and is distinct from the employee ID. HuntR's specified `delete` command uses the employee ID. |
+| **Duplicate employee record** | A record with the same employee ID as another record. Two employees with the same name but different employee IDs are distinct records. |
+| **Employee** | A member of the organisation whose information the HR administrator manages in HuntR. An employee record contains an employee ID, name, phone number, email, department, and role. |
+| **Employee ID** | The unique identifier for an employee record: uppercase `E` followed by exactly four digits, such as `E0123`. It is supplied using `id/` and distinguishes employees even when their names are identical. |
+| **Filtered employee list** | The subset of stored employee records currently displayed after applying search criteria. Filtering changes the view without deleting records from the workforce roster. |
+| **Graphical user interface (GUI)** | The application's visual interface, including the command box, result display, and employee list. |
+| **HR administrator** | The human resources staff member who operates HuntR to maintain the organisation's employee records; the application's target user. |
+| **JAR** | Java Archive: the executable package containing HuntR's application code, dependencies, and resources. |
+| **JSON** | JavaScript Object Notation, the text-based format used for employee data and preferences. |
+| **Keyword** | A space-separated search term supplied to `find`. It matches a whole word in an employee's name, ignoring letter case. With multiple keywords, a match on any one keyword is sufficient. |
+| **Main success scenario (MSS)** | The sequence of steps in a use case when the interaction succeeds without taking an error or alternative path. |
+| **Preferences file** | The local `preferences.json` file containing application settings, such as window size and position, rather than employee records. |
+| **Reporting relationship** | The relationship identifying which employee another employee reports to in the organisation, as referenced by the proposed reporting-structure user stories. |
+| **Role** | An employee's job title, such as Software Engineer or Accountant; supplied using `r/`. It does not denote application access permissions. |
+| **Session** | One period of application use, from launch until shutdown. |
+| **Workforce records / roster** | The complete collection of employee records stored in HuntR, including employees not visible in the current filtered list. |
 
 --------------------------------------------------------------------------------------------------------------------
 
