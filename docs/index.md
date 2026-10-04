@@ -9,7 +9,7 @@
 
 ![Ui](images/Ui.png)
 
-**HuntR is a desktop application being developed for HR administrators to manage workforce records.** It combines text commands with a graphical interface to help administrators maintain employee information in one place.
+**HuntR is a desktop app for the sole HR administrator at a small or medium-sized company.** It helps them keep employee records accurate, see how staff relate to each other, such as who reports to whom and who works in which team, and get an overall picture of the workforce. It is optimised for administrators who prefer typing commands, while still showing results in a graphical interface.
 
 Employee-specific fields and commands are still under development. The guides describe the current application and its planned development.
 
