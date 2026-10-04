@@ -361,7 +361,7 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 
 **MSS**
 
-1. User requests to delete an employee using `delete id/EMPLOYEE_ID`.
+1. User requests to delete an employee using `delete INDEX`.
 2. HuntR finds the employee record with the specified employee ID.
 3. HuntR deletes the specified employee record.
 4. HuntR displays the deleted employee's details as confirmation.
