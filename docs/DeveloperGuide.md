@@ -339,7 +339,7 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 1. User requests to view all employee records.
 2. HuntR displays the employees as a numbered list with summary information.
 3. User selects a specific employee from the displayed list.
-4. HuntR displays the employee's full details, including their employee ID, department, role, manager, teammates, and direct reports.
+4. HuntR displays the employee's full details, including their employee ID, department, role.
 
     Use case ends.
 
@@ -361,31 +361,26 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 
 **MSS**
 
-1. User requests to view or find employees.
-2. HuntR displays the employees as a numbered list.
-3. User requests to delete an employee using the employee's displayed index.
-4. HuntR deletes the specified employee record.
-5. HuntR displays the deleted employee's details as confirmation.
+1. User requests to delete an employee using `delete id/EMPLOYEE_ID`.
+2. HuntR finds the employee record with the specified employee ID.
+3. HuntR deletes the specified employee record.
+4. HuntR displays the deleted employee's details as confirmation.
 
     Use case ends.
 
 **Extensions**
 
-* 2a. There are no employees in the displayed list.
+* 1a. The employee ID is missing, malformed, or accompanied by additional arguments.
 
-  Use case ends.
+  * 1a1. HuntR shows the correct command format.
 
-* 3a. The index is missing, is not a positive integer, or the request contains additional arguments.
+    Use case resumes at step 1.
 
-  * 3a1. HuntR shows the correct command format.
+* 2a. No employee has the specified employee ID.
 
-    Use case resumes at step 2.
+  * 2a1. HuntR informs the user that no employee with the specified employee ID was found.
 
-* 3b. The index is greater than the number of employees in the displayed list.
-
-  * 3b1. HuntR informs the user that the displayed index is invalid.
-
-    Use case resumes at step 2.
+    Use case ends.
 
 *{More to be added}*
 
