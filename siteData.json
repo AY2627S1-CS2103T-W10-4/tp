@@ -132,7 +132,8 @@
       "src": "index.md",
       "title": "",
       "headings": {
-        "huntr": "HuntR"
+        "huntr": "HuntR",
+        "user-interface": "User interface"
       },
       "headingKeywords": {}
     },
