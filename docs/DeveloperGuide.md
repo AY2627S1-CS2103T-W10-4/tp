@@ -409,28 +409,79 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 
     Use case ends.
 
-**Use case: Delete a person**
+**Use case: Find employees**
 
 **MSS**
 
-1.  User requests to list persons
-2.  AddressBook shows a list of persons
-3.  User requests to delete a specific person in the list
-4.  AddressBook deletes the person
+1. User requests to find employees using one or more name keywords.
+2. HuntR searches the employee records for names containing at least one of the keywords.
+3. HuntR displays the matching employees as a numbered list and reports the number of matches.
 
     Use case ends.
 
 **Extensions**
 
-* 2a. The list is empty.
+* 1a. The user does not provide a keyword.
 
-  Use case ends.
+  * 1a1. HuntR informs the user that a keyword is required and shows the correct command format.
 
-* 3a. The given index is invalid.
+    Use case resumes at step 1.
 
-    * 3a1. AddressBook shows an error message.
+* 2a. No employee matches any of the keywords.
 
-      Use case resumes at step 2.
+  * 2a1. HuntR displays an empty result list and informs the user that no employees were found.
+
+    Use case ends.
+
+**Use case: View employee data**
+
+**MSS**
+
+1. User requests to view all employee records.
+2. HuntR displays the employees as a numbered list with summary information.
+3. User selects a specific employee from the displayed list.
+4. HuntR displays the employee's full details, including their employee ID, department, role.
+
+    Use case ends.
+
+**Extensions**
+
+* 2a. There are no employee records.
+
+  * 2a1. HuntR displays an empty list and informs the user that there are no employees to show.
+
+    Use case ends.
+
+* 3a. The selected index does not correspond to an employee in the displayed list.
+
+  * 3a1. HuntR informs the user that the displayed index is invalid.
+
+    Use case resumes at step 2.
+
+**Use case: Delete an employee**
+
+**MSS**
+
+1. User requests to delete an employee using `delete INDEX`.
+2. HuntR finds the employee record with the specified employee ID.
+3. HuntR deletes the specified employee record.
+4. HuntR displays the deleted employee's details as confirmation.
+
+    Use case ends.
+
+**Extensions**
+
+* 1a. The employee ID is missing, malformed, or accompanied by additional arguments.
+
+  * 1a1. HuntR shows the correct command format.
+
+    Use case resumes at step 1.
+
+* 2a. No employee has the specified employee ID.
+
+  * 2a1. HuntR informs the user that no employee with the specified employee ID was found.
+
+    Use case ends.
 
 *{More to be added}*
 
