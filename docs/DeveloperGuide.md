@@ -319,7 +319,95 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 
 ### Use cases
 
-(For all use cases below, the **System** is the `AddressBook` and the **Actor** is the `user`, unless specified otherwise)
+(For all use cases below, the **System** is `HuntR` and the **Actor** is the `user`, unless specified otherwise)
+
+**Use case: Add an employee**
+
+**MSS**
+
+1. User requests to add an employee and provides the employee ID, name, phone number, email, department, and role.
+2. HuntR validates the provided details.
+3. HuntR adds the employee and saves the updated employee records.
+4. HuntR displays the added employee's details.
+
+   Use case ends.
+
+**Extensions**
+
+* 1a. A required field is missing.
+
+  * 1a1. HuntR shows an error message and the expected command format.
+
+    Use case resumes at step 1.
+
+* 2a. One or more provided fields are invalid.
+
+  * 2a1. HuntR shows an error message describing the invalid input.
+
+    Use case resumes at step 1.
+
+* 2b. An employee with the same employee ID already exists.
+
+  * 2b1. HuntR informs the user that an employee with the same employee ID already exists.
+
+    Use case ends.
+
+* 3a. HuntR is unable to save the updated employee records.
+
+  * 3a1. HuntR informs the user that the employee could not be saved successfully.
+
+    Use case ends.
+
+**Use case: Edit an employee**
+
+**MSS**
+
+1. User requests to list employees.
+2. HuntR displays the employee list.
+3. User selects an employee and provides the details to update.
+4. HuntR validates the provided details.
+5. HuntR updates the selected employee's record and saves the updated employee records.
+6. HuntR displays the updated employee's details.
+
+   Use case ends.
+
+**Extensions**
+
+* 2a. The employee list is empty.
+
+  * 2a1. HuntR informs the user that there are no employee records.
+
+    Use case ends.
+
+* 3a. The selected employee index is invalid.
+
+  * 3a1. HuntR shows an error message.
+
+    Use case resumes at step 2.
+
+* 3b. The user does not provide any field to update.
+
+  * 3b1. HuntR informs the user that at least one field must be provided.
+
+    Use case resumes at step 3.
+
+* 4a. One or more provided fields are invalid.
+
+  * 4a1. HuntR shows an error message describing the invalid input.
+
+    Use case resumes at step 3.
+
+* 4b. The update would make the employee identical to another existing employee.
+
+  * 4b1. HuntR informs the user that the employee already exists.
+
+    Use case ends.
+
+* 5a. HuntR is unable to save the updated employee records.
+
+  * 5a1. HuntR informs the user that the employee changes could not be saved successfully.
+
+    Use case ends.
 
 **Use case: Delete a person**
 
