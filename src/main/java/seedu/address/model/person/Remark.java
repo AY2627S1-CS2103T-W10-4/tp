@@ -4,7 +4,7 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * Represents a Person's remark in the address book.
- * Guarantees: immutable; is always present but can be empty.
+ * Guarantees: immutable; any value (including empty) is valid
  */
 public class Remark {
 
@@ -13,7 +13,7 @@ public class Remark {
     /**
      * Constructs a {@code Remark}.
      *
-     * @param remark A remark, which may be empty.
+     * @param remark A remark.
      */
     public Remark(String remark) {
         requireNonNull(remark);
@@ -32,10 +32,11 @@ public class Remark {
         }
 
         // instanceof handles nulls
-        if (!(other instanceof Remark otherRemark)) {
+        if (!(other instanceof Remark)) {
             return false;
         }
 
+        Remark otherRemark = (Remark) other;
         return value.equals(otherRemark.value);
     }
 
@@ -43,4 +44,5 @@ public class Remark {
     public int hashCode() {
         return value.hashCode();
     }
+
 }

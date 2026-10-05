@@ -21,96 +21,110 @@ import seedu.address.model.person.Person;
 import seedu.address.model.person.Remark;
 import seedu.address.testutil.PersonBuilder;
 
+/**
+ * Contains integration tests (interaction with the Model) and unit tests for RemarkCommand.
+ */
 public class RemarkCommandTest {
 
-    private final Model model = new ModelManager(getTypicalAddressBook(), new UserPrefs());
+    private static final String REMARK_STUB = "Some remark";
+
+    private Model model = new ModelManager(getTypicalAddressBook(), new UserPrefs());
 
     @Test
     public void execute_addRemarkUnfilteredList_success() {
-        Remark remark = new Remark("Likes to swim");
-        Person personToEdit = model.getFilteredPersonList().get(INDEX_FIRST_PERSON.getZeroBased());
-        Person editedPerson = new PersonBuilder(personToEdit).withRemark(remark.value).build();
-        RemarkCommand remarkCommand = new RemarkCommand(INDEX_FIRST_PERSON, remark);
+        Person firstPerson = model.getFilteredPersonList().get(INDEX_FIRST_PERSON.getZeroBased());
+        Person editedPerson = new PersonBuilder(firstPerson).withRemark(REMARK_STUB).build();
+
+        RemarkCommand remarkCommand = new RemarkCommand(INDEX_FIRST_PERSON, new Remark(REMARK_STUB));
 
         String expectedMessage = String.format(RemarkCommand.MESSAGE_ADD_REMARK_SUCCESS,
                 Messages.format(editedPerson));
+
         Model expectedModel = new ModelManager(model.getAddressBook(), new UserPrefs());
-        expectedModel.setPerson(personToEdit, editedPerson);
+        expectedModel.setPerson(firstPerson, editedPerson);
 
         assertCommandSuccess(remarkCommand, model, expectedMessage, expectedModel);
     }
 
     @Test
-    public void execute_removeRemarkUnfilteredList_success() {
-        Person personWithRemark = new PersonBuilder(
-                model.getFilteredPersonList().get(INDEX_FIRST_PERSON.getZeroBased()))
-                .withRemark("Likes to swim").build();
-        model.setPerson(model.getFilteredPersonList().get(INDEX_FIRST_PERSON.getZeroBased()), personWithRemark);
+    public void execute_deleteRemarkUnfilteredList_success() {
+        Person firstPerson = model.getFilteredPersonList().get(INDEX_FIRST_PERSON.getZeroBased());
+        Person editedPerson = new PersonBuilder(firstPerson).withRemark("").build();
 
-        Remark emptyRemark = new Remark("");
-        Person editedPerson = new PersonBuilder(personWithRemark).withRemark("").build();
-        RemarkCommand remarkCommand = new RemarkCommand(INDEX_FIRST_PERSON, emptyRemark);
+        RemarkCommand remarkCommand = new RemarkCommand(INDEX_FIRST_PERSON, new Remark(""));
 
         String expectedMessage = String.format(RemarkCommand.MESSAGE_DELETE_REMARK_SUCCESS,
                 Messages.format(editedPerson));
+
         Model expectedModel = new ModelManager(model.getAddressBook(), new UserPrefs());
-        expectedModel.setPerson(personWithRemark, editedPerson);
+        expectedModel.setPerson(firstPerson, editedPerson);
 
         assertCommandSuccess(remarkCommand, model, expectedMessage, expectedModel);
     }
 
     @Test
-    public void execute_invalidIndexUnfilteredList_throwsCommandException() {
+    public void execute_filteredList_success() {
+        showPersonAtIndex(model, INDEX_FIRST_PERSON);
+
+        Person firstPerson = model.getFilteredPersonList().get(INDEX_FIRST_PERSON.getZeroBased());
+        Person editedPerson = new PersonBuilder(firstPerson).withRemark(REMARK_STUB).build();
+
+        RemarkCommand remarkCommand = new RemarkCommand(INDEX_FIRST_PERSON, new Remark(REMARK_STUB));
+
+        String expectedMessage = String.format(RemarkCommand.MESSAGE_ADD_REMARK_SUCCESS,
+                Messages.format(editedPerson));
+
+        Model expectedModel = new ModelManager(model.getAddressBook(), new UserPrefs());
+        expectedModel.setPerson(firstPerson, editedPerson);
+
+        assertCommandSuccess(remarkCommand, model, expectedMessage, expectedModel);
+    }
+
+    @Test
+    public void execute_invalidPersonIndexUnfilteredList_failure() {
         Index outOfBoundIndex = Index.fromOneBased(model.getFilteredPersonList().size() + 1);
-        RemarkCommand remarkCommand = new RemarkCommand(outOfBoundIndex, new Remark("Likes to swim"));
+        RemarkCommand remarkCommand = new RemarkCommand(outOfBoundIndex, new Remark(REMARK_STUB));
 
         assertCommandFailure(remarkCommand, model, Messages.MESSAGE_INVALID_PERSON_DISPLAYED_INDEX);
     }
 
+    /**
+     * Edit filtered list where index is larger than size of filtered list,
+     * but smaller than size of address book
+     */
     @Test
-    public void execute_validIndexFilteredList_success() {
+    public void execute_invalidPersonIndexFilteredList_failure() {
         showPersonAtIndex(model, INDEX_FIRST_PERSON);
-        Person personToEdit = model.getFilteredPersonList().get(INDEX_FIRST_PERSON.getZeroBased());
-        Person editedPerson = new PersonBuilder(personToEdit).withRemark("Likes to swim").build();
-        RemarkCommand remarkCommand = new RemarkCommand(INDEX_FIRST_PERSON, new Remark("Likes to swim"));
+        Index outOfBoundIndex = INDEX_SECOND_PERSON;
+        // ensures that outOfBoundIndex is still in bounds of address book list
+        assertTrue(outOfBoundIndex.getZeroBased() < model.getAddressBook().getPersonList().size());
 
-        String expectedMessage = String.format(RemarkCommand.MESSAGE_ADD_REMARK_SUCCESS,
-                Messages.format(editedPerson));
-        Model expectedModel = new ModelManager(model.getAddressBook(), new UserPrefs());
-        expectedModel.setPerson(personToEdit, editedPerson);
-
-        assertCommandSuccess(remarkCommand, model, expectedMessage, expectedModel);
-    }
-
-    @Test
-    public void execute_invalidIndexFilteredList_throwsCommandException() {
-        showPersonAtIndex(model, INDEX_FIRST_PERSON);
-        RemarkCommand remarkCommand = new RemarkCommand(INDEX_SECOND_PERSON, new Remark("Likes to swim"));
+        RemarkCommand remarkCommand = new RemarkCommand(outOfBoundIndex, new Remark(REMARK_STUB));
 
         assertCommandFailure(remarkCommand, model, Messages.MESSAGE_INVALID_PERSON_DISPLAYED_INDEX);
     }
 
     @Test
     public void equals() {
-        RemarkCommand firstCommand = new RemarkCommand(INDEX_FIRST_PERSON, new Remark("Likes to swim"));
-        RemarkCommand firstCommandCopy = new RemarkCommand(INDEX_FIRST_PERSON, new Remark("Likes to swim"));
-        RemarkCommand secondIndexCommand = new RemarkCommand(INDEX_SECOND_PERSON, new Remark("Likes to swim"));
-        RemarkCommand differentRemarkCommand = new RemarkCommand(INDEX_FIRST_PERSON, new Remark("Likes to run"));
+        final RemarkCommand standardCommand = new RemarkCommand(INDEX_FIRST_PERSON, new Remark(REMARK_STUB));
 
-        assertTrue(firstCommand.equals(firstCommand));
-        assertTrue(firstCommand.equals(firstCommandCopy));
-        assertFalse(firstCommand.equals(secondIndexCommand));
-        assertFalse(firstCommand.equals(differentRemarkCommand));
-        assertFalse(firstCommand.equals(null));
-        assertFalse(firstCommand.equals(1));
-    }
+        // same values -> returns true
+        RemarkCommand commandWithSameValues = new RemarkCommand(INDEX_FIRST_PERSON, new Remark(REMARK_STUB));
+        assertEquals(standardCommand, commandWithSameValues);
 
-    @Test
-    public void toStringMethod() {
-        Remark remark = new Remark("Likes to swim");
-        RemarkCommand remarkCommand = new RemarkCommand(INDEX_FIRST_PERSON, remark);
-        String expected = RemarkCommand.class.getCanonicalName() + "{index=" + INDEX_FIRST_PERSON
-                + ", remark=" + remark + "}";
-        assertEquals(expected, remarkCommand.toString());
+        // same object -> returns true
+        assertEquals(standardCommand, standardCommand);
+
+        // null -> returns false
+        assertFalse(standardCommand.equals(null));
+
+        // different types -> returns false
+        assertFalse(standardCommand.equals(new ClearCommand()));
+
+        // different index -> returns false
+        assertFalse(standardCommand.equals(new RemarkCommand(INDEX_SECOND_PERSON, new Remark(REMARK_STUB))));
+
+        // different remark -> returns false
+        assertFalse(standardCommand.equals(new RemarkCommand(INDEX_FIRST_PERSON, new Remark("Other remark"))));
     }
 }

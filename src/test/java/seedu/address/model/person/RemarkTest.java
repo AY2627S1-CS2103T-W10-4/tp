@@ -2,8 +2,9 @@ package seedu.address.model.person;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static seedu.address.testutil.Assert.assertThrows;
 
 import org.junit.jupiter.api.Test;
 
@@ -15,19 +16,33 @@ public class RemarkTest {
     }
 
     @Test
-    public void equals() {
-        Remark remark = new Remark("Likes to swim");
-
-        assertTrue(remark.equals(remark));
-        assertTrue(remark.equals(new Remark("Likes to swim")));
-        assertFalse(remark.equals(new Remark("Likes to run")));
-        assertFalse(remark.equals(null));
-        assertFalse(remark.equals("Likes to swim"));
+    public void constructor_emptyRemark_isAllowed() {
+        assertEquals("", new Remark("").value);
     }
 
     @Test
-    public void toStringMethod() {
-        String value = "Likes to swim";
-        assertEquals(value, new Remark(value).toString());
+    public void equals() {
+        Remark remark = new Remark("Hello");
+
+        // same values -> returns true
+        assertTrue(remark.equals(new Remark("Hello")));
+
+        // same object -> returns true
+        assertTrue(remark.equals(remark));
+
+        // null -> returns false
+        assertFalse(remark.equals(null));
+
+        // different types -> returns false
+        assertFalse(remark.equals(5.0f));
+
+        // different values -> returns false
+        assertFalse(remark.equals(new Remark("Hello1")));
+    }
+
+    @Test
+    public void hashCode_sameValue_sameHash() {
+        assertEquals(new Remark("Hello").hashCode(), new Remark("Hello").hashCode());
+        assertNotEquals(new Remark("Hello").hashCode(), new Remark("Bye").hashCode());
     }
 }

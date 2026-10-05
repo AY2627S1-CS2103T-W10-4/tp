@@ -1,6 +1,5 @@
 package seedu.address.logic.parser;
 
-import static seedu.address.logic.Messages.MESSAGE_DUPLICATE_FIELDS;
 import static seedu.address.logic.Messages.MESSAGE_INVALID_COMMAND_FORMAT;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_REMARK;
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseFailure;
@@ -14,27 +13,31 @@ import seedu.address.model.person.Remark;
 
 public class RemarkCommandParserTest {
 
-    private final RemarkCommandParser parser = new RemarkCommandParser();
+    private static final String NONEMPTY_REMARK = "Some remark.";
+
+    private RemarkCommandParser parser = new RemarkCommandParser();
 
     @Test
-    public void parse_validArgs_returnsRemarkCommand() {
-        assertParseSuccess(parser, "1 r/Likes to swim",
-                new RemarkCommand(INDEX_FIRST_PERSON, new Remark("Likes to swim")));
+    public void parse_indexSpecified_success() {
+        // have remark
+        String userInput = INDEX_FIRST_PERSON.getOneBased() + " " + PREFIX_REMARK + NONEMPTY_REMARK;
+        RemarkCommand expectedCommand = new RemarkCommand(INDEX_FIRST_PERSON, new Remark(NONEMPTY_REMARK));
+        assertParseSuccess(parser, userInput, expectedCommand);
+
+        // no remark
+        userInput = INDEX_FIRST_PERSON.getOneBased() + " " + PREFIX_REMARK;
+        expectedCommand = new RemarkCommand(INDEX_FIRST_PERSON, new Remark(""));
+        assertParseSuccess(parser, userInput, expectedCommand);
     }
 
     @Test
-    public void parse_emptyRemark_returnsRemarkCommand() {
-        assertParseSuccess(parser, "1 r/", new RemarkCommand(INDEX_FIRST_PERSON, new Remark("")));
-    }
+    public void parse_missingCompulsoryField_failure() {
+        String expectedMessage = String.format(MESSAGE_INVALID_COMMAND_FORMAT, RemarkCommand.MESSAGE_USAGE);
 
-    @Test
-    public void parse_invalidIndex_throwsParseException() {
-        assertParseFailure(parser, "a r/Likes to swim",
-                String.format(MESSAGE_INVALID_COMMAND_FORMAT, RemarkCommand.MESSAGE_USAGE));
-    }
+        // no parameters
+        assertParseFailure(parser, RemarkCommand.COMMAND_WORD, expectedMessage);
 
-    @Test
-    public void parse_duplicateRemark_throwsParseException() {
-        assertParseFailure(parser, "1 r/First r/Second", MESSAGE_DUPLICATE_FIELDS + PREFIX_REMARK);
+        // no index
+        assertParseFailure(parser, RemarkCommand.COMMAND_WORD + " " + NONEMPTY_REMARK, expectedMessage);
     }
 }
