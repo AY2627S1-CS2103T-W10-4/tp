@@ -7,7 +7,7 @@ import static seedu.address.logic.parser.CliSyntax.PREFIX_REMARK;
 import seedu.address.commons.core.index.Index;
 import seedu.address.logic.commands.RemarkCommand;
 import seedu.address.logic.parser.exceptions.ParseException;
-import seedu.address.model.person.Remark;
+import seedu.address.model.employee.Remark;
 
 /**
  * Parses input arguments and creates a new {@code RemarkCommand} object.

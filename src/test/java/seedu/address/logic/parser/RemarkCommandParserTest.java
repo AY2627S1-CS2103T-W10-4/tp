@@ -5,12 +5,12 @@ import static seedu.address.logic.Messages.MESSAGE_INVALID_COMMAND_FORMAT;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_REMARK;
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseFailure;
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseSuccess;
-import static seedu.address.testutil.TypicalIndexes.INDEX_FIRST_PERSON;
+import static seedu.address.testutil.TypicalIndexes.INDEX_FIRST_EMPLOYEE;
 
 import org.junit.jupiter.api.Test;
 
 import seedu.address.logic.commands.RemarkCommand;
-import seedu.address.model.person.Remark;
+import seedu.address.model.employee.Remark;
 
 public class RemarkCommandParserTest {
 
@@ -19,12 +19,12 @@ public class RemarkCommandParserTest {
     @Test
     public void parse_validArgs_returnsRemarkCommand() {
         assertParseSuccess(parser, "1 r/Likes to swim",
-                new RemarkCommand(INDEX_FIRST_PERSON, new Remark("Likes to swim")));
+                new RemarkCommand(INDEX_FIRST_EMPLOYEE, new Remark("Likes to swim")));
     }
 
     @Test
     public void parse_emptyRemark_returnsRemarkCommand() {
-        assertParseSuccess(parser, "1 r/", new RemarkCommand(INDEX_FIRST_PERSON, new Remark("")));
+        assertParseSuccess(parser, "1 r/", new RemarkCommand(INDEX_FIRST_EMPLOYEE, new Remark("")));
     }
 
     @Test
