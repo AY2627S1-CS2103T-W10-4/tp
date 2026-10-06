@@ -9,8 +9,6 @@ import static seedu.address.logic.commands.CommandTestUtil.VALID_ID_BOB;
 import static seedu.address.logic.commands.CommandTestUtil.VALID_NAME_BOB;
 import static seedu.address.logic.commands.CommandTestUtil.VALID_PHONE_BOB;
 import static seedu.address.logic.commands.CommandTestUtil.VALID_ROLE_BOB;
-import static seedu.address.logic.commands.CommandTestUtil.VALID_TAG_HUSBAND;
-import static seedu.address.testutil.Assert.assertThrows;
 import static seedu.address.testutil.TypicalEmployees.ALICE;
 import static seedu.address.testutil.TypicalEmployees.BOB;
 
@@ -19,12 +17,6 @@ import org.junit.jupiter.api.Test;
 import seedu.address.testutil.EmployeeBuilder;
 
 public class EmployeeTest {
-
-    @Test
-    public void asObservableList_modifyList_throwsUnsupportedOperationException() {
-        Employee employee = new EmployeeBuilder().build();
-        assertThrows(UnsupportedOperationException.class, () -> employee.getTags().remove(0));
-    }
 
     @Test
     public void isSameEmployee() {
@@ -36,8 +28,7 @@ public class EmployeeTest {
 
         // same ID, all other attributes different -> returns true
         Employee editedAlice = new EmployeeBuilder(ALICE).withName(VALID_NAME_BOB).withPhone(VALID_PHONE_BOB)
-                .withEmail(VALID_EMAIL_BOB).withDepartment(VALID_DEPARTMENT_BOB).withRole(VALID_ROLE_BOB)
-                .withTags(VALID_TAG_HUSBAND).build();
+                .withEmail(VALID_EMAIL_BOB).withDepartment(VALID_DEPARTMENT_BOB).withRole(VALID_ROLE_BOB).build();
         assertTrue(ALICE.isSameEmployee(editedAlice));
 
         // different ID, all other attributes same -> returns false
@@ -94,18 +85,13 @@ public class EmployeeTest {
         // different ID -> returns false
         editedAlice = new EmployeeBuilder(ALICE).withId(VALID_ID_BOB).build();
         assertFalse(ALICE.equals(editedAlice));
-
-        // different tags -> returns false
-        editedAlice = new EmployeeBuilder(ALICE).withTags(VALID_TAG_HUSBAND).build();
-        assertFalse(ALICE.equals(editedAlice));
     }
 
     @Test
     public void toStringMethod() {
         String expected = Employee.class.getCanonicalName() + "{id=" + ALICE.getId() + ", name=" + ALICE.getName()
                 + ", phone=" + ALICE.getPhone() + ", email=" + ALICE.getEmail()
-                + ", department=" + ALICE.getDepartment() + ", role=" + ALICE.getRole()
-                + ", tags=" + ALICE.getTags() + "}";
+                + ", department=" + ALICE.getDepartment() + ", role=" + ALICE.getRole() + "}";
         assertEquals(expected, ALICE.toString());
     }
 }

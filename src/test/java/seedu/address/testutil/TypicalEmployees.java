@@ -12,8 +12,6 @@ import static seedu.address.logic.commands.CommandTestUtil.VALID_PHONE_AMY;
 import static seedu.address.logic.commands.CommandTestUtil.VALID_PHONE_BOB;
 import static seedu.address.logic.commands.CommandTestUtil.VALID_ROLE_AMY;
 import static seedu.address.logic.commands.CommandTestUtil.VALID_ROLE_BOB;
-import static seedu.address.logic.commands.CommandTestUtil.VALID_TAG_FRIEND;
-import static seedu.address.logic.commands.CommandTestUtil.VALID_TAG_HUSBAND;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -29,19 +27,16 @@ public class TypicalEmployees {
 
     public static final Employee ALICE = new EmployeeBuilder().withId("E0001").withName("Alice Pauline")
             .withPhone("94351253").withEmail("alice@example.com")
-            .withDepartment("Engineering").withRole("Software Engineer")
-            .withTags("friends").build();
+            .withDepartment("Engineering").withRole("Software Engineer").build();
     public static final Employee BENSON = new EmployeeBuilder().withId("E0002").withName("Benson Meier")
             .withPhone("98765432").withEmail("johnd@example.com")
-            .withDepartment("Human Resources").withRole("HR Executive")
-            .withTags("owesMoney", "friends").build();
+            .withDepartment("Human Resources").withRole("HR Executive").build();
     public static final Employee CARL = new EmployeeBuilder().withId("E0003").withName("Carl Kurz")
             .withPhone("95352563").withEmail("heinz@example.com")
             .withDepartment("Finance").withRole("Accountant").build();
     public static final Employee DANIEL = new EmployeeBuilder().withId("E0004").withName("Daniel Meier")
             .withPhone("87652533").withEmail("cornelia@example.com")
-            .withDepartment("Sales").withRole("Account Manager")
-            .withTags("friends").build();
+            .withDepartment("Sales").withRole("Account Manager").build();
     public static final Employee ELLE = new EmployeeBuilder().withId("E0005").withName("Elle Meyer")
             .withPhone("9482224").withEmail("werner@example.com")
             .withDepartment("Operations").withRole("Operations Analyst").build();
@@ -63,11 +58,10 @@ public class TypicalEmployees {
     // Manually added - Employee's details found in {@code CommandTestUtil}
     public static final Employee AMY = new EmployeeBuilder().withId(VALID_ID_AMY).withName(VALID_NAME_AMY)
             .withPhone(VALID_PHONE_AMY).withEmail(VALID_EMAIL_AMY)
-            .withDepartment(VALID_DEPARTMENT_AMY).withRole(VALID_ROLE_AMY).withTags(VALID_TAG_FRIEND).build();
+            .withDepartment(VALID_DEPARTMENT_AMY).withRole(VALID_ROLE_AMY).build();
     public static final Employee BOB = new EmployeeBuilder().withId(VALID_ID_BOB).withName(VALID_NAME_BOB)
             .withPhone(VALID_PHONE_BOB).withEmail(VALID_EMAIL_BOB)
-            .withDepartment(VALID_DEPARTMENT_BOB).withRole(VALID_ROLE_BOB)
-            .withTags(VALID_TAG_HUSBAND, VALID_TAG_FRIEND).build();
+            .withDepartment(VALID_DEPARTMENT_BOB).withRole(VALID_ROLE_BOB).build();
 
     public static final String KEYWORD_MATCHING_MEIER = "Meier"; // A keyword that matches MEIER
 

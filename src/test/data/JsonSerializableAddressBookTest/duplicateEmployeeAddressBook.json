@@ -5,8 +5,7 @@
     "phone": "94351253",
     "email": "alice@example.com",
     "department": "Engineering",
-    "role": "Software Engineer",
-    "tags": [ "friends" ]
+    "role": "Software Engineer"
   }, {
     "id": "e0001",
     "name": "Bob Different",

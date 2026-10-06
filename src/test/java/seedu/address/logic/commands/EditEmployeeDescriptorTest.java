@@ -10,7 +10,6 @@ import static seedu.address.logic.commands.CommandTestUtil.VALID_EMAIL_BOB;
 import static seedu.address.logic.commands.CommandTestUtil.VALID_NAME_BOB;
 import static seedu.address.logic.commands.CommandTestUtil.VALID_PHONE_BOB;
 import static seedu.address.logic.commands.CommandTestUtil.VALID_ROLE_BOB;
-import static seedu.address.logic.commands.CommandTestUtil.VALID_TAG_HUSBAND;
 
 import org.junit.jupiter.api.Test;
 
@@ -56,10 +55,6 @@ public class EditEmployeeDescriptorTest {
         // different role -> returns false
         editedAmy = new EditEmployeeDescriptorBuilder(DESC_AMY).withRole(VALID_ROLE_BOB).build();
         assertFalse(DESC_AMY.equals(editedAmy));
-
-        // different tags -> returns false
-        editedAmy = new EditEmployeeDescriptorBuilder(DESC_AMY).withTags(VALID_TAG_HUSBAND).build();
-        assertFalse(DESC_AMY.equals(editedAmy));
     }
 
     @Test
@@ -70,8 +65,7 @@ public class EditEmployeeDescriptorTest {
                 + editEmployeeDescriptor.getPhone().orElse(null) + ", email="
                 + editEmployeeDescriptor.getEmail().orElse(null) + ", department="
                 + editEmployeeDescriptor.getDepartment().orElse(null) + ", role="
-                + editEmployeeDescriptor.getRole().orElse(null) + ", tags="
-                + editEmployeeDescriptor.getTags().orElse(null) + "}";
+                + editEmployeeDescriptor.getRole().orElse(null) + "}";
         assertEquals(expected, editEmployeeDescriptor.toString());
     }
 }

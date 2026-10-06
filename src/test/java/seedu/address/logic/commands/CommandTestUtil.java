@@ -8,7 +8,6 @@ import static seedu.address.logic.parser.CliSyntax.PREFIX_ID;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_NAME;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_PHONE;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_ROLE;
-import static seedu.address.logic.parser.CliSyntax.PREFIX_TAG;
 import static seedu.address.testutil.Assert.assertThrows;
 
 import java.util.ArrayList;
@@ -39,8 +38,6 @@ public class CommandTestUtil {
     public static final String VALID_DEPARTMENT_BOB = "Finance";
     public static final String VALID_ROLE_AMY = "Software Engineer";
     public static final String VALID_ROLE_BOB = "Accountant";
-    public static final String VALID_TAG_HUSBAND = "husband";
-    public static final String VALID_TAG_FRIEND = "friend";
 
     public static final String ID_DESC_AMY = " " + PREFIX_ID + VALID_ID_AMY;
     public static final String ID_DESC_BOB = " " + PREFIX_ID + VALID_ID_BOB;
@@ -54,8 +51,6 @@ public class CommandTestUtil {
     public static final String DEPARTMENT_DESC_BOB = " " + PREFIX_DEPARTMENT + VALID_DEPARTMENT_BOB;
     public static final String ROLE_DESC_AMY = " " + PREFIX_ROLE + VALID_ROLE_AMY;
     public static final String ROLE_DESC_BOB = " " + PREFIX_ROLE + VALID_ROLE_BOB;
-    public static final String TAG_DESC_FRIEND = " " + PREFIX_TAG + VALID_TAG_FRIEND;
-    public static final String TAG_DESC_HUSBAND = " " + PREFIX_TAG + VALID_TAG_HUSBAND;
 
     public static final String INVALID_ID_DESC = " " + PREFIX_ID + "E 01"; // spaces not allowed in IDs
     public static final String INVALID_NAME_DESC = " " + PREFIX_NAME + "James&"; // '&' not allowed in names
@@ -63,7 +58,6 @@ public class CommandTestUtil {
     public static final String INVALID_EMAIL_DESC = " " + PREFIX_EMAIL + "bob!yahoo"; // missing '@' symbol
     public static final String INVALID_DEPARTMENT_DESC = " " + PREFIX_DEPARTMENT; // empty string not allowed
     public static final String INVALID_ROLE_DESC = " " + PREFIX_ROLE; // empty string not allowed
-    public static final String INVALID_TAG_DESC = " " + PREFIX_TAG + "hubby*"; // '*' not allowed in tags
 
     public static final String PREAMBLE_WHITESPACE = "\t  \r  \n";
     public static final String PREAMBLE_NON_EMPTY = "NonEmptyPreamble";
@@ -74,12 +68,10 @@ public class CommandTestUtil {
     static {
         DESC_AMY = new EditEmployeeDescriptorBuilder().withName(VALID_NAME_AMY)
                 .withPhone(VALID_PHONE_AMY).withEmail(VALID_EMAIL_AMY)
-                .withDepartment(VALID_DEPARTMENT_AMY).withRole(VALID_ROLE_AMY)
-                .withTags(VALID_TAG_FRIEND).build();
+                .withDepartment(VALID_DEPARTMENT_AMY).withRole(VALID_ROLE_AMY).build();
         DESC_BOB = new EditEmployeeDescriptorBuilder().withName(VALID_NAME_BOB)
                 .withPhone(VALID_PHONE_BOB).withEmail(VALID_EMAIL_BOB)
-                .withDepartment(VALID_DEPARTMENT_BOB).withRole(VALID_ROLE_BOB)
-                .withTags(VALID_TAG_HUSBAND, VALID_TAG_FRIEND).build();
+                .withDepartment(VALID_DEPARTMENT_BOB).withRole(VALID_ROLE_BOB).build();
     }
 
     /**

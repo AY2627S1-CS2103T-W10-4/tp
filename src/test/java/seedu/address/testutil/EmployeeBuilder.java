@@ -1,8 +1,5 @@
 package seedu.address.testutil;
 
-import java.util.HashSet;
-import java.util.Set;
-
 import seedu.address.model.employee.Department;
 import seedu.address.model.employee.Email;
 import seedu.address.model.employee.Employee;
@@ -10,8 +7,6 @@ import seedu.address.model.employee.EmployeeId;
 import seedu.address.model.employee.Name;
 import seedu.address.model.employee.Phone;
 import seedu.address.model.employee.Role;
-import seedu.address.model.tag.Tag;
-import seedu.address.model.util.SampleDataUtil;
 
 /**
  * A utility class to help with building Employee objects.
@@ -31,7 +26,6 @@ public class EmployeeBuilder {
     private Email email;
     private Department department;
     private Role role;
-    private Set<Tag> tags;
 
     /**
      * Creates a {@code EmployeeBuilder} with the default details.
@@ -43,7 +37,6 @@ public class EmployeeBuilder {
         email = new Email(DEFAULT_EMAIL);
         department = new Department(DEFAULT_DEPARTMENT);
         role = new Role(DEFAULT_ROLE);
-        tags = new HashSet<>();
     }
 
     /**
@@ -56,7 +49,6 @@ public class EmployeeBuilder {
         email = employeeToCopy.getEmail();
         department = employeeToCopy.getDepartment();
         role = employeeToCopy.getRole();
-        tags = new HashSet<>(employeeToCopy.getTags());
     }
 
     /**
@@ -72,14 +64,6 @@ public class EmployeeBuilder {
      */
     public EmployeeBuilder withName(String name) {
         this.name = new Name(name);
-        return this;
-    }
-
-    /**
-     * Parses the {@code tags} into a {@code Set<Tag>} and sets it to the {@code Employee} that we are building.
-     */
-    public EmployeeBuilder withTags(String ... tags) {
-        this.tags = SampleDataUtil.getTagSet(tags);
         return this;
     }
 
@@ -116,7 +100,7 @@ public class EmployeeBuilder {
     }
 
     public Employee build() {
-        return new Employee(id, name, phone, email, department, role, tags);
+        return new Employee(id, name, phone, email, department, role);
     }
 
 }

@@ -7,7 +7,6 @@ import static seedu.address.logic.parser.CliSyntax.PREFIX_ID;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_NAME;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_PHONE;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_ROLE;
-import static seedu.address.logic.parser.CliSyntax.PREFIX_TAG;
 
 import seedu.address.commons.util.ToStringBuilder;
 import seedu.address.logic.Messages;
@@ -29,16 +28,14 @@ public class AddCommand extends Command {
             + PREFIX_PHONE + "PHONE "
             + PREFIX_EMAIL + "EMAIL "
             + PREFIX_DEPARTMENT + "DEPARTMENT "
-            + PREFIX_ROLE + "ROLE "
-            + "[" + PREFIX_TAG + "TAG]...\n"
+            + PREFIX_ROLE + "ROLE\n"
             + "Example: " + COMMAND_WORD + " "
             + PREFIX_ID + "E0123 "
             + PREFIX_NAME + "John Tan "
             + PREFIX_PHONE + "91234567 "
             + PREFIX_EMAIL + "johntan@example.com "
             + PREFIX_DEPARTMENT + "Engineering "
-            + PREFIX_ROLE + "Software Engineer "
-            + PREFIX_TAG + "friends";
+            + PREFIX_ROLE + "Software Engineer";
 
     public static final String MESSAGE_SUCCESS = "New employee added: %1$s";
     public static final String MESSAGE_DUPLICATE_EMPLOYEE = "This employee already exists in the address book.";
