@@ -9,10 +9,12 @@ import java.util.Set;
 import seedu.address.commons.core.index.Index;
 import seedu.address.commons.util.StringUtil;
 import seedu.address.logic.parser.exceptions.ParseException;
-import seedu.address.model.employee.Address;
+import seedu.address.model.employee.Department;
 import seedu.address.model.employee.Email;
+import seedu.address.model.employee.EmployeeId;
 import seedu.address.model.employee.Name;
 import seedu.address.model.employee.Phone;
+import seedu.address.model.employee.Role;
 import seedu.address.model.tag.Tag;
 
 /**
@@ -66,18 +68,48 @@ public class ParserUtil {
     }
 
     /**
-     * Parses a {@code String address} into an {@code Address}.
+     * Parses a {@code String employeeId} into a {@code EmployeeId}.
      * Leading and trailing whitespaces will be trimmed.
      *
-     * @throws ParseException if the given {@code address} is invalid.
+     * @throws ParseException if the given {@code employeeId} is invalid.
      */
-    public static Address parseAddress(String address) throws ParseException {
-        requireNonNull(address);
-        String trimmedAddress = address.trim();
-        if (!Address.isValidAddress(trimmedAddress)) {
-            throw new ParseException(Address.MESSAGE_CONSTRAINTS);
+    public static EmployeeId parseEmployeeId(String employeeId) throws ParseException {
+        requireNonNull(employeeId);
+        String trimmedEmployeeId = employeeId.trim();
+        if (!EmployeeId.isValidEmployeeId(trimmedEmployeeId)) {
+            throw new ParseException(EmployeeId.MESSAGE_CONSTRAINTS);
         }
-        return new Address(trimmedAddress);
+        return new EmployeeId(trimmedEmployeeId);
+    }
+
+    /**
+     * Parses a {@code String department} into a {@code Department}.
+     * Leading and trailing whitespaces will be trimmed.
+     *
+     * @throws ParseException if the given {@code department} is invalid.
+     */
+    public static Department parseDepartment(String department) throws ParseException {
+        requireNonNull(department);
+        String trimmedDepartment = department.trim();
+        if (!Department.isValidDepartment(trimmedDepartment)) {
+            throw new ParseException(Department.MESSAGE_CONSTRAINTS);
+        }
+        return new Department(trimmedDepartment);
+    }
+
+    /**
+     * Parses a {@code String role} into a {@code Role}.
+     * Leading and trailing whitespaces will be trimmed.
+     *
+     * @throws ParseException if the given {@code role} is invalid.
+     */
+    public static Role parseRole(String role) throws ParseException {
+        requireNonNull(role);
+        String trimmedRole = role.trim();
+        if (!Role.isValidRole(trimmedRole)) {
+            throw new ParseException(Role.MESSAGE_CONSTRAINTS);
+        }
+        return new Role(trimmedRole);
     }
 
     /**

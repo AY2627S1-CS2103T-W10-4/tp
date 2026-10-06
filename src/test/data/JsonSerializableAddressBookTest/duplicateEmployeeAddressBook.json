@@ -1,16 +1,18 @@
 {
   "employees": [ {
+    "id": "E0001",
     "name": "Alice Pauline",
     "phone": "94351253",
     "email": "alice@example.com",
-    "address": "123, Jurong West Ave 6, #08-111",
-    "remark": "",
+    "department": "Engineering",
+    "role": "Software Engineer",
     "tags": [ "friends" ]
   }, {
-    "name": "Alice Pauline",
+    "id": "e0001",
+    "name": "Bob Different",
     "phone": "94351253",
     "email": "pauline@example.com",
-    "address": "4th street",
-    "remark": ""
+    "department": "Finance",
+    "role": "Accountant"
   } ]
 }

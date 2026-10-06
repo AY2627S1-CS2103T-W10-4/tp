@@ -17,26 +17,33 @@ import seedu.address.model.tag.Tag;
 public class Employee {
 
     // Identity fields
+    private final EmployeeId id;
+
+    // Data fields
     private final Name name;
     private final Phone phone;
     private final Email email;
-
-    // Data fields
-    private final Address address;
-    private final Remark remark;
+    private final Department department;
+    private final Role role;
     private final Set<Tag> tags = new HashSet<>();
 
     /**
      * Every field must be present and not null.
      */
-    public Employee(Name name, Phone phone, Email email, Address address, Remark remark, Set<Tag> tags) {
-        requireAllNonNull(name, phone, email, address, remark, tags);
+    public Employee(EmployeeId id, Name name, Phone phone, Email email, Department department, Role role,
+            Set<Tag> tags) {
+        requireAllNonNull(id, name, phone, email, department, role, tags);
+        this.id = id;
         this.name = name;
         this.phone = phone;
         this.email = email;
-        this.address = address;
-        this.remark = remark;
+        this.department = department;
+        this.role = role;
         this.tags.addAll(tags);
+    }
+
+    public EmployeeId getId() {
+        return id;
     }
 
     public Name getName() {
@@ -51,12 +58,12 @@ public class Employee {
         return email;
     }
 
-    public Address getAddress() {
-        return address;
+    public Department getDepartment() {
+        return department;
     }
 
-    public Remark getRemark() {
-        return remark;
+    public Role getRole() {
+        return role;
     }
 
     /**
@@ -68,7 +75,7 @@ public class Employee {
     }
 
     /**
-     * Returns true if both employees have the same name.
+     * Returns true if both employees have the same employee ID.
      * This defines a weaker notion of equality between two employees.
      */
     public boolean isSameEmployee(Employee otherEmployee) {
@@ -77,7 +84,7 @@ public class Employee {
         }
 
         return otherEmployee != null
-                && otherEmployee.getName().equals(getName());
+                && otherEmployee.getId().equals(getId());
     }
 
     /**
@@ -95,28 +102,30 @@ public class Employee {
             return false;
         }
 
-        return name.equals(otherEmployee.name)
+        return id.equals(otherEmployee.id)
+                && name.equals(otherEmployee.name)
                 && phone.equals(otherEmployee.phone)
                 && email.equals(otherEmployee.email)
-                && address.equals(otherEmployee.address)
-                && remark.equals(otherEmployee.remark)
+                && department.equals(otherEmployee.department)
+                && role.equals(otherEmployee.role)
                 && tags.equals(otherEmployee.tags);
     }
 
     @Override
     public int hashCode() {
         // use this method for custom fields hashing instead of implementing your own
-        return Objects.hash(name, phone, email, address, remark, tags);
+        return Objects.hash(id, name, phone, email, department, role, tags);
     }
 
     @Override
     public String toString() {
         return new ToStringBuilder(this)
+                .add("id", id)
                 .add("name", name)
                 .add("phone", phone)
                 .add("email", email)
-                .add("address", address)
-                .add("remark", remark)
+                .add("department", department)
+                .add("role", role)
                 .add("tags", tags)
                 .toString();
     }

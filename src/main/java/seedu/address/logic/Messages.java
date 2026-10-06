@@ -36,15 +36,18 @@ public class Messages {
      */
     public static String format(Employee employee) {
         final StringBuilder builder = new StringBuilder();
-        builder.append(employee.getName())
+        builder.append("ID: ")
+                .append(employee.getId())
+                .append("; Name: ")
+                .append(employee.getName())
                 .append("; Phone: ")
                 .append(employee.getPhone())
                 .append("; Email: ")
                 .append(employee.getEmail())
-                .append("; Address: ")
-                .append(employee.getAddress())
-                .append("; Remark: ")
-                .append(employee.getRemark())
+                .append("; Department: ")
+                .append(employee.getDepartment())
+                .append("; Role: ")
+                .append(employee.getRole())
                 .append("; Tags: ");
         employee.getTags().forEach(builder::append);
         return builder.toString();

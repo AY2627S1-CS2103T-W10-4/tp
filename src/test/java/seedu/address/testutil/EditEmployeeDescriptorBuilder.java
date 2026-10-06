@@ -5,11 +5,12 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import seedu.address.logic.commands.EditCommand.EditEmployeeDescriptor;
-import seedu.address.model.employee.Address;
+import seedu.address.model.employee.Department;
 import seedu.address.model.employee.Email;
 import seedu.address.model.employee.Employee;
 import seedu.address.model.employee.Name;
 import seedu.address.model.employee.Phone;
+import seedu.address.model.employee.Role;
 import seedu.address.model.tag.Tag;
 
 /**
@@ -35,7 +36,8 @@ public class EditEmployeeDescriptorBuilder {
         descriptor.setName(employee.getName());
         descriptor.setPhone(employee.getPhone());
         descriptor.setEmail(employee.getEmail());
-        descriptor.setAddress(employee.getAddress());
+        descriptor.setDepartment(employee.getDepartment());
+        descriptor.setRole(employee.getRole());
         descriptor.setTags(employee.getTags());
     }
 
@@ -64,10 +66,18 @@ public class EditEmployeeDescriptorBuilder {
     }
 
     /**
-     * Sets the {@code Address} of the {@code EditEmployeeDescriptor} that we are building.
+     * Sets the {@code Department} of the {@code EditEmployeeDescriptor} that we are building.
      */
-    public EditEmployeeDescriptorBuilder withAddress(String address) {
-        descriptor.setAddress(new Address(address));
+    public EditEmployeeDescriptorBuilder withDepartment(String department) {
+        descriptor.setDepartment(new Department(department));
+        return this;
+    }
+
+    /**
+     * Sets the {@code Role} of the {@code EditEmployeeDescriptor} that we are building.
+     */
+    public EditEmployeeDescriptorBuilder withRole(String role) {
+        descriptor.setRole(new Role(role));
         return this;
     }
 
