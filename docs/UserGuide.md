@@ -33,7 +33,7 @@ AddressBook Level 3 (AB3) is a **desktop application for managing contacts, opti
 
    * `add n/John Doe p/98765432 e/johnd@example.com a/John street, block 123, #01-01` : Adds a contact named `John Doe` to the Address Book.
 
-   * `delete 3` : Deletes the 3rd contact shown in the current list.
+   * `delete id/E0003` : Permanently deletes employee `E0003`, including if hidden by a search.
 
    * `clear` : Deletes all contacts.
 
@@ -71,7 +71,7 @@ AddressBook Level 3 (AB3) is a **desktop application for managing contacts, opti
 
 Shows a message explaining how to access the help page.
 
-![help message](images/helpMessage.png)
+The help window displays `Refer to the user guide: https://ay2627-cs2103t-w10-4.github.io/tp/UserGuide.html`. Its copy button copies the HuntR User Guide link.
 
 Format: `help`
 
@@ -130,19 +130,59 @@ Examples:
 * `find alex david` returns `Alex Yeoh`, `David Li`<br>
   ![result for 'find alex david'](images/findAlexDavidResult.png)
 
-### Deleting a person: `delete`
+### Deleting an employee: `delete`
 
-Deletes the specified person from the address book.
+Permanently removes one employee from all stored workforce records.
 
-Format: `delete INDEX`
+Format: `delete id/EMPLOYEE_ID`
 
-* Deletes the person at the specified `INDEX`.
-* The index refers to the index number shown in the displayed person list.
-* The index **must be a positive integer** 1, 2, 3, ...
+* The ID must be uppercase `E` followed by exactly four ASCII digits: `E0000` through `E9999`.
+* Both `delete` and `id/` are lowercase. Lowercase IDs such as `e0123` are rejected, not converted.
+* Spaces and tabs are allowed around the command, between tokens, and after `id/`. Whitespace inside the ID is invalid.
+* Exactly one ID is required. Repeated `id/` prefixes (even identical ones), extra fields, and extra text are rejected.
+* The command searches the **whole roster**, including employees hidden by `find`. Names and displayed row numbers do not identify the target.
+* The current search filter and the order of remaining employees are preserved. An empty view stays an empty list.
+* There is **no confirmation or undo**. Deleting the last employee is allowed and stays empty after restarting.
+* Success is shown only after saving. A save failure leaves both the running roster and previous data file unchanged.
+* A deleted employee ID can be reused by `add`.
 
-Examples:
-* `list` followed by `delete 2` deletes the 2nd person in the address book.
-* `find Betsy` followed by `delete 1` deletes the 1st person in the results of the `find` command.
+Examples (assuming the target exists):
+
+* `delete id/E0123` deletes employee `E0123`.
+* `delete    id/ E0123` performs the same deletion.
+* `find Betsy` followed by `delete id/E0123` deletes `E0123` even when that employee is not among the results. The Betsy search remains active.
+
+For John Tan (`E0123`, phone `91234567`, email `johntan@example.com`, department `Engineering`, role `Software Engineer`), success is exactly:
+
+```text
+Deleted employee: ID: E0123; Name: John Tan; Phone: 91234567; Email: johntan@example.com; Department: Engineering; Role: Software Engineer
+```
+
+Every syntax or ID-validation error below appends this usage block after a newline:
+
+```text
+delete: Deletes one employee by employee ID from all stored employee records.
+Parameters: id/EMPLOYEE_ID (uppercase E followed by exactly four digits)
+Example: delete id/E0123
+```
+
+| Invalid input | Message before the usage block |
+| --- | --- |
+| `delete`, `delete id/`, `delete 1`, `delete E0123`, `delete ID/E0123`, `delete extra id/E0123` | `Invalid command format!` |
+| `delete id/e0123`, `delete id/EMP-0042`, `delete id/123`, `delete id/E123`, `delete id/E01234`, `delete id/E 0123`, `delete id/E0123,E0456` | `Employee ID must be an uppercase E followed by exactly four digits (e.g. E0123).` |
+| `delete id/E0123 extra`, `delete id/E0123 E0456`, `delete id/E0123 n/John` | `Unexpected arguments. Specify exactly one employee ID.` |
+| `delete id/E0123 id/E0123`, `delete id/E0123 id/E0456` | `Multiple values specified for the following single-valued field(s): id/` |
+
+Other outcomes do not append usage:
+
+* `DELETE id/E0123`: `Unknown command.`
+* An absent ID, including repeated deletion or an empty roster: `No employee with ID E0123 was found.`
+* A permission failure: `Could not delete employee E0123: insufficient permission to save employee records. No employee records were changed.`
+* Another save failure: `Could not delete employee E0123: employee records could not be saved. No employee records were changed.`
+
+On failure, the roster and filter remain unchanged, and the command stays in the input box with error styling so it can be corrected or retried. On success, the input box clears. The existing result log includes the deleted employee's displayed details.
+
+**Compatibility:** `delete INDEX` has been removed. `edit` remains index-based and cannot change an employee's ID. The strict `E####` constraint also applies to `add`, model validation, and data-file loading. Existing files with valid IDs need no migration; a file containing any lowercase or custom-format ID is rejected as a whole. There is no automatic ID conversion. As with other invalid files, startup uses an empty roster and logs a warning without changing the file; later successful record-changing commands can overwrite it with the running roster.
 
 ### Clearing all entries: `clear`
 
@@ -158,7 +198,11 @@ Format: `exit`
 
 ### Saving the data
 
-AddressBook automatically saves data after every command. You do not need to save manually.
+HuntR automatically saves employee records for `add`, `edit`, `delete`, and `clear`. You do not need to save manually. Each command updates the running roster and reports success only after saving succeeds. If saving fails, the running records, active search, and previously saved file remain unchanged, so you can fix the storage problem and retry the same command.
+
+Saving prepares a replacement file and swaps it into place in one step. If your storage location does not support that operation, the command reports a save error and leaves your records unchanged. Use a storage location that supports atomic file replacement.
+
+`list`, `find`, `help`, and `exit` do not write employee records and remain available when saving is unavailable. Successful `add` and `edit` commands show all employees as before; `delete` and `clear` retain the active filter. Deleting the final employee or clearing the roster saves an empty `employees` array, which remains empty on restart. `clear` saves even when the running roster is already empty.
 
 ### Editing the data file
 
@@ -167,7 +211,7 @@ AddressBook data is saved automatically as a JSON file `[JAR file location]/data
 <box type="warning" seamless>
 
 **Caution:**
-If your changes make the data file invalid, AddressBook starts with an empty address book at the next run. The invalid file remains on disk until you run a command (AddressBook saves after every command). Still, we recommend backing up the file before editing it.<br>
+If your changes make the data file invalid, HuntR starts with an empty roster at the next run. The invalid file remains unchanged until a record-changing command saves successfully. `list`, `find`, `help`, and `exit` do not overwrite it. Still, we recommend backing up the file before editing it.<br>
 Furthermore, certain edits can cause the AddressBook to behave in unexpected ways (e.g., if a value entered is outside of the acceptable range). Therefore, edit the data file only if you are confident that you can update it correctly.
 </box>
 
@@ -197,7 +241,7 @@ Action     | Format, Examples
 -----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 **Add**    | `add n/NAME p/PHONE_NUMBER e/EMAIL a/ADDRESS [t/TAG]... ` <br> e.g., `add n/James Ho p/22224444 e/jamesho@example.com a/123, Clementi Rd, 1234665 t/friend t/colleague`
 **Clear**  | `clear`
-**Delete** | `delete INDEX`<br> e.g., `delete 3`
+**Delete** | `delete id/EMPLOYEE_ID`<br> e.g., `delete id/E0123`
 **Edit**   | `edit INDEX [n/NAME] [p/PHONE_NUMBER] [e/EMAIL] [a/ADDRESS] [t/TAG]... `<br> e.g.,`edit 2 n/James Lee e/jameslee@example.com`
 **Find**   | `find KEYWORD [MORE_KEYWORDS]`<br> e.g., `find James Jake`
 **List**   | `list`

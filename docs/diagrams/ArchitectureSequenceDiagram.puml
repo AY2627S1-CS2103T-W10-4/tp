@@ -1,39 +1,28 @@
 @startuml
 !include style.puml
 skinparam ArrowFontStyle plain
+actor User as user USER_COLOR
+participant ":UI" as ui UI_COLOR
+participant ":Logic" as logic LOGIC_COLOR
+participant "live:Model" as live MODEL_COLOR
+participant "candidate:Model" as candidate MODEL_COLOR
+participant ":Storage" as storage STORAGE_COLOR
 
-Actor User as user USER_COLOR
-Participant ":UI" as ui UI_COLOR
-Participant ":Logic" as logic LOGIC_COLOR
-Participant ":Model" as model MODEL_COLOR
-Participant ":Storage" as storage STORAGE_COLOR
-
-user -[USER_COLOR]> ui : "delete 1"
-activate ui UI_COLOR
-
-ui -[UI_COLOR]> logic : execute("delete 1")
-activate logic LOGIC_COLOR
-
-logic -[LOGIC_COLOR]> model : deletePerson(p)
-activate model MODEL_COLOR
-
-model -[MODEL_COLOR]-> logic
-deactivate model
-
-logic -[LOGIC_COLOR]> storage : saveAddressBook(addressBook)
-activate storage STORAGE_COLOR
-
-storage -[STORAGE_COLOR]> storage : Save to file
-activate storage STORAGE_COLOR_T1
-storage --[STORAGE_COLOR]> storage
-deactivate storage
-
-storage --[STORAGE_COLOR]> logic
-deactivate storage
-
-logic --[LOGIC_COLOR]> ui
-deactivate logic
-
-ui--[UI_COLOR]> user
-deactivate ui
+user -> ui : "delete id/E0123"
+ui -> logic : execute("delete id/E0123")
+logic -> live : read roster and preferences
+live --> logic : current state
+logic -> candidate : create detached copy and delete target ID
+logic -> storage : saveAddressBook(candidate roster)
+storage -> storage : write sibling temporary file\nthen atomically replace saved file
+alt save succeeds
+    storage --> logic : saved
+    logic -> live : publish candidate, retaining filter
+    logic --> ui : deletion success
+    ui --> user : deleted employee details
+else save fails
+    storage --> logic : IOException
+    logic --> ui : save failure, live roster unchanged
+    ui --> user : error, command retained
+end
 @enduml

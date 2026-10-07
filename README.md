@@ -32,9 +32,11 @@ HuntR allows HR administrators to view all employees currently stored in the app
 Example:
 `list`
 
-### Delete employees
+### Delete employees (implemented)
 
-HuntR allows HR administrators to remove an employee from the workforce records using the employee's unique employee ID.
+HuntR allows HR administrators to permanently remove one employee using their unique employee ID. IDs must be uppercase `E` followed by exactly four digits, such as `E0123`. The command searches all stored employees, including those hidden by a search, and preserves the current filter. Deletion has no confirmation or undo; success is reported only after saving. If saving fails, the roster and existing data file remain unchanged.
+
+The previous `delete INDEX` syntax is no longer supported. Deleted IDs can be reused. See the [User Guide](docs/UserGuide.md#deleting-an-employee-delete) for validation, messages, and compatibility rules.
 
 Example:
 `delete id/E0123`
@@ -48,6 +50,8 @@ Example: `find John`
 ### Automatic data persistence
 
 HuntR automatically saves your workforce records to disk after every change, and reloads them the next time the application is launched — no manual save or load required.
+
+`add`, `edit`, `delete`, and `clear` save successfully before updating the running roster. If saving fails, both the running records and saved file remain unchanged. Commands that do not change records (`list`, `find`, `help`, and `exit`) do not save the roster.
 
 ### Exit
 

@@ -50,7 +50,7 @@ The bulk of the app's work is done by the following four components:
 
 **How the architecture components interact with each other**
 
-The *Sequence Diagram* below shows how the components interact with each other for the scenario where the user issues the command `delete 1`.
+The *Sequence Diagram* below shows how the components interact with each other for the scenario where the user issues the command `delete id/E0123`.
 
 <puml src="diagrams/ArchitectureSequenceDiagram.puml" width="574" />
 
@@ -90,21 +90,15 @@ Here's a (partial) class diagram of the `Logic` component:
 
 <puml src="diagrams/LogicClassDiagram.puml" width="550"/>
 
-The sequence diagram below illustrates the interactions within the `Logic` component, taking `execute("delete 1")` API call as an example.
+The sequence diagram below illustrates the interactions within the `Logic` component, taking `execute("delete id/E0123")` API call as an example.
 
-<puml src="diagrams/DeleteSequenceDiagram.puml" alt="Interactions Inside the Logic Component for the `delete 1` Command" />
-
-<box type="info" seamless>
-
-**Note:** The lifeline for `DeleteCommandParser` should end at the destroy marker (X), but due to a limitation of PlantUML, the lifeline continues till the end of diagram.
-</box>
-
+<puml src="diagrams/DeleteSequenceDiagram.puml" alt="Interactions Inside the Logic Component for the `delete id/E0123` Command" />
 
 How the `Logic` component works:
 
 1. When `Logic` is called upon to execute a command, the command is passed to an `AddressBookParser` object, which in turn creates a parser that matches the command (e.g., `DeleteCommandParser`) and uses it to parse the command.
 1. This results in a `Command` object (more precisely, an object of one of its subclasses e.g., `DeleteCommand`) which is executed by the `LogicManager`.
-1. The command can communicate with the `Model` when it is executed (e.g. to delete a person).<br>
+1. The command can communicate with the `Model` when it is executed. Commands that change employee records execute against a detached candidate model; `LogicManager` saves it before publishing it to the live model.<br>
    Note that although this is shown as a single step in the diagram above for simplicity, the code can require several interactions between the command object and the `Model` to complete the operation.
 1. The result of the command execution is encapsulated as a `CommandResult` object which is returned from `Logic`.
 
@@ -159,7 +153,25 @@ Classes used by multiple components are in the `seedu.address.commons` package.
 
 This section describes some noteworthy details on how certain features are implemented.
 
+### Delete an employee by ID
+
+`DeleteCommandParser` accepts `delete id/EMPLOYEE_ID` with exactly one uppercase `E` and four ASCII digits. It accepts spaces and tabs without changing shared tokenization for other commands. Validation precedence is command routing, duplicate `id/`, required leading prefix, unexpected fields/trailing arguments, empty value, ID constraint, lookup, then persistence. Syntax errors append `DeleteCommand.MESSAGE_USAGE`; nonexistent IDs produce a distinct message without usage. See the [User Guide](UserGuide.md#deleting-an-employee-delete) for exact output and examples.
+
+`DeleteCommand` stores an `EmployeeId` and searches `model.getAddressBook().getEmployeeList()`, not the filtered list. It deletes the matching stored object and returns its full details. The ID model validates `E[0-9]{4}` consistently for additions and JSON loading. Index-based edits retain their existing ID; ID editing is not supported.
+
+`LogicManager` uses the same save-before-publish flow for `add`, `edit`, `delete`, and `clear`. Each declares `Command.requiresSave()` as true. The candidate `ModelManager` copies the roster, preferences, and active filter before execution, so an index-based edit still targets the displayed employee. Only after saving succeeds does logic publish the candidate records and resulting filter to the existing live observable list. Add and edit show all employees; delete and clear retain the original filter. A failure discards the candidate, leaving live records, order, and filtering unchanged. Existing success/error messages are retained.
+
+`list`, `find`, `help`, and `exit` use the default `requiresSave()` value of false, execute on the live model, and do not save employee records. They remain usable when roster storage is unavailable. New commands that change employee records must override `requiresSave()` to opt into the shared transaction. Record-changing commands save even when the resulting roster is identical, including `clear` on an empty roster and an edit that repeats an existing value.
+
+`JsonAddressBookStorage` serializes the complete roster to a temporary sibling file and closes the write before atomically replacing the destination. It never pre-creates or truncates the destination. Unsupported atomic replacement fails without a non-atomic fallback. Failed writes preserve the old file, or leave a missing destination absent. Temporary-file cleanup failures are logged and cannot turn a completed commit into a reported failure. All roster saves use this storage path; preferences storage is unchanged.
+
+The JSON schema remains an `employees` array with `id`, `name`, `phone`, `email`, `department`, and `role`. Deleting the final record saves an empty array, not a missing file. There are no tombstones, reserved IDs, audits, backups, confirmation prompts, or undo support. A deleted ID can be reused.
+
+**Compatibility:** `delete INDEX` is rejected. Previously accepted lowercase/custom IDs now fail the shared ID constraint. Loading rejects the whole invalid file, starts with an empty roster, and logs a warning; it does not rewrite the file during loading. Later successful record-changing commands can overwrite it; read-only commands leave it untouched. There is no automatic migration.
+
 ### \[Proposed\] Undo/redo feature
+
+Confirmation and undo/redo are future features; the current delete command performs immediate permanent removal after a successful save. The history operations below are not implemented.
 
 #### Proposed Implementation
 
@@ -177,7 +189,7 @@ Step 1. The user launches the application for the first time. The `VersionedAddr
 
 <puml src="diagrams/UndoRedoState0.puml" alt="UndoRedoState0" />
 
-Step 2. The user executes `delete 5` command to delete the 5th person in the address book. The `delete` command calls `Model#commitAddressBook()`, causing the modified state of the address book after the `delete 5` command executes to be saved in the `addressBookStateList`, and the `currentStatePointer` is shifted to the newly inserted address book state.
+Step 2. The user executes `delete id/E0005` command to delete employee `E0005` from the roster. The `delete` command calls `Model#commitAddressBook()`, causing the modified state of the address book after the `delete id/E0005` command executes to be saved in the `addressBookStateList`, and the `currentStatePointer` is shifted to the newly inserted address book state.
 
 <puml src="diagrams/UndoRedoState1.puml" alt="UndoRedoState1" />
 
@@ -309,7 +321,7 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 | `* * *` | Basic user | Have my data saved automatically after every change | I don't lose records if the app closes unexpectedly |
 | `* * *` | Basic user | Exit the application with a command | close it safely knowing my data is saved |
 | `* *` | Basic user | Edit an employee's details | keep records accurate when someone's role or contact info changes |
-| `* *` | Careful user | Be asked to confirm before a record is deleted | avoid losing a record to a mistyped command |
+| `* *` | Careful user | Be asked to confirm before a record is deleted (future feature) | avoid losing a record to a mistyped command |
 | `* *` | Busy user | Filter employees using multiple criteria at once (e.g. department and role) | narrow down results faster than one field at a time |
 | `* *` | Busy user | View an entire team's roster with one command | prepare for a team meeting without assembling the list myself |
 | `*` | Busy user | Sort employees by a chosen field (e.g. name or department) | scan records in the order that's useful to me |
@@ -327,7 +339,7 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 
 1. User requests to add an employee and provides the employee ID, name, phone number, email, department, and role.
 2. HuntR validates the provided details.
-3. HuntR adds the employee and saves the updated employee records.
+3. HuntR prepares the updated roster, saves it, and then adds the employee to the live records.
 4. HuntR displays the added employee's details.
 
    Use case ends.
@@ -354,7 +366,7 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 
 * 3a. HuntR is unable to save the updated employee records.
 
-  * 3a1. HuntR informs the user that the employee could not be saved successfully.
+  * 3a1. HuntR reports the save failure and leaves the live roster, filter, and saved file unchanged. The user can fix the storage problem and retry.
 
     Use case ends.
 
@@ -366,7 +378,7 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 2. HuntR displays the employee list.
 3. User selects an employee and provides the details to update.
 4. HuntR validates the provided details.
-5. HuntR updates the selected employee's record and saves the updated employee records.
+5. HuntR prepares the updated roster, saves it, and then publishes the selected employee's updated record.
 6. HuntR displays the updated employee's details.
 
    Use case ends.
@@ -405,7 +417,7 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 
 * 5a. HuntR is unable to save the updated employee records.
 
-  * 5a1. HuntR informs the user that the employee changes could not be saved successfully.
+  * 5a1. HuntR reports the save failure and leaves the live roster, filter, and saved file unchanged. The user can fix the storage problem and retry.
 
     Use case ends.
 
@@ -462,26 +474,24 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 
 **MSS**
 
-1. User requests to delete an employee using `delete INDEX`.
-2. HuntR finds the employee record with the specified employee ID.
-3. HuntR deletes the specified employee record.
-4. HuntR displays the deleted employee's details as confirmation.
+1. User submits `delete id/EMPLOYEE_ID`.
+2. HuntR validates the syntax and finds the ID in the complete roster, including hidden employees.
+3. HuntR removes that employee from a candidate roster and saves it atomically.
+4. HuntR publishes the saved roster, preserving the current filter and remaining order.
+5. HuntR displays the deleted employee's full details and clears the command input.
 
-    Use case ends.
+   Use case ends. There is no confirmation step or undo.
 
 **Extensions**
 
-* 1a. The employee ID is missing, malformed, or accompanied by additional arguments.
-
-  * 1a1. HuntR shows the correct command format.
-
-    Use case resumes at step 1.
-
-* 2a. No employee has the specified employee ID.
-
-  * 2a1. HuntR informs the user that no employee with the specified employee ID was found.
-
-    Use case ends.
+* 1a. The ID is missing, malformed, repeated, or accompanied by additional arguments.
+  * HuntR shows the corresponding error and usage; records and the filter are unchanged. The input is retained.
+* 2a. No employee has the ID, including in an empty roster or after a repeated deletion.
+  * HuntR shows `No employee with ID EMPLOYEE_ID was found.` Records and the filter are unchanged.
+* 3a. Saving fails, including unsupported atomic replacement.
+  * HuntR reports the save failure, retains the input, and leaves the running roster and previous data file unchanged. The user can fix the failure and retry the same command.
+* 4a. The final employee or final visible result was removed.
+  * HuntR displays an empty list with only the normal deletion message. An empty saved roster stays empty on restart.
 
 *{More to be added}*
 
@@ -531,7 +541,7 @@ These definitions describe HuntR's employee-management domain. The inherited cod
 | **Displayed index** | An employee's position in the currently displayed list, starting at 1. It can change when the list changes and is distinct from the employee ID. HuntR's specified `delete` command uses the employee ID. |
 | **Duplicate employee record** | A record with the same employee ID as another record. Two employees with the same name but different employee IDs are distinct records. |
 | **Employee** | A member of the organisation whose information the HR administrator manages in HuntR. An employee record contains an employee ID, name, phone number, email, department, and role. |
-| **Employee ID** | The unique identifier for an employee record: uppercase `E` followed by exactly four digits, such as `E0123`. It is supplied using `id/` and distinguishes employees even when their names are identical. |
+| **Employee ID** | The unique identifier for an employee record: uppercase `E` followed by exactly four ASCII digits, such as `E0123` (valid range `E0000`–`E9999`). It is supplied using `id/` and distinguishes employees even when their names are identical. |
 | **Filtered employee list** | The subset of stored employee records currently displayed after applying search criteria. Filtering changes the view without deleting records from the workforce roster. |
 | **Graphical user interface (GUI)** | The application's visual interface, including the command box, result display, and employee list. |
 | **HR administrator** | The human resources staff member who operates HuntR to maintain the organisation's employee records; the application's target user. |
@@ -575,22 +585,15 @@ testers are expected to do more *exploratory* testing.
 
 1. _{ more test cases … }_
 
-### Deleting a person
+### Deleting an employee
 
-1. Deleting a person while all persons are being shown
-
-   1. Prerequisites: List all persons using the `list` command, with multiple persons in the list.
-
-   1. Test case: `delete 1`<br>
-      Expected: The first contact is deleted from the list. The status message shows the deleted contact's details.
-
-   1. Test case: `delete 0`<br>
-      Expected: No person is deleted. The status message shows error details.
-
-   1. Other incorrect delete commands to try: `delete`, `delete x`, `...` (where x is larger than the list size)<br>
-      Expected: Similar to previous.
-
-1. _{ more test cases … }_
+1. With valid employees `E0001` and `E0002`, run `list`, then `delete id/E0001`. Expect only `E0001` to disappear, its complete details in the result, and an empty command input.
+2. Restore `E0001`, then search for the name of `E0002`. Delete `E0001` while hidden. Expect the visible results and active search to remain unchanged; `list` must confirm `E0001` is gone.
+3. Try `delete 1`, `delete id/e0001`, `delete id/E0001 id/E0001`, and `delete id/E0001 n/John`. Expect the documented error and usage with unchanged records and retained input/error styling.
+4. Delete an absent ID and repeat a successful deletion. Expect the exact not-found message with no mutation.
+5. Delete the last employee, exit, and relaunch. Expect an empty roster with no sample records.
+6. Verify Help displays and copies HuntR's published guide link. Confirmation and undo are not available.
+7. Follow the repository's `tests/test-plan.md` for complete acceptance cases, deterministic save-failure tests, and release-level checks. Save failures must preserve the old file bytes and live roster, and permit retry.
 
 ### Saving data
 
