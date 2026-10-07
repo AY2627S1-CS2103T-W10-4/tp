@@ -3,8 +3,6 @@ package seedu.address.model.employee;
 import static java.util.Objects.requireNonNull;
 import static seedu.address.commons.util.AppUtil.checkArgument;
 
-import java.util.Locale;
-
 /**
  * Represents an Employee's ID in the address book.
  * Guarantees: immutable; is valid as declared in {@link #isValidEmployeeId(String)}
@@ -12,13 +10,9 @@ import java.util.Locale;
 public class EmployeeId {
 
     public static final String MESSAGE_CONSTRAINTS =
-            "Employee ID should be 1 to 20 characters long and contain only letters, digits, hyphens and underscores.";
+            "Employee ID must be an uppercase E followed by exactly four digits (e.g. E0123).";
 
-    /*
-     * Company ID schemes vary (e.g. E0123, EMP-0042, 2024-017), so any combination of
-     * letters, digits, hyphens and underscores is accepted, up to 20 characters.
-     */
-    public static final String VALIDATION_REGEX = "[\\p{Alnum}_-]{1,20}";
+    public static final String VALIDATION_REGEX = "E[0-9]{4}";
 
     public final String value;
 
@@ -46,7 +40,7 @@ public class EmployeeId {
     }
 
     /**
-     * Two IDs are equal if they differ only in letter case, e.g. E0123 and e0123.
+     * Returns true if both IDs have the same validated uppercase value.
      */
     @Override
     public boolean equals(Object other) {
@@ -60,12 +54,12 @@ public class EmployeeId {
         }
 
         EmployeeId otherEmployeeId = (EmployeeId) other;
-        return value.equalsIgnoreCase(otherEmployeeId.value);
+        return value.equals(otherEmployeeId.value);
     }
 
     @Override
     public int hashCode() {
-        return value.toLowerCase(Locale.ROOT).hashCode();
+        return value.hashCode();
     }
 
 }

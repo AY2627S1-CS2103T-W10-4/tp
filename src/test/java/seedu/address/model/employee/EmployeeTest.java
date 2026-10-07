@@ -35,12 +35,8 @@ public class EmployeeTest {
         editedAlice = new EmployeeBuilder(ALICE).withId(VALID_ID_BOB).build();
         assertFalse(ALICE.isSameEmployee(editedAlice));
 
-        // ID differs in case, all other attributes same -> returns true
-        Employee editedBob = new EmployeeBuilder(BOB).withId(VALID_ID_BOB.toLowerCase()).build();
-        assertTrue(BOB.isSameEmployee(editedBob));
-
         // same name, different ID -> returns false (employees may share a name)
-        editedBob = new EmployeeBuilder(BOB).withId("E9999").build();
+        Employee editedBob = new EmployeeBuilder(BOB).withId("E9999").build();
         assertFalse(BOB.isSameEmployee(editedBob));
     }
 

@@ -168,15 +168,10 @@ public class ParserUtilTest {
     }
 
     @Test
-    public void parseEmployeeId_differentCase_returnsEqualId() throws Exception {
-        assertEquals(ParserUtil.parseEmployeeId("e0123"), ParserUtil.parseEmployeeId("E0123"));
-    }
-
-    @Test
-    public void parseEmployeeId_variousSchemes_accepted() throws Exception {
-        assertEquals("EMP-0042", ParserUtil.parseEmployeeId("EMP-0042").value);
-        assertEquals("2024_017", ParserUtil.parseEmployeeId("2024_017").value);
-        assertEquals("1", ParserUtil.parseEmployeeId("1").value);
+    public void parseEmployeeId_legacySchemes_throwsParseException() {
+        for (String id : new String[] {"e0123", "EMP-0042", "2024_017", "1"}) {
+            assertThrows(ParseException.class, EmployeeId.MESSAGE_CONSTRAINTS, () -> ParserUtil.parseEmployeeId(id));
+        }
     }
 
     @Test
