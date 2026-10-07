@@ -32,7 +32,7 @@ public class ModelManager implements Model {
 
         this.addressBook = new AddressBook(addressBook);
         this.userPrefs = new UserPrefs(userPrefs);
-        filteredEmployees = new FilteredList<>(this.addressBook.getEmployeeList());
+        filteredEmployees = new FilteredList<>(this.addressBook.getEmployeeList(), PREDICATE_SHOW_ALL_EMPLOYEES);
     }
 
     public ModelManager() {
@@ -105,7 +105,12 @@ public class ModelManager implements Model {
     }
 
     @Override
-    public void updateFilteredEmployeeList(Predicate<Employee> predicate) {
+    public Predicate<? super Employee> getEmployeeFilter() {
+        return filteredEmployees.getPredicate();
+    }
+
+    @Override
+    public void updateFilteredEmployeeList(Predicate<? super Employee> predicate) {
         requireNonNull(predicate);
         filteredEmployees.setPredicate(predicate);
     }

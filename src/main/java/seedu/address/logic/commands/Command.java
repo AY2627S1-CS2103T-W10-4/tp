@@ -9,6 +9,14 @@ import seedu.address.model.Model;
 public abstract class Command {
 
     /**
+     * Returns whether this command requires saving employee records before publishing its result.
+     * Commands that change employee records must override this method to return true.
+     */
+    public boolean requiresSave() {
+        return false;
+    }
+
+    /**
      * Executes the command and returns the result message.
      *
      * @param model {@code Model} which the command should operate on.

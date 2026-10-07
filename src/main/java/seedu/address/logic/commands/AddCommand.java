@@ -51,6 +51,11 @@ public class AddCommand extends Command {
     }
 
     @Override
+    public boolean requiresSave() {
+        return true;
+    }
+
+    @Override
     public CommandResult execute(Model model) throws CommandException {
         requireNonNull(model);
 

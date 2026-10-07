@@ -1,7 +1,6 @@
 package seedu.address.logic;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static seedu.address.logic.Messages.MESSAGE_INVALID_EMPLOYEE_DISPLAYED_INDEX;
 import static seedu.address.logic.Messages.MESSAGE_UNKNOWN_COMMAND;
 import static seedu.address.logic.commands.CommandTestUtil.DEPARTMENT_DESC_AMY;
 import static seedu.address.logic.commands.CommandTestUtil.EMAIL_DESC_AMY;
@@ -10,7 +9,6 @@ import static seedu.address.logic.commands.CommandTestUtil.NAME_DESC_AMY;
 import static seedu.address.logic.commands.CommandTestUtil.PHONE_DESC_AMY;
 import static seedu.address.logic.commands.CommandTestUtil.ROLE_DESC_AMY;
 import static seedu.address.testutil.Assert.assertThrows;
-import static seedu.address.testutil.TypicalEmployees.AMY;
 
 import java.io.IOException;
 import java.nio.file.AccessDeniedException;
@@ -29,11 +27,9 @@ import seedu.address.model.Model;
 import seedu.address.model.ModelManager;
 import seedu.address.model.ReadOnlyAddressBook;
 import seedu.address.model.UserPrefs;
-import seedu.address.model.employee.Employee;
 import seedu.address.storage.JsonAddressBookStorage;
 import seedu.address.storage.JsonUserPrefsStorage;
 import seedu.address.storage.StorageManager;
-import seedu.address.testutil.EmployeeBuilder;
 
 public class LogicManagerTest {
     private static final IOException DUMMY_IO_EXCEPTION = new IOException("dummy IO exception");
@@ -62,8 +58,8 @@ public class LogicManagerTest {
 
     @Test
     public void execute_commandExecutionError_throwsCommandException() {
-        String deleteCommand = "delete 9";
-        assertCommandException(deleteCommand, MESSAGE_INVALID_EMPLOYEE_DISPLAYED_INDEX);
+        String deleteCommand = "delete id/E9999";
+        assertCommandException(deleteCommand, "No employee with ID E9999 was found.");
     }
 
     @Test
@@ -168,9 +164,7 @@ public class LogicManagerTest {
         // Triggers the saveAddressBook method by executing an add command
         String addCommand = AddCommand.COMMAND_WORD + ID_DESC_AMY + NAME_DESC_AMY + PHONE_DESC_AMY
                 + EMAIL_DESC_AMY + DEPARTMENT_DESC_AMY + ROLE_DESC_AMY;
-        Employee expectedEmployee = new EmployeeBuilder(AMY).build();
         ModelManager expectedModel = new ModelManager();
-        expectedModel.addEmployee(expectedEmployee);
         assertCommandFailure(addCommand, CommandException.class, expectedMessage, expectedModel);
     }
 }

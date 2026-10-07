@@ -5,116 +5,104 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.logic.commands.CommandTestUtil.assertCommandFailure;
 import static seedu.address.logic.commands.CommandTestUtil.assertCommandSuccess;
-import static seedu.address.logic.commands.CommandTestUtil.showEmployeeAtIndex;
+import static seedu.address.testutil.TypicalEmployees.ALICE;
+import static seedu.address.testutil.TypicalEmployees.BENSON;
 import static seedu.address.testutil.TypicalEmployees.getTypicalAddressBook;
-import static seedu.address.testutil.TypicalIndexes.INDEX_FIRST_EMPLOYEE;
-import static seedu.address.testutil.TypicalIndexes.INDEX_SECOND_EMPLOYEE;
 
 import org.junit.jupiter.api.Test;
 
-import seedu.address.commons.core.index.Index;
-import seedu.address.logic.Messages;
+import seedu.address.model.AddressBook;
 import seedu.address.model.Model;
 import seedu.address.model.ModelManager;
 import seedu.address.model.UserPrefs;
 import seedu.address.model.employee.Employee;
+import seedu.address.model.employee.EmployeeId;
+import seedu.address.testutil.EmployeeBuilder;
 
-/**
- * Contains integration tests (interaction with the Model) and unit tests for
- * {@code DeleteCommand}.
- */
 public class DeleteCommandTest {
-
     private Model model = new ModelManager(getTypicalAddressBook(), new UserPrefs());
 
     @Test
-    public void execute_validIndexUnfilteredList_success() {
-        Employee employeeToDelete = model.getFilteredEmployeeList().get(INDEX_FIRST_EMPLOYEE.getZeroBased());
-        DeleteCommand deleteCommand = new DeleteCommand(INDEX_FIRST_EMPLOYEE);
-
-        String expectedMessage = String.format(DeleteCommand.MESSAGE_DELETE_EMPLOYEE_SUCCESS,
-                Messages.format(employeeToDelete));
-
-        ModelManager expectedModel = new ModelManager(model.getAddressBook(), new UserPrefs());
-        expectedModel.deleteEmployee(employeeToDelete);
-
-        assertCommandSuccess(deleteCommand, model, expectedMessage, expectedModel);
+    public void execute_existingId_deletesEmployeeAndReportsAllFields() {
+        Model expected = new ModelManager(model.getAddressBook(), new UserPrefs());
+        expected.deleteEmployee(ALICE);
+        assertCommandSuccess(new DeleteCommand(ALICE.getId()), model,
+                "Deleted employee: ID: E0001; Name: Alice Pauline; Phone: 94351253; Email: alice@example.com; "
+                        + "Department: Engineering; Role: Software Engineer", expected);
     }
 
     @Test
-    public void execute_invalidIndexUnfilteredList_throwsCommandException() {
-        Index outOfBoundIndex = Index.fromOneBased(model.getFilteredEmployeeList().size() + 1);
-        DeleteCommand deleteCommand = new DeleteCommand(outOfBoundIndex);
-
-        assertCommandFailure(deleteCommand, model, Messages.MESSAGE_INVALID_EMPLOYEE_DISPLAYED_INDEX);
+    public void execute_visibleTarget_preservesFilterAndOrder() throws Exception {
+        model.updateFilteredEmployeeList(employee -> employee.equals(ALICE) || employee.equals(BENSON));
+        new DeleteCommand(ALICE.getId()).execute(model);
+        assertEquals(java.util.List.of(BENSON), model.getFilteredEmployeeList());
+        AddressBook expected = getTypicalAddressBook();
+        expected.removeEmployee(ALICE);
+        assertEquals(expected, model.getAddressBook());
     }
 
     @Test
-    public void execute_validIndexFilteredList_success() {
-        showEmployeeAtIndex(model, INDEX_FIRST_EMPLOYEE);
-
-        Employee employeeToDelete = model.getFilteredEmployeeList().get(INDEX_FIRST_EMPLOYEE.getZeroBased());
-        DeleteCommand deleteCommand = new DeleteCommand(INDEX_FIRST_EMPLOYEE);
-
-        String expectedMessage = String.format(DeleteCommand.MESSAGE_DELETE_EMPLOYEE_SUCCESS,
-                Messages.format(employeeToDelete));
-
-        Model expectedModel = new ModelManager(model.getAddressBook(), new UserPrefs());
-        expectedModel.deleteEmployee(employeeToDelete);
-        showNoEmployee(expectedModel);
-
-        assertCommandSuccess(deleteCommand, model, expectedMessage, expectedModel);
+    public void execute_hiddenTarget_preservesVisibleResults() throws Exception {
+        model.updateFilteredEmployeeList(employee -> employee.equals(BENSON));
+        new DeleteCommand(ALICE.getId()).execute(model);
+        assertEquals(java.util.List.of(BENSON), model.getFilteredEmployeeList());
+        assertFalse(model.hasEmployee(ALICE));
     }
 
     @Test
-    public void execute_invalidIndexFilteredList_throwsCommandException() {
-        showEmployeeAtIndex(model, INDEX_FIRST_EMPLOYEE);
+    public void execute_emptySearch_deletesHiddenTarget() throws Exception {
+        model.updateFilteredEmployeeList(employee -> false);
+        new DeleteCommand(ALICE.getId()).execute(model);
+        assertTrue(model.getFilteredEmployeeList().isEmpty());
+        assertFalse(model.hasEmployee(ALICE));
+    }
 
-        Index outOfBoundIndex = INDEX_SECOND_EMPLOYEE;
-        // ensures that outOfBoundIndex is still in bounds of address book list
-        assertTrue(outOfBoundIndex.getZeroBased() < model.getAddressBook().getEmployeeList().size());
+    @Test
+    public void execute_sameNameDifferentId_deletesOnlyRequestedId() throws Exception {
+        Employee namesake = new EmployeeBuilder(ALICE).withId("E9999").build();
+        model.addEmployee(namesake);
+        new DeleteCommand(ALICE.getId()).execute(model);
+        assertTrue(model.hasEmployee(namesake));
+        assertFalse(model.hasEmployee(ALICE));
+    }
 
-        DeleteCommand deleteCommand = new DeleteCommand(outOfBoundIndex);
+    @Test
+    public void execute_missingId_leavesModelUnchanged() {
+        model.updateFilteredEmployeeList(employee -> employee.equals(BENSON));
+        assertCommandFailure(new DeleteCommand(new EmployeeId("E9999")), model,
+                "No employee with ID E9999 was found.");
+    }
 
-        assertCommandFailure(deleteCommand, model, Messages.MESSAGE_INVALID_EMPLOYEE_DISPLAYED_INDEX);
+    @Test
+    public void execute_lastEmployeeAndRepeatedDeletion_leavesEmptyRoster() throws Exception {
+        model = new ModelManager();
+        model.addEmployee(ALICE);
+        new DeleteCommand(ALICE.getId()).execute(model);
+        assertTrue(model.getAddressBook().getEmployeeList().isEmpty());
+        assertCommandFailure(new DeleteCommand(ALICE.getId()), model, "No employee with ID E0001 was found.");
+    }
+
+    @Test
+    public void execute_deletedId_canBeReused() throws Exception {
+        new DeleteCommand(ALICE.getId()).execute(model);
+        Employee replacement = new EmployeeBuilder(ALICE).withName("Replacement Employee").build();
+        model.addEmployee(replacement);
+        assertTrue(model.hasEmployee(replacement));
     }
 
     @Test
     public void equals() {
-        DeleteCommand deleteFirstCommand = new DeleteCommand(INDEX_FIRST_EMPLOYEE);
-        DeleteCommand deleteSecondCommand = new DeleteCommand(INDEX_SECOND_EMPLOYEE);
-
-        // same object -> returns true
-        assertTrue(deleteFirstCommand.equals(deleteFirstCommand));
-
-        // same values -> returns true
-        DeleteCommand deleteFirstCommandCopy = new DeleteCommand(INDEX_FIRST_EMPLOYEE);
-        assertTrue(deleteFirstCommand.equals(deleteFirstCommandCopy));
-
-        // different types -> returns false
-        assertFalse(deleteFirstCommand.equals(1));
-
-        // null -> returns false
-        assertFalse(deleteFirstCommand.equals(null));
-
-        // different employee -> returns false
-        assertFalse(deleteFirstCommand.equals(deleteSecondCommand));
+        DeleteCommand first = new DeleteCommand(ALICE.getId());
+        assertTrue(first.equals(first));
+        assertTrue(first.equals(new DeleteCommand(new EmployeeId("E0001"))));
+        assertFalse(first.equals(new DeleteCommand(BENSON.getId())));
+        assertFalse(first.equals(null));
+        assertFalse(first.equals(1));
     }
 
     @Test
     public void toStringMethod() {
-        Index targetIndex = Index.fromOneBased(1);
-        DeleteCommand deleteCommand = new DeleteCommand(targetIndex);
-        String expected = DeleteCommand.class.getCanonicalName() + "{targetIndex=" + targetIndex + "}";
-        assertEquals(expected, deleteCommand.toString());
-    }
-
-    /**
-     * Updates {@code model}'s filtered list to show no one.
-     */
-    private void showNoEmployee(Model model) {
-        model.updateFilteredEmployeeList(p -> false);
-
-        assertTrue(model.getFilteredEmployeeList().isEmpty());
+        assertEquals(DeleteCommand.class.getCanonicalName() + "{targetId=E0001}",
+                new DeleteCommand(ALICE.getId()).toString());
     }
 }

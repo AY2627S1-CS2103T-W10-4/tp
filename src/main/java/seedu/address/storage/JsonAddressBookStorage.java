@@ -3,14 +3,17 @@ package seedu.address.storage;
 import static java.util.Objects.requireNonNull;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.Optional;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import seedu.address.commons.core.LogsCenter;
 import seedu.address.commons.exceptions.DataLoadingException;
 import seedu.address.commons.exceptions.IllegalValueException;
-import seedu.address.commons.util.FileUtil;
 import seedu.address.commons.util.JsonUtil;
 import seedu.address.model.ReadOnlyAddressBook;
 
@@ -82,8 +85,41 @@ public class JsonAddressBookStorage {
         requireNonNull(addressBook);
         requireNonNull(filePath);
 
-        FileUtil.createIfMissing(filePath);
-        JsonUtil.saveJsonFile(new JsonSerializableAddressBook(addressBook), filePath);
+        String json = JsonUtil.toJsonString(new JsonSerializableAddressBook(addressBook));
+        Path destination = filePath.toAbsolutePath();
+        Files.createDirectories(destination.getParent());
+        Path temporaryFile = Files.createTempFile(destination.getParent(), ".addressbook-", ".tmp");
+        try {
+            writeTemporaryFile(temporaryFile, json);
+            replaceFile(temporaryFile, destination);
+        } finally {
+            try {
+                deleteTemporaryFile(temporaryFile);
+            } catch (IOException e) {
+                logger.log(Level.WARNING, "Could not remove temporary employee data file " + temporaryFile, e);
+            }
+        }
+    }
+
+    /**
+     * Writes the complete candidate without modifying the destination file.
+     */
+    void writeTemporaryFile(Path temporaryFile, String json) throws IOException {
+        Files.writeString(temporaryFile, json, StandardCharsets.UTF_8);
+    }
+
+    /**
+     * Replaces the saved roster atomically, failing if the file provider cannot do so.
+     */
+    void replaceFile(Path temporaryFile, Path destination) throws IOException {
+        Files.move(temporaryFile, destination, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+    }
+
+    /**
+     * Removes a staging file left behind by an unsuccessful save.
+     */
+    void deleteTemporaryFile(Path temporaryFile) throws IOException {
+        Files.deleteIfExists(temporaryFile);
     }
 
 }

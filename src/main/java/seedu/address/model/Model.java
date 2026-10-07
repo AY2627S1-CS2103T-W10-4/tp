@@ -64,9 +64,12 @@ public interface Model {
     /** Returns an unmodifiable view of the filtered employee list */
     ObservableList<Employee> getFilteredEmployeeList();
 
+    /** Returns the predicate used to filter the employee list. */
+    Predicate<? super Employee> getEmployeeFilter();
+
     /**
      * Updates the filter of the filtered employee list to filter by the given {@code predicate}.
      * @throws NullPointerException if {@code predicate} is null.
      */
-    void updateFilteredEmployeeList(Predicate<Employee> predicate);
+    void updateFilteredEmployeeList(Predicate<? super Employee> predicate);
 }

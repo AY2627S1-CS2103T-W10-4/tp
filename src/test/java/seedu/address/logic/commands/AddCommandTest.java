@@ -139,7 +139,12 @@ public class AddCommandTest {
         }
 
         @Override
-        public void updateFilteredEmployeeList(Predicate<Employee> predicate) {
+        public Predicate<? super Employee> getEmployeeFilter() {
+            throw new AssertionError("This method should not be called.");
+        }
+
+        @Override
+        public void updateFilteredEmployeeList(Predicate<? super Employee> predicate) {
             throw new AssertionError("This method should not be called.");
         }
     }

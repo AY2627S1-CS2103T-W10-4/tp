@@ -23,6 +23,7 @@ import seedu.address.logic.commands.HelpCommand;
 import seedu.address.logic.commands.ListCommand;
 import seedu.address.logic.parser.exceptions.ParseException;
 import seedu.address.model.employee.Employee;
+import seedu.address.model.employee.EmployeeId;
 import seedu.address.model.employee.NameContainsKeywordsPredicate;
 import seedu.address.testutil.EditEmployeeDescriptorBuilder;
 import seedu.address.testutil.EmployeeBuilder;
@@ -48,8 +49,16 @@ public class AddressBookParserTest {
     @Test
     public void parseCommand_delete() throws Exception {
         DeleteCommand command = (DeleteCommand) parser.parseCommand(
-                DeleteCommand.COMMAND_WORD + " " + INDEX_FIRST_EMPLOYEE.getOneBased());
-        assertEquals(new DeleteCommand(INDEX_FIRST_EMPLOYEE), command);
+                "delete id/E0123");
+        assertEquals(new DeleteCommand(new EmployeeId("E0123")), command);
+        assertEquals(command, parser.parseCommand(" \tdelete\tid/\t E0123 \t"));
+    }
+
+    @Test
+    public void parseCommand_deleteLegacyAndWrongCase_throwsParseException() {
+        String expected = String.format(MESSAGE_INVALID_COMMAND_FORMAT, DeleteCommand.MESSAGE_USAGE);
+        assertThrows(ParseException.class, expected, () -> parser.parseCommand("delete 1"));
+        assertThrows(ParseException.class, MESSAGE_UNKNOWN_COMMAND, () -> parser.parseCommand("DELETE id/E0123"));
     }
 
     @Test

@@ -64,6 +64,11 @@ public class EditCommand extends Command {
     }
 
     @Override
+    public boolean requiresSave() {
+        return true;
+    }
+
+    @Override
     public CommandResult execute(Model model) throws CommandException {
         requireNonNull(model);
         List<Employee> lastShownList = model.getFilteredEmployeeList();
