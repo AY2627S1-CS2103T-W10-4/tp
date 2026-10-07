@@ -58,7 +58,13 @@ public class AddressBookParser {
             case ClearCommand.COMMAND_WORD -> new ClearCommand();
             case FindCommand.COMMAND_WORD -> new FindCommandParser().parse(arguments);
             case ListCommand.COMMAND_WORD -> new ListCommand();
-            case ExitCommand.COMMAND_WORD -> new ExitCommand();
+            case ExitCommand.COMMAND_WORD -> {
+                if (!arguments.isBlank()) {
+                    throw new ParseException(
+                            String.format(MESSAGE_INVALID_COMMAND_FORMAT, ExitCommand.MESSAGE_USAGE));
+                }
+                yield new ExitCommand();
+            }
             case HelpCommand.COMMAND_WORD -> new HelpCommand();
             default -> {
                 logger.finer("This user input caused a ParseException: " + userInput);
