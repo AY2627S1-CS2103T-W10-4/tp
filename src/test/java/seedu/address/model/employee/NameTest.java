@@ -1,5 +1,6 @@
 package seedu.address.model.employee;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.testutil.Assert.assertThrows;
@@ -28,7 +29,10 @@ public class NameTest {
         assertFalse(Name.isValidName("")); // empty string
         assertFalse(Name.isValidName(" ")); // spaces only
         assertFalse(Name.isValidName("^")); // only non-alphanumeric characters
-        assertFalse(Name.isValidName("peter*")); // contains non-alphanumeric characters
+        assertFalse(Name.isValidName("peter*")); // contains a symbol that is not allowed
+        assertFalse(Name.isValidName("peter&jack")); // ampersand not allowed
+        assertFalse(Name.isValidName("-peter")); // must start with a letter or digit
+        assertFalse(Name.isValidName("'peter")); // must start with a letter or digit
 
         // valid name
         assertTrue(Name.isValidName("peter jack")); // alphabets only
@@ -36,6 +40,41 @@ public class NameTest {
         assertTrue(Name.isValidName("peter the 2nd")); // alphanumeric characters
         assertTrue(Name.isValidName("Capital Tan")); // with capital letters
         assertTrue(Name.isValidName("David Roger Jackson Ray Jr 2nd")); // long names
+        assertTrue(Name.isValidName("Ravi s/o Kumar")); // son of
+        assertTrue(Name.isValidName("Nur Aisha d/o Ali")); // daughter of
+        assertTrue(Name.isValidName("Ravi A/L Kumar")); // Malay-style relation word
+        assertTrue(Name.isValidName("Mary-Ann O'Brien")); // hyphen and apostrophe
+        assertTrue(Name.isValidName("Dr. Tan, Jr")); // full stop and comma
+        assertTrue(Name.isValidName("Jos\u00e9 M\u00fcller")); // accented letters
+        assertTrue(Name.isValidName("\u674e\u5c0f\u9f99")); // non-Latin letters
+    }
+
+    @Test
+    public void normalise_trimsAndCollapsesSpaces() {
+        assertEquals("John Doe", Name.normalise("  John    Doe  "));
+        assertEquals("John Doe", Name.normalise("John\tDoe"));
+    }
+
+    @Test
+    public void isSimilarTo() {
+        Name name = new Name("John Doe");
+
+        // same name -> returns true
+        assertTrue(name.isSimilarTo(new Name("John Doe")));
+
+        // differs only in letter case -> returns true
+        assertTrue(name.isSimilarTo(new Name("john doe")));
+        assertTrue(name.isSimilarTo(new Name("JOHN DOE")));
+
+        // differs only in spacing -> returns true
+        assertTrue(name.isSimilarTo(new Name("John    Doe")));
+
+        // null -> returns false
+        assertFalse(name.isSimilarTo(null));
+
+        // different name -> returns false
+        assertFalse(name.isSimilarTo(new Name("John Doe Jr")));
+        assertFalse(name.isSimilarTo(new Name("Jane Doe")));
     }
 
     @Test

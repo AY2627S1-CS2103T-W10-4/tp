@@ -10,9 +10,21 @@ import static seedu.address.commons.util.AppUtil.checkArgument;
 public class Phone {
 
 
+    public static final String MESSAGE_BLANK = "Phone number should not be blank.";
+
+    public static final String MESSAGE_TOO_FEW_DIGITS = "Phone numbers should contain at least 3 digits.";
+
     public static final String MESSAGE_CONSTRAINTS =
-            "Phone numbers should only contain digits, and should be at least 3 digits long";
-    public static final String VALIDATION_REGEX = "\\d{3,}";
+            "Phone numbers may only contain digits, spaces and the symbols + - , . ( ), with labels allowed inside "
+                    + "brackets (for example 9123 4567 (HP) or +65 6123-4567).";
+
+    public static final int MINIMUM_DIGITS = 3;
+
+    /*
+     * Phone numbers come in many layouts, so spaces, +, -, commas, full stops and bracketed labels such as (HP)
+     * are accepted as well as plain digits.
+     */
+    public static final String VALIDATION_REGEX = "(?:[0-9+\\-,. ]|\\([A-Za-z0-9 +\\-]+\\))+";
     public final String value;
 
     /**
@@ -30,7 +42,14 @@ public class Phone {
      * Returns true if a given string is a valid phone number.
      */
     public static boolean isValidPhone(String test) {
-        return test.matches(VALIDATION_REGEX);
+        return test.matches(VALIDATION_REGEX) && countDigits(test) >= MINIMUM_DIGITS;
+    }
+
+    /**
+     * Returns the number of digits in {@code test}.
+     */
+    public static long countDigits(String test) {
+        return test.chars().filter(Character::isDigit).count();
     }
 
     @Override
