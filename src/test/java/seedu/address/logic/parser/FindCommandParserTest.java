@@ -3,6 +3,7 @@ package seedu.address.logic.parser;
 import static seedu.address.logic.Messages.MESSAGE_INVALID_COMMAND_FORMAT;
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseFailure;
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseSuccess;
+import static seedu.address.logic.parser.FindCommandParser.MESSAGE_INVALID_KEYWORDS;
 
 import java.util.List;
 
@@ -21,6 +22,13 @@ public class FindCommandParserTest {
     }
 
     @Test
+    public void parse_nonAlphanumericKeyword_throwsParseException() {
+        assertParseFailure(parser, "@@@", MESSAGE_INVALID_KEYWORDS);
+        assertParseFailure(parser, "/John", MESSAGE_INVALID_KEYWORDS);
+        assertParseFailure(parser, "John Joe!", MESSAGE_INVALID_KEYWORDS);
+    }
+
+    @Test
     public void parse_validArgs_returnsFindCommand() {
         // no leading and trailing whitespaces
         FindCommand expectedFindCommand =
@@ -29,6 +37,11 @@ public class FindCommandParserTest {
 
         // multiple whitespaces between keywords
         assertParseSuccess(parser, " \n Alice \n \t Bob  \t", expectedFindCommand);
+
+        // alphanumeric keywords
+        FindCommand expectedAlphanumericFindCommand =
+                new FindCommand(new NameContainsKeywordsPredicate(List.of("Alice2", "3Bob")));
+        assertParseSuccess(parser, "Alice2 3Bob", expectedAlphanumericFindCommand);
     }
 
 }
