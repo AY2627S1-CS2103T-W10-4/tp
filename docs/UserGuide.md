@@ -33,7 +33,7 @@ AddressBook Level 3 (AB3) is a **desktop application for managing contacts, opti
 
    * `add n/John Doe p/98765432 e/johnd@example.com a/John street, block 123, #01-01` : Adds a contact named `John Doe` to the Address Book.
 
-   * `delete 3` : Deletes the 3rd contact shown in the current list.
+   * `delete id/EMP-0042` : Deletes employee `EMP-0042`, including when hidden by a search.
 
    * `clear` : Deletes all contacts.
 
@@ -130,19 +130,46 @@ Examples:
 * `find alex david` returns `Alex Yeoh`, `David Li`<br>
   ![result for 'find alex david'](images/findAlexDavidResult.png)
 
-### Deleting a person: `delete`
+### Deleting an employee: `delete`
 
-Deletes the specified person from the address book.
+Permanently deletes one employee from the complete roster using their employee ID.
 
-Format: `delete INDEX`
+Format: `delete id/EMPLOYEE_ID`
 
-* Deletes the person at the specified `INDEX`.
-* The index refers to the index number shown in the displayed person list.
-* The index **must be a positive integer** 1, 2, 3, ...
+* Employee IDs contain 1 to 20 letters, digits, hyphens or underscores, with no spaces. For example, `E0001`, `EMP-0042`, `2024-017`, `abc` and `e0123` are valid.
+* ID matching ignores letter case: `e0123` identifies the same employee as `E0123`. The success message shows the ID as stored.
+* Supply exactly one `id/` parameter. Surrounding spaces and tabs are accepted; spaces within an ID, repeated `id/` parameters and other parameters are rejected.
+* The command searches all employee records, including employees hidden by `find`. Employees may share a name; deletion uses only the ID.
+* The current search filter and the order of remaining employees are preserved.
+* Deletion is immediate, with no confirmation or undo. The final employee can be deleted, and a deleted ID can be reused.
 
-Examples:
-* `list` followed by `delete 2` deletes the 2nd person in the address book.
-* `find Betsy` followed by `delete 1` deletes the 1st person in the results of the `find` command.
+Examples, assuming the target employee exists:
+
+* `delete id/EMP-0042` deletes employee `EMP-0042`.
+* `delete id/e0123` deletes employee `E0123`.
+* `find Betsy` followed by `delete id/EMP-0042` deletes `EMP-0042` even when hidden by that search. The Betsy search remains active.
+
+On success, the message starts with `Deleted employee:` and includes the deleted employee's ID, name, phone, email, department and role.
+
+The following input errors leave the records unchanged. Each message is followed by the usage block below.
+
+| Input | Error message |
+| --- | --- |
+| `delete` or `delete 1` | `Missing parameter: id/EMPLOYEE_ID.` |
+| `delete id/` or a whitespace-only ID | `Employee ID cannot be blank.` |
+| `delete x/value` or `delete id/abc x/value` | `Unknown parameter: x/. Only id/ is supported.` |
+| `delete id/abc!`, `delete id/abc def` or an ID longer than 20 characters | `Employee ID should be 1 to 20 characters long and contain only letters, digits, hyphens and underscores.` |
+| `delete id/abc id/abc` | `Multiple values specified for the following single-valued field(s): id/` |
+| `delete extra id/abc` | `Unexpected arguments. Specify exactly one employee ID using id/EMPLOYEE_ID.` |
+
+```text
+delete: Deletes one employee by employee ID from all stored employee records.
+Parameters: id/EMPLOYEE_ID
+Employee ID should be 1 to 20 characters long and contain only letters, digits, hyphens and underscores.
+Example: delete id/EMP-0042
+```
+
+A valid ID that does not exist produces `No employee with ID EMP-0042 was found.` (using the entered ID), without the usage block. No records are changed. This also applies to deleting an employee twice or deleting from an empty roster.
 
 ### Clearing all entries: `clear`
 
@@ -197,7 +224,7 @@ Action     | Format, Examples
 -----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 **Add**    | `add n/NAME p/PHONE_NUMBER e/EMAIL a/ADDRESS [t/TAG]... ` <br> e.g., `add n/James Ho p/22224444 e/jamesho@example.com a/123, Clementi Rd, 1234665 t/friend t/colleague`
 **Clear**  | `clear`
-**Delete** | `delete INDEX`<br> e.g., `delete 3`
+**Delete** | `delete id/EMPLOYEE_ID`<br> e.g., `delete id/EMP-0042`
 **Edit**   | `edit INDEX [n/NAME] [p/PHONE_NUMBER] [e/EMAIL] [a/ADDRESS] [t/TAG]... `<br> e.g.,`edit 2 n/James Lee e/jameslee@example.com`
 **Find**   | `find KEYWORD [MORE_KEYWORDS]`<br> e.g., `find James Jake`
 **List**   | `list`
