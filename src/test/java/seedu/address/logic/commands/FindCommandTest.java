@@ -3,7 +3,7 @@ package seedu.address.logic.commands;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static seedu.address.logic.Messages.MESSAGE_EMPLOYEES_LISTED_OVERVIEW;
+import static seedu.address.logic.Messages.getEmployeesListedOverview;
 import static seedu.address.logic.commands.CommandTestUtil.assertCommandSuccess;
 import static seedu.address.testutil.TypicalEmployees.CARL;
 import static seedu.address.testutil.TypicalEmployees.ELLE;
@@ -55,7 +55,7 @@ public class FindCommandTest {
 
     @Test
     public void execute_zeroKeywords_noEmployeeFound() {
-        String expectedMessage = String.format(MESSAGE_EMPLOYEES_LISTED_OVERVIEW, 0);
+        String expectedMessage = getEmployeesListedOverview(0);
         NameContainsKeywordsPredicate predicate = preparePredicate(" ");
         FindCommand command = new FindCommand(predicate);
         expectedModel.updateFilteredEmployeeList(predicate);
@@ -64,8 +64,18 @@ public class FindCommandTest {
     }
 
     @Test
+    public void execute_oneKeyword_oneEmployeeFound() {
+        String expectedMessage = "1 employee listed!";
+        NameContainsKeywordsPredicate predicate = preparePredicate("Fiona");
+        FindCommand command = new FindCommand(predicate);
+        expectedModel.updateFilteredEmployeeList(predicate);
+        assertCommandSuccess(command, model, expectedMessage, expectedModel);
+        assertEquals(List.of(FIONA), model.getFilteredEmployeeList());
+    }
+
+    @Test
     public void execute_multipleKeywords_multipleEmployeesFound() {
-        String expectedMessage = String.format(MESSAGE_EMPLOYEES_LISTED_OVERVIEW, 3);
+        String expectedMessage = getEmployeesListedOverview(3);
         NameContainsKeywordsPredicate predicate = preparePredicate("Kurz Elle Kunz");
         FindCommand command = new FindCommand(predicate);
         expectedModel.updateFilteredEmployeeList(predicate);
