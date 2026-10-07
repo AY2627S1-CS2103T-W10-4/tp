@@ -6,16 +6,12 @@ import java.util.List;
 
 import seedu.address.logic.commands.FindCommand;
 import seedu.address.logic.parser.exceptions.ParseException;
-import seedu.address.model.employee.Name;
 import seedu.address.model.employee.NameContainsKeywordsPredicate;
 
 /**
  * Parses input arguments and creates a new FindCommand object
  */
 public class FindCommandParser implements Parser<FindCommand> {
-
-    public static final String MESSAGE_INVALID_KEYWORDS =
-            "Keywords should only contain alphanumeric characters and spaces.";
 
     /**
      * Parses the given {@code String} of arguments in the context of the FindCommand
@@ -30,10 +26,6 @@ public class FindCommandParser implements Parser<FindCommand> {
         }
 
         List<String> nameKeywords = List.of(trimmedArgs.split("\\s+"));
-        if (nameKeywords.stream().anyMatch(keyword -> !Name.isValidName(keyword))) {
-            throw new ParseException(MESSAGE_INVALID_KEYWORDS);
-        }
-
         return new FindCommand(new NameContainsKeywordsPredicate(nameKeywords));
     }
 

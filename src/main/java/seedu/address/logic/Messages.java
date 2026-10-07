@@ -15,6 +15,7 @@ public class Messages {
     public static final String MESSAGE_UNKNOWN_COMMAND = "Unknown command.";
     public static final String MESSAGE_INVALID_COMMAND_FORMAT = "Invalid command format!\n%1$s";
     public static final String MESSAGE_INVALID_EMPLOYEE_DISPLAYED_INDEX = "The employee index provided is invalid.";
+    public static final String MESSAGE_EMPLOYEE_LISTED_OVERVIEW = "%1$d employee listed!";
     public static final String MESSAGE_EMPLOYEES_LISTED_OVERVIEW = "%1$d employees listed!";
     public static final String MESSAGE_DUPLICATE_FIELDS =
                 "Multiple values specified for the following single-valued field(s): ";
@@ -29,6 +30,16 @@ public class Messages {
                 Stream.of(duplicatePrefixes).map(Prefix::toString).collect(Collectors.toSet());
 
         return MESSAGE_DUPLICATE_FIELDS + String.join(" ", duplicateFields);
+    }
+
+    /**
+     * Returns a grammatically correct message indicating the number of employees listed.
+     */
+    public static String getEmployeesListedOverview(int employeeCount) {
+        String messageTemplate = employeeCount == 1
+                ? MESSAGE_EMPLOYEE_LISTED_OVERVIEW
+                : MESSAGE_EMPLOYEES_LISTED_OVERVIEW;
+        return String.format(messageTemplate, employeeCount);
     }
 
     /**

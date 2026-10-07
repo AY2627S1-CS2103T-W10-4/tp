@@ -124,7 +124,8 @@ Format: `find KEYWORD [MORE_KEYWORDS]`
 * The search considers only names.
 * Only full words match; for example, `Han` does not match `Hans`.
 * Employees matching at least one keyword are returned (an `OR` search); for example, `Hans Bo` returns `Hans Gruber` and `Bo Yang`.
-* Keywords may contain only alphanumeric characters. At least one keyword must be provided.
+* At least one non-blank keyword must be provided. A keyword may contain punctuation or symbols; a search with no
+  matching name is still valid.
 * Leading and trailing spaces are ignored, and multiple spaces between keywords are treated as separators.
 * A search with no matches is successful and displays an empty employee list.
 
