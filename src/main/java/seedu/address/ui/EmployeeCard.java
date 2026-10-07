@@ -1,10 +1,7 @@
 package seedu.address.ui;
 
-import java.util.Comparator;
-
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
-import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
 import seedu.address.model.employee.Employee;
@@ -35,13 +32,13 @@ public class EmployeeCard extends UiPart<Region> {
     @FXML
     private Label phone;
     @FXML
-    private Label address;
+    private Label employeeId;
     @FXML
     private Label email;
     @FXML
-    private Label remark;
+    private Label department;
     @FXML
-    private FlowPane tags;
+    private Label role;
 
     /**
      * Creates a {@code EmployeeCard} with the given {@code Employee} and index to display.
@@ -52,11 +49,9 @@ public class EmployeeCard extends UiPart<Region> {
         id.setText(displayedIndex + ". ");
         name.setText(employee.getName().fullName);
         phone.setText(employee.getPhone().value);
-        address.setText(employee.getAddress().value);
+        employeeId.setText("ID: " + employee.getId().value);
         email.setText(employee.getEmail().value);
-        remark.setText(employee.getRemark().value);
-        employee.getTags().stream()
-                .sorted(Comparator.comparing(tag -> tag.tagName))
-                .forEach(tag -> tags.getChildren().add(new Label(tag.tagName)));
+        department.setText(employee.getDepartment().value);
+        role.setText(employee.getRole().value);
     }
 }

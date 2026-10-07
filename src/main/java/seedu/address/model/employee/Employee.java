@@ -2,13 +2,9 @@ package seedu.address.model.employee;
 
 import static seedu.address.commons.util.CollectionUtil.requireAllNonNull;
 
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.Objects;
-import java.util.Set;
 
 import seedu.address.commons.util.ToStringBuilder;
-import seedu.address.model.tag.Tag;
 
 /**
  * Represents an Employee in the address book.
@@ -17,26 +13,30 @@ import seedu.address.model.tag.Tag;
 public class Employee {
 
     // Identity fields
+    private final EmployeeId id;
+
+    // Data fields
     private final Name name;
     private final Phone phone;
     private final Email email;
-
-    // Data fields
-    private final Address address;
-    private final Remark remark;
-    private final Set<Tag> tags = new HashSet<>();
+    private final Department department;
+    private final Role role;
 
     /**
      * Every field must be present and not null.
      */
-    public Employee(Name name, Phone phone, Email email, Address address, Remark remark, Set<Tag> tags) {
-        requireAllNonNull(name, phone, email, address, remark, tags);
+    public Employee(EmployeeId id, Name name, Phone phone, Email email, Department department, Role role) {
+        requireAllNonNull(id, name, phone, email, department, role);
+        this.id = id;
         this.name = name;
         this.phone = phone;
         this.email = email;
-        this.address = address;
-        this.remark = remark;
-        this.tags.addAll(tags);
+        this.department = department;
+        this.role = role;
+    }
+
+    public EmployeeId getId() {
+        return id;
     }
 
     public Name getName() {
@@ -51,24 +51,16 @@ public class Employee {
         return email;
     }
 
-    public Address getAddress() {
-        return address;
+    public Department getDepartment() {
+        return department;
     }
 
-    public Remark getRemark() {
-        return remark;
-    }
-
-    /**
-     * Returns an immutable tag set, which throws {@code UnsupportedOperationException}
-     * if modification is attempted.
-     */
-    public Set<Tag> getTags() {
-        return Collections.unmodifiableSet(tags);
+    public Role getRole() {
+        return role;
     }
 
     /**
-     * Returns true if both employees have the same name.
+     * Returns true if both employees have the same employee ID.
      * This defines a weaker notion of equality between two employees.
      */
     public boolean isSameEmployee(Employee otherEmployee) {
@@ -77,7 +69,7 @@ public class Employee {
         }
 
         return otherEmployee != null
-                && otherEmployee.getName().equals(getName());
+                && otherEmployee.getId().equals(getId());
     }
 
     /**
@@ -95,29 +87,29 @@ public class Employee {
             return false;
         }
 
-        return name.equals(otherEmployee.name)
+        return id.equals(otherEmployee.id)
+                && name.equals(otherEmployee.name)
                 && phone.equals(otherEmployee.phone)
                 && email.equals(otherEmployee.email)
-                && address.equals(otherEmployee.address)
-                && remark.equals(otherEmployee.remark)
-                && tags.equals(otherEmployee.tags);
+                && department.equals(otherEmployee.department)
+                && role.equals(otherEmployee.role);
     }
 
     @Override
     public int hashCode() {
         // use this method for custom fields hashing instead of implementing your own
-        return Objects.hash(name, phone, email, address, remark, tags);
+        return Objects.hash(id, name, phone, email, department, role);
     }
 
     @Override
     public String toString() {
         return new ToStringBuilder(this)
+                .add("id", id)
                 .add("name", name)
                 .add("phone", phone)
                 .add("email", email)
-                .add("address", address)
-                .add("remark", remark)
-                .add("tags", tags)
+                .add("department", department)
+                .add("role", role)
                 .toString();
     }
 

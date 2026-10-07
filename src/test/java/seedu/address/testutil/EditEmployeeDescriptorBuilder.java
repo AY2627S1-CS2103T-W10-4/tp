@@ -1,16 +1,12 @@
 package seedu.address.testutil;
 
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
 import seedu.address.logic.commands.EditCommand.EditEmployeeDescriptor;
-import seedu.address.model.employee.Address;
+import seedu.address.model.employee.Department;
 import seedu.address.model.employee.Email;
 import seedu.address.model.employee.Employee;
 import seedu.address.model.employee.Name;
 import seedu.address.model.employee.Phone;
-import seedu.address.model.tag.Tag;
+import seedu.address.model.employee.Role;
 
 /**
  * A utility class to help with building EditEmployeeDescriptor objects.
@@ -35,8 +31,8 @@ public class EditEmployeeDescriptorBuilder {
         descriptor.setName(employee.getName());
         descriptor.setPhone(employee.getPhone());
         descriptor.setEmail(employee.getEmail());
-        descriptor.setAddress(employee.getAddress());
-        descriptor.setTags(employee.getTags());
+        descriptor.setDepartment(employee.getDepartment());
+        descriptor.setRole(employee.getRole());
     }
 
     /**
@@ -64,20 +60,18 @@ public class EditEmployeeDescriptorBuilder {
     }
 
     /**
-     * Sets the {@code Address} of the {@code EditEmployeeDescriptor} that we are building.
+     * Sets the {@code Department} of the {@code EditEmployeeDescriptor} that we are building.
      */
-    public EditEmployeeDescriptorBuilder withAddress(String address) {
-        descriptor.setAddress(new Address(address));
+    public EditEmployeeDescriptorBuilder withDepartment(String department) {
+        descriptor.setDepartment(new Department(department));
         return this;
     }
 
     /**
-     * Parses the {@code tags} into a {@code Set<Tag>} and sets it to the {@code EditEmployeeDescriptor}
-     * that we are building.
+     * Sets the {@code Role} of the {@code EditEmployeeDescriptor} that we are building.
      */
-    public EditEmployeeDescriptorBuilder withTags(String... tags) {
-        Set<Tag> tagSet = Stream.of(tags).map(Tag::new).collect(Collectors.toSet());
-        descriptor.setTags(tagSet);
+    public EditEmployeeDescriptorBuilder withRole(String role) {
+        descriptor.setRole(new Role(role));
         return this;
     }
 

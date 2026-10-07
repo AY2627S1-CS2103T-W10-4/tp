@@ -5,34 +5,35 @@ import static seedu.address.storage.JsonAdaptedEmployee.MISSING_FIELD_MESSAGE_FO
 import static seedu.address.testutil.Assert.assertThrows;
 import static seedu.address.testutil.TypicalEmployees.BENSON;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
-
 import org.junit.jupiter.api.Test;
 
 import seedu.address.commons.exceptions.IllegalValueException;
-import seedu.address.model.employee.Address;
+import seedu.address.model.employee.Department;
 import seedu.address.model.employee.Email;
+import seedu.address.model.employee.EmployeeId;
 import seedu.address.model.employee.Name;
 import seedu.address.model.employee.Phone;
-import seedu.address.model.employee.Remark;
+import seedu.address.model.employee.Role;
 
 public class JsonAdaptedEmployeeTest {
+    private static final String INVALID_ID = "E 01";
     private static final String INVALID_NAME = "R@chel";
     private static final String INVALID_PHONE = "+651234";
-    private static final String INVALID_ADDRESS = " ";
     private static final String INVALID_EMAIL = "example.com";
-    private static final String INVALID_TAG = "#friend";
+    private static final String INVALID_DEPARTMENT = " ";
+    private static final String INVALID_ROLE = " ";
 
+    private static final String VALID_ID = BENSON.getId().toString();
     private static final String VALID_NAME = BENSON.getName().toString();
     private static final String VALID_PHONE = BENSON.getPhone().toString();
     private static final String VALID_EMAIL = BENSON.getEmail().toString();
-    private static final String VALID_ADDRESS = BENSON.getAddress().toString();
-    private static final String VALID_REMARK = BENSON.getRemark().toString();
-    private static final List<JsonAdaptedTag> VALID_TAGS = BENSON.getTags().stream()
-            .map(JsonAdaptedTag::new)
-            .collect(Collectors.toList());
+    private static final String VALID_DEPARTMENT = BENSON.getDepartment().toString();
+    private static final String VALID_ROLE = BENSON.getRole().toString();
+
+    private static JsonAdaptedEmployee build(String id, String name, String phone, String email, String department,
+            String role) {
+        return new JsonAdaptedEmployee(id, name, phone, email, department, role);
+    }
 
     @Test
     public void toModelType_validEmployeeDetails_returnsEmployee() throws Exception {
@@ -41,18 +42,31 @@ public class JsonAdaptedEmployeeTest {
     }
 
     @Test
+    public void toModelType_invalidId_throwsIllegalValueException() {
+        JsonAdaptedEmployee employee =
+                build(INVALID_ID, VALID_NAME, VALID_PHONE, VALID_EMAIL, VALID_DEPARTMENT, VALID_ROLE);
+        assertThrows(IllegalValueException.class, EmployeeId.MESSAGE_CONSTRAINTS, employee::toModelType);
+    }
+
+    @Test
+    public void toModelType_nullId_throwsIllegalValueException() {
+        JsonAdaptedEmployee employee =
+                build(null, VALID_NAME, VALID_PHONE, VALID_EMAIL, VALID_DEPARTMENT, VALID_ROLE);
+        String expectedMessage = String.format(MISSING_FIELD_MESSAGE_FORMAT, EmployeeId.class.getSimpleName());
+        assertThrows(IllegalValueException.class, expectedMessage, employee::toModelType);
+    }
+
+    @Test
     public void toModelType_invalidName_throwsIllegalValueException() {
         JsonAdaptedEmployee employee =
-                new JsonAdaptedEmployee(INVALID_NAME, VALID_PHONE, VALID_EMAIL, VALID_ADDRESS,
-                        VALID_REMARK, VALID_TAGS);
-        String expectedMessage = Name.MESSAGE_CONSTRAINTS;
-        assertThrows(IllegalValueException.class, expectedMessage, employee::toModelType);
+                build(VALID_ID, INVALID_NAME, VALID_PHONE, VALID_EMAIL, VALID_DEPARTMENT, VALID_ROLE);
+        assertThrows(IllegalValueException.class, Name.MESSAGE_CONSTRAINTS, employee::toModelType);
     }
 
     @Test
     public void toModelType_nullName_throwsIllegalValueException() {
         JsonAdaptedEmployee employee =
-                new JsonAdaptedEmployee(null, VALID_PHONE, VALID_EMAIL, VALID_ADDRESS, VALID_REMARK, VALID_TAGS);
+                build(VALID_ID, null, VALID_PHONE, VALID_EMAIL, VALID_DEPARTMENT, VALID_ROLE);
         String expectedMessage = String.format(MISSING_FIELD_MESSAGE_FORMAT, Name.class.getSimpleName());
         assertThrows(IllegalValueException.class, expectedMessage, employee::toModelType);
     }
@@ -60,16 +74,14 @@ public class JsonAdaptedEmployeeTest {
     @Test
     public void toModelType_invalidPhone_throwsIllegalValueException() {
         JsonAdaptedEmployee employee =
-                new JsonAdaptedEmployee(VALID_NAME, INVALID_PHONE, VALID_EMAIL, VALID_ADDRESS,
-                        VALID_REMARK, VALID_TAGS);
-        String expectedMessage = Phone.MESSAGE_CONSTRAINTS;
-        assertThrows(IllegalValueException.class, expectedMessage, employee::toModelType);
+                build(VALID_ID, VALID_NAME, INVALID_PHONE, VALID_EMAIL, VALID_DEPARTMENT, VALID_ROLE);
+        assertThrows(IllegalValueException.class, Phone.MESSAGE_CONSTRAINTS, employee::toModelType);
     }
 
     @Test
     public void toModelType_nullPhone_throwsIllegalValueException() {
         JsonAdaptedEmployee employee =
-                new JsonAdaptedEmployee(VALID_NAME, null, VALID_EMAIL, VALID_ADDRESS, VALID_REMARK, VALID_TAGS);
+                build(VALID_ID, VALID_NAME, null, VALID_EMAIL, VALID_DEPARTMENT, VALID_ROLE);
         String expectedMessage = String.format(MISSING_FIELD_MESSAGE_FORMAT, Phone.class.getSimpleName());
         assertThrows(IllegalValueException.class, expectedMessage, employee::toModelType);
     }
@@ -77,51 +89,45 @@ public class JsonAdaptedEmployeeTest {
     @Test
     public void toModelType_invalidEmail_throwsIllegalValueException() {
         JsonAdaptedEmployee employee =
-                new JsonAdaptedEmployee(VALID_NAME, VALID_PHONE, INVALID_EMAIL, VALID_ADDRESS,
-                        VALID_REMARK, VALID_TAGS);
-        String expectedMessage = Email.MESSAGE_CONSTRAINTS;
-        assertThrows(IllegalValueException.class, expectedMessage, employee::toModelType);
+                build(VALID_ID, VALID_NAME, VALID_PHONE, INVALID_EMAIL, VALID_DEPARTMENT, VALID_ROLE);
+        assertThrows(IllegalValueException.class, Email.MESSAGE_CONSTRAINTS, employee::toModelType);
     }
 
     @Test
     public void toModelType_nullEmail_throwsIllegalValueException() {
         JsonAdaptedEmployee employee =
-                new JsonAdaptedEmployee(VALID_NAME, VALID_PHONE, null, VALID_ADDRESS, VALID_REMARK, VALID_TAGS);
+                build(VALID_ID, VALID_NAME, VALID_PHONE, null, VALID_DEPARTMENT, VALID_ROLE);
         String expectedMessage = String.format(MISSING_FIELD_MESSAGE_FORMAT, Email.class.getSimpleName());
         assertThrows(IllegalValueException.class, expectedMessage, employee::toModelType);
     }
 
     @Test
-    public void toModelType_invalidAddress_throwsIllegalValueException() {
+    public void toModelType_invalidDepartment_throwsIllegalValueException() {
         JsonAdaptedEmployee employee =
-                new JsonAdaptedEmployee(VALID_NAME, VALID_PHONE, VALID_EMAIL, INVALID_ADDRESS,
-                        VALID_REMARK, VALID_TAGS);
-        String expectedMessage = Address.MESSAGE_CONSTRAINTS;
+                build(VALID_ID, VALID_NAME, VALID_PHONE, VALID_EMAIL, INVALID_DEPARTMENT, VALID_ROLE);
+        assertThrows(IllegalValueException.class, Department.MESSAGE_CONSTRAINTS, employee::toModelType);
+    }
+
+    @Test
+    public void toModelType_nullDepartment_throwsIllegalValueException() {
+        JsonAdaptedEmployee employee =
+                build(VALID_ID, VALID_NAME, VALID_PHONE, VALID_EMAIL, null, VALID_ROLE);
+        String expectedMessage = String.format(MISSING_FIELD_MESSAGE_FORMAT, Department.class.getSimpleName());
         assertThrows(IllegalValueException.class, expectedMessage, employee::toModelType);
     }
 
     @Test
-    public void toModelType_nullAddress_throwsIllegalValueException() {
+    public void toModelType_invalidRole_throwsIllegalValueException() {
         JsonAdaptedEmployee employee =
-                new JsonAdaptedEmployee(VALID_NAME, VALID_PHONE, VALID_EMAIL, null, VALID_REMARK, VALID_TAGS);
-        String expectedMessage = String.format(MISSING_FIELD_MESSAGE_FORMAT, Address.class.getSimpleName());
-        assertThrows(IllegalValueException.class, expectedMessage, employee::toModelType);
+                build(VALID_ID, VALID_NAME, VALID_PHONE, VALID_EMAIL, VALID_DEPARTMENT, INVALID_ROLE);
+        assertThrows(IllegalValueException.class, Role.MESSAGE_CONSTRAINTS, employee::toModelType);
     }
 
     @Test
-    public void toModelType_invalidTags_throwsIllegalValueException() {
-        List<JsonAdaptedTag> invalidTags = new ArrayList<>(VALID_TAGS);
-        invalidTags.add(new JsonAdaptedTag(INVALID_TAG));
+    public void toModelType_nullRole_throwsIllegalValueException() {
         JsonAdaptedEmployee employee =
-                new JsonAdaptedEmployee(VALID_NAME, VALID_PHONE, VALID_EMAIL, VALID_ADDRESS, VALID_REMARK, invalidTags);
-        assertThrows(IllegalValueException.class, employee::toModelType);
-    }
-
-    @Test
-    public void toModelType_nullRemark_throwsIllegalValueException() {
-        JsonAdaptedEmployee employee =
-                new JsonAdaptedEmployee(VALID_NAME, VALID_PHONE, VALID_EMAIL, VALID_ADDRESS, null, VALID_TAGS);
-        String expectedMessage = String.format(MISSING_FIELD_MESSAGE_FORMAT, Remark.class.getSimpleName());
+                build(VALID_ID, VALID_NAME, VALID_PHONE, VALID_EMAIL, VALID_DEPARTMENT, null);
+        String expectedMessage = String.format(MISSING_FIELD_MESSAGE_FORMAT, Role.class.getSimpleName());
         assertThrows(IllegalValueException.class, expectedMessage, employee::toModelType);
     }
 
