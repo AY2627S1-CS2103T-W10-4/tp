@@ -1,0 +1,10 @@
+{
+  "employees": [ {
+    "id": "E0001",
+    "name": "Hans Muster",
+    "phone": "9482424",
+    "email": "invalid@email!3e",
+    "department": "Engineering",
+    "role": "Software Engineer"
+  } ]
+}

@@ -270,13 +270,14 @@ _{Explain here how the data archiving feature will be implemented}_
 
 **Target user profile**:
 
-* has a need to manage a significant number of contacts
-* prefers desktop apps over other types of applications
+* is the sole HR administrator at a small or medium-sized company
+* has no HR team or dedicated HR software, and keeps employee records in spreadsheets or shared files
+* is the only person who maintains these records, on a single computer
+* manages records for up to a few hundred employees
+* often has to answer ad-hoc questions about individual employees, reporting lines and team sizes within minutes
 * can type fast
-* prefers typing to mouse interactions
-* is reasonably comfortable using CLI apps
 
-**Value proposition**: Manage contacts faster than with a typical mouse-driven GUI application.
+**Value proposition**: HuntR helps the sole HR administrator keep employee records accurate, see how staff relate to each other, such as reporting lines and team membership, and get an overall picture of the workforce, all through typed commands.
 
 
 ### User stories
@@ -301,35 +302,186 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 | `* * *` | Long-time user | Easily search up contact details with the commands | Save time instead of using traditional address / contact books |
 | `* *` | Long-time user | Import employee data from a supported file | Initialise or restore the company’s records efficiently |
 | `* *` | Long-time user | Filter employees by search criteria | Gather specific organisation-wide data efficiently |
-
-*{More to be added}*
+| `* * *` | Basic user | Add an employee's information | the app reflects my company's workforce |
+| `* * *` | Basic user | List all employees | see the full roster in one place |
+| `* * *` | Basic user | Delete an employee's record | my workforce records remain current |
+| `* * *` | Basic user | Find an employee by name | quickly retrieve their information without browsing the whole list |
+| `* * *` | Basic user | Have my data saved automatically after every change | I don't lose records if the app closes unexpectedly |
+| `* * *` | Basic user | Exit the application with a command | close it safely knowing my data is saved |
+| `* *` | Basic user | Edit an employee's details | keep records accurate when someone's role or contact info changes |
+| `* *` | Careful user | Be asked to confirm before a record is deleted | avoid losing a record to a mistyped command |
+| `* *` | Busy user | Filter employees using multiple criteria at once (e.g. department and role) | narrow down results faster than one field at a time |
+| `* *` | Busy user | View an entire team's roster with one command | prepare for a team meeting without assembling the list myself |
+| `*` | Busy user | Sort employees by a chosen field (e.g. name or department) | scan records in the order that's useful to me |
+| `*` | Busy user | Look up an employee's leave status with one command | check quickly if they're available for a meeting |
+| `*` | Long-time user | Identify employees who don't appear connected to anyone else in the organisation | investigate whether my workforce information is incomplete |
+| `*` | Long-time user | Count employees by department | quickly see the size of each team |
 
 ### Use cases
 
-(For all use cases below, the **System** is the `AddressBook` and the **Actor** is the `user`, unless specified otherwise)
+(For all use cases below, the **System** is `HuntR` and the **Actor** is the `user`, unless specified otherwise)
 
-**Use case: Delete a person**
+**Use case: Add an employee**
 
 **MSS**
 
-1.  User requests to list persons
-2.  AddressBook shows a list of persons
-3.  User requests to delete a specific person in the list
-4.  AddressBook deletes the person
+1. User requests to add an employee and provides the employee ID, name, phone number, email, department, and role.
+2. HuntR validates the provided details.
+3. HuntR adds the employee and saves the updated employee records.
+4. HuntR displays the added employee's details.
+
+   Use case ends.
+
+**Extensions**
+
+* 1a. A required field is missing.
+
+  * 1a1. HuntR shows an error message and the expected command format.
+
+    Use case resumes at step 1.
+
+* 2a. One or more provided fields are invalid.
+
+  * 2a1. HuntR shows an error message describing the invalid input.
+
+    Use case resumes at step 1.
+
+* 2b. An employee with the same employee ID already exists.
+
+  * 2b1. HuntR informs the user that an employee with the same employee ID already exists.
+
+    Use case ends.
+
+* 3a. HuntR is unable to save the updated employee records.
+
+  * 3a1. HuntR informs the user that the employee could not be saved successfully.
+
+    Use case ends.
+
+**Use case: Edit an employee**
+
+**MSS**
+
+1. User requests to list employees.
+2. HuntR displays the employee list.
+3. User selects an employee and provides the details to update.
+4. HuntR validates the provided details.
+5. HuntR updates the selected employee's record and saves the updated employee records.
+6. HuntR displays the updated employee's details.
+
+   Use case ends.
+
+**Extensions**
+
+* 2a. The employee list is empty.
+
+  * 2a1. HuntR informs the user that there are no employee records.
+
+    Use case ends.
+
+* 3a. The selected employee index is invalid.
+
+  * 3a1. HuntR shows an error message.
+
+    Use case resumes at step 2.
+
+* 3b. The user does not provide any field to update.
+
+  * 3b1. HuntR informs the user that at least one field must be provided.
+
+    Use case resumes at step 3.
+
+* 4a. One or more provided fields are invalid.
+
+  * 4a1. HuntR shows an error message describing the invalid input.
+
+    Use case resumes at step 3.
+
+* 4b. The update would make the employee identical to another existing employee.
+
+  * 4b1. HuntR informs the user that the employee already exists.
+
+    Use case ends.
+
+* 5a. HuntR is unable to save the updated employee records.
+
+  * 5a1. HuntR informs the user that the employee changes could not be saved successfully.
+
+    Use case ends.
+
+**Use case: Find employees**
+
+**MSS**
+
+1. User requests to find employees using one or more name keywords.
+2. HuntR searches the employee records for names containing at least one of the keywords.
+3. HuntR displays the matching employees as a numbered list and reports the number of matches.
 
     Use case ends.
 
 **Extensions**
 
-* 2a. The list is empty.
+* 1a. The user does not provide a keyword.
 
-  Use case ends.
+  * 1a1. HuntR informs the user that a keyword is required and shows the correct command format.
 
-* 3a. The given index is invalid.
+    Use case resumes at step 1.
 
-    * 3a1. AddressBook shows an error message.
+* 2a. No employee matches any of the keywords.
 
-      Use case resumes at step 2.
+  * 2a1. HuntR displays an empty result list and informs the user that no employees were found.
+
+    Use case ends.
+
+**Use case: View employee data**
+
+**MSS**
+
+1. User requests to view all employee records.
+2. HuntR displays the employees as a numbered list with summary information.
+3. User selects a specific employee from the displayed list.
+4. HuntR displays the employee's full details, including their employee ID, department, role.
+
+    Use case ends.
+
+**Extensions**
+
+* 2a. There are no employee records.
+
+  * 2a1. HuntR displays an empty list and informs the user that there are no employees to show.
+
+    Use case ends.
+
+* 3a. The selected index does not correspond to an employee in the displayed list.
+
+  * 3a1. HuntR informs the user that the displayed index is invalid.
+
+    Use case resumes at step 2.
+
+**Use case: Delete an employee**
+
+**MSS**
+
+1. User requests to delete an employee using `delete INDEX`.
+2. HuntR finds the employee record with the specified employee ID.
+3. HuntR deletes the specified employee record.
+4. HuntR displays the deleted employee's details as confirmation.
+
+    Use case ends.
+
+**Extensions**
+
+* 1a. The employee ID is missing, malformed, or accompanied by additional arguments.
+
+  * 1a1. HuntR shows the correct command format.
+
+    Use case resumes at step 1.
+
+* 2a. No employee has the specified employee ID.
+
+  * 2a1. HuntR informs the user that no employee with the specified employee ID was found.
+
+    Use case ends.
 
 *{More to be added}*
 

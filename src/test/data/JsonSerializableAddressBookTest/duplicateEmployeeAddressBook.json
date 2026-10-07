@@ -1,0 +1,17 @@
+{
+  "employees": [ {
+    "id": "E0001",
+    "name": "Alice Pauline",
+    "phone": "94351253",
+    "email": "alice@example.com",
+    "department": "Engineering",
+    "role": "Software Engineer"
+  }, {
+    "id": "e0001",
+    "name": "Bob Different",
+    "phone": "94351253",
+    "email": "pauline@example.com",
+    "department": "Finance",
+    "role": "Accountant"
+  } ]
+}
