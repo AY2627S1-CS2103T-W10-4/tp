@@ -92,7 +92,18 @@ public class AddressBookParserTest {
     @Test
     public void parseCommand_list() throws Exception {
         assertTrue(parser.parseCommand(ListCommand.COMMAND_WORD) instanceof ListCommand);
-        assertTrue(parser.parseCommand(ListCommand.COMMAND_WORD + " 3") instanceof ListCommand);
+        assertTrue(parser.parseCommand("  " + ListCommand.COMMAND_WORD + "  ") instanceof ListCommand);
+    }
+
+    @Test
+    public void parseCommand_listWithArguments_throwsParseException() {
+        String expectedMessage = String.format(MESSAGE_INVALID_COMMAND_FORMAT, ListCommand.MESSAGE_USAGE);
+        assertThrows(ParseException.class, expectedMessage, () ->
+                parser.parseCommand(ListCommand.COMMAND_WORD + " employee"));
+        assertThrows(ParseException.class, expectedMessage, () ->
+                parser.parseCommand(ListCommand.COMMAND_WORD + " 1"));
+        assertThrows(ParseException.class, expectedMessage, () ->
+                parser.parseCommand(ListCommand.COMMAND_WORD + " d/Engineering"));
     }
 
     @Test
@@ -103,6 +114,10 @@ public class AddressBookParserTest {
 
     @Test
     public void parseCommand_unknownCommand_throwsParseException() {
-        assertThrows(ParseException.class, MESSAGE_UNKNOWN_COMMAND, () -> parser.parseCommand("unknownCommand"));
+        String unknownCommand = "unknownCommand";
+        assertThrows(ParseException.class, String.format(MESSAGE_UNKNOWN_COMMAND, unknownCommand),
+                () -> parser.parseCommand(unknownCommand));
+        assertThrows(ParseException.class, String.format(MESSAGE_UNKNOWN_COMMAND, "LIST"),
+                () -> parser.parseCommand("LIST"));
     }
 }
