@@ -8,6 +8,8 @@ import static seedu.address.logic.parser.CliSyntax.PREFIX_NAME;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_PHONE;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_ROLE;
 
+import java.util.stream.Collectors;
+
 import seedu.address.commons.util.ToStringBuilder;
 import seedu.address.logic.Messages;
 import seedu.address.logic.commands.exceptions.CommandException;
@@ -38,7 +40,9 @@ public class AddCommand extends Command {
             + PREFIX_ROLE + "Software Engineer";
 
     public static final String MESSAGE_SUCCESS = "New employee added: %1$s";
-    public static final String MESSAGE_DUPLICATE_EMPLOYEE = "This employee already exists in the address book.";
+    public static final String MESSAGE_DUPLICATE_EMPLOYEE = "An employee with Employee ID %1$s already exists.";
+    public static final String MESSAGE_SIMILAR_NAME_WARNING = "Warning: an employee with the same or a very similar "
+            + "name already exists (Employee ID %1$s). Please check that this is not a duplicate.";
 
     private final Employee toAdd;
 
@@ -55,11 +59,22 @@ public class AddCommand extends Command {
         requireNonNull(model);
 
         if (model.hasEmployee(toAdd)) {
-            throw new CommandException(MESSAGE_DUPLICATE_EMPLOYEE);
+            throw new CommandException(String.format(MESSAGE_DUPLICATE_EMPLOYEE, toAdd.getId()));
         }
 
+        // Employees may share a name, so a similar name only produces a warning and does not stop the add.
+        String similarEmployeeIds = model.getAddressBook().getEmployeeList().stream()
+                .filter(employee -> employee.getName().isSimilarTo(toAdd.getName()))
+                .map(employee -> employee.getId().toString())
+                .collect(Collectors.joining(", "));
+
         model.addEmployee(toAdd);
-        return new CommandResult(String.format(MESSAGE_SUCCESS, Messages.format(toAdd)));
+
+        String message = String.format(MESSAGE_SUCCESS, Messages.format(toAdd));
+        if (!similarEmployeeIds.isEmpty()) {
+            message += "\n" + String.format(MESSAGE_SIMILAR_NAME_WARNING, similarEmployeeIds);
+        }
+        return new CommandResult(message);
     }
 
     @Override
