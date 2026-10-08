@@ -3,16 +3,15 @@ package seedu.address.logic.commands;
 import static java.util.Objects.requireNonNull;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_DEPARTMENT;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_EMAIL;
+import static seedu.address.logic.parser.CliSyntax.PREFIX_ID;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_NAME;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_PHONE;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_ROLE;
 import static seedu.address.model.Model.PREDICATE_SHOW_ALL_EMPLOYEES;
 
-import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-import seedu.address.commons.core.index.Index;
 import seedu.address.commons.util.CollectionUtil;
 import seedu.address.commons.util.ToStringBuilder;
 import seedu.address.logic.Messages;
@@ -21,6 +20,7 @@ import seedu.address.model.Model;
 import seedu.address.model.employee.Department;
 import seedu.address.model.employee.Email;
 import seedu.address.model.employee.Employee;
+import seedu.address.model.employee.EmployeeId;
 import seedu.address.model.employee.Name;
 import seedu.address.model.employee.Phone;
 import seedu.address.model.employee.Role;
@@ -33,46 +33,43 @@ public class EditCommand extends Command {
     public static final String COMMAND_WORD = "edit";
 
     public static final String MESSAGE_USAGE = COMMAND_WORD + ": Edits the details of the employee identified "
-            + "by the index number used in the displayed employee list. "
+            + "by the employee ID. "
             + "Existing values will be overwritten by the input values.\n"
-            + "Parameters: INDEX (must be a positive integer) "
+            + "Parameters: " + PREFIX_ID + "EMPLOYEE_ID "
             + "[" + PREFIX_NAME + "NAME] "
             + "[" + PREFIX_PHONE + "PHONE] "
             + "[" + PREFIX_EMAIL + "EMAIL] "
             + "[" + PREFIX_DEPARTMENT + "DEPARTMENT] "
             + "[" + PREFIX_ROLE + "ROLE]\n"
-            + "Example: " + COMMAND_WORD + " 1 "
+            + "Example: " + COMMAND_WORD + " " + PREFIX_ID + "E0001 "
             + PREFIX_PHONE + "91234567 "
             + PREFIX_EMAIL + "johndoe@example.com";
 
     public static final String MESSAGE_EDIT_EMPLOYEE_SUCCESS = "Edited employee: %1$s";
     public static final String MESSAGE_NOT_EDITED = "At least one field to edit must be provided.";
 
-    private final Index index;
+    private final EmployeeId targetId;
     private final EditEmployeeDescriptor editEmployeeDescriptor;
 
     /**
-     * @param index of the employee in the filtered employee list to edit
+     * @param targetId of the employee to edit
      * @param editEmployeeDescriptor details to edit the employee with
      */
-    public EditCommand(Index index, EditEmployeeDescriptor editEmployeeDescriptor) {
-        requireNonNull(index);
+    public EditCommand(EmployeeId targetId, EditEmployeeDescriptor editEmployeeDescriptor) {
+        requireNonNull(targetId);
         requireNonNull(editEmployeeDescriptor);
 
-        this.index = index;
+        this.targetId = targetId;
         this.editEmployeeDescriptor = new EditEmployeeDescriptor(editEmployeeDescriptor);
     }
 
     @Override
     public CommandResult execute(Model model) throws CommandException {
         requireNonNull(model);
-        List<Employee> lastShownList = model.getFilteredEmployeeList();
-
-        if (index.getZeroBased() >= lastShownList.size()) {
-            throw new CommandException(Messages.MESSAGE_INVALID_EMPLOYEE_DISPLAYED_INDEX);
-        }
-
-        Employee employeeToEdit = lastShownList.get(index.getZeroBased());
+        Employee employeeToEdit = model.getAddressBook().getEmployeeList().stream()
+                .filter(employee -> employee.getId().equals(targetId))
+                .findFirst()
+                .orElseThrow(() -> new CommandException(String.format(Messages.MESSAGE_EMPLOYEE_NOT_FOUND, targetId)));
         Employee editedEmployee = createEditedEmployee(employeeToEdit, editEmployeeDescriptor);
 
         model.setEmployee(employeeToEdit, editedEmployee);
@@ -109,14 +106,14 @@ public class EditCommand extends Command {
             return false;
         }
 
-        return index.equals(otherEditCommand.index)
+        return targetId.equals(otherEditCommand.targetId)
                 && editEmployeeDescriptor.equals(otherEditCommand.editEmployeeDescriptor);
     }
 
     @Override
     public String toString() {
         return new ToStringBuilder(this)
-                .add("index", index)
+                .add("targetId", targetId)
                 .add("editEmployeeDescriptor", editEmployeeDescriptor)
                 .toString();
     }

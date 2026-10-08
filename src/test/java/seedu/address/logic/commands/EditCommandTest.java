@@ -10,13 +10,13 @@ import static seedu.address.logic.commands.CommandTestUtil.VALID_PHONE_BOB;
 import static seedu.address.logic.commands.CommandTestUtil.assertCommandFailure;
 import static seedu.address.logic.commands.CommandTestUtil.assertCommandSuccess;
 import static seedu.address.logic.commands.CommandTestUtil.showEmployeeAtIndex;
+import static seedu.address.testutil.TypicalEmployees.ALICE;
+import static seedu.address.testutil.TypicalEmployees.BENSON;
 import static seedu.address.testutil.TypicalEmployees.getTypicalAddressBook;
 import static seedu.address.testutil.TypicalIndexes.INDEX_FIRST_EMPLOYEE;
-import static seedu.address.testutil.TypicalIndexes.INDEX_SECOND_EMPLOYEE;
 
 import org.junit.jupiter.api.Test;
 
-import seedu.address.commons.core.index.Index;
 import seedu.address.logic.Messages;
 import seedu.address.logic.commands.EditCommand.EditEmployeeDescriptor;
 import seedu.address.model.AddressBook;
@@ -24,6 +24,7 @@ import seedu.address.model.Model;
 import seedu.address.model.ModelManager;
 import seedu.address.model.UserPrefs;
 import seedu.address.model.employee.Employee;
+import seedu.address.model.employee.EmployeeId;
 import seedu.address.testutil.EditEmployeeDescriptorBuilder;
 import seedu.address.testutil.EmployeeBuilder;
 
@@ -37,10 +38,10 @@ public class EditCommandTest {
     @Test
     public void execute_allFieldsSpecifiedUnfilteredList_success() {
         // the employee ID cannot be edited, so the edited employee keeps the original ID
-        Employee editedEmployee = new EmployeeBuilder()
-                .withId(model.getFilteredEmployeeList().get(0).getId().value).build();
+        EmployeeId targetId = model.getFilteredEmployeeList().get(0).getId();
+        Employee editedEmployee = new EmployeeBuilder().withId(targetId.value).build();
         EditEmployeeDescriptor descriptor = new EditEmployeeDescriptorBuilder(editedEmployee).build();
-        EditCommand editCommand = new EditCommand(INDEX_FIRST_EMPLOYEE, descriptor);
+        EditCommand editCommand = new EditCommand(targetId, descriptor);
 
         String expectedMessage = String.format(EditCommand.MESSAGE_EDIT_EMPLOYEE_SUCCESS,
                 Messages.format(editedEmployee));
@@ -53,15 +54,14 @@ public class EditCommandTest {
 
     @Test
     public void execute_someFieldsSpecifiedUnfilteredList_success() {
-        Index indexLastEmployee = Index.fromOneBased(model.getFilteredEmployeeList().size());
-        Employee lastEmployee = model.getFilteredEmployeeList().get(indexLastEmployee.getZeroBased());
+        Employee lastEmployee = model.getFilteredEmployeeList().get(model.getFilteredEmployeeList().size() - 1);
 
         EmployeeBuilder employeeInList = new EmployeeBuilder(lastEmployee);
         Employee editedEmployee = employeeInList.withName(VALID_NAME_BOB).withPhone(VALID_PHONE_BOB).build();
 
         EditEmployeeDescriptor descriptor = new EditEmployeeDescriptorBuilder().withName(VALID_NAME_BOB)
                 .withPhone(VALID_PHONE_BOB).build();
-        EditCommand editCommand = new EditCommand(indexLastEmployee, descriptor);
+        EditCommand editCommand = new EditCommand(lastEmployee.getId(), descriptor);
 
         String expectedMessage = String.format(EditCommand.MESSAGE_EDIT_EMPLOYEE_SUCCESS,
                 Messages.format(editedEmployee));
@@ -74,8 +74,8 @@ public class EditCommandTest {
 
     @Test
     public void execute_noFieldSpecifiedUnfilteredList_success() {
-        EditCommand editCommand = new EditCommand(INDEX_FIRST_EMPLOYEE, new EditEmployeeDescriptor());
-        Employee editedEmployee = model.getFilteredEmployeeList().get(INDEX_FIRST_EMPLOYEE.getZeroBased());
+        Employee editedEmployee = model.getFilteredEmployeeList().get(0);
+        EditCommand editCommand = new EditCommand(editedEmployee.getId(), new EditEmployeeDescriptor());
 
         String expectedMessage = String.format(EditCommand.MESSAGE_EDIT_EMPLOYEE_SUCCESS,
                 Messages.format(editedEmployee));
@@ -91,7 +91,7 @@ public class EditCommandTest {
 
         Employee employeeInFilteredList = model.getFilteredEmployeeList().get(INDEX_FIRST_EMPLOYEE.getZeroBased());
         Employee editedEmployee = new EmployeeBuilder(employeeInFilteredList).withName(VALID_NAME_BOB).build();
-        EditCommand editCommand = new EditCommand(INDEX_FIRST_EMPLOYEE,
+        EditCommand editCommand = new EditCommand(employeeInFilteredList.getId(),
                 new EditEmployeeDescriptorBuilder().withName(VALID_NAME_BOB).build());
 
         String expectedMessage = String.format(EditCommand.MESSAGE_EDIT_EMPLOYEE_SUCCESS,
@@ -104,38 +104,44 @@ public class EditCommandTest {
     }
 
     @Test
-    public void execute_invalidEmployeeIndexUnfilteredList_failure() {
-        Index outOfBoundIndex = Index.fromOneBased(model.getFilteredEmployeeList().size() + 1);
+    public void execute_employeeIdNotFound_failure() {
+        EmployeeId missingId = new EmployeeId("E9999");
         EditEmployeeDescriptor descriptor = new EditEmployeeDescriptorBuilder().withName(VALID_NAME_BOB).build();
-        EditCommand editCommand = new EditCommand(outOfBoundIndex, descriptor);
+        EditCommand editCommand = new EditCommand(missingId, descriptor);
 
-        assertCommandFailure(editCommand, model, Messages.MESSAGE_INVALID_EMPLOYEE_DISPLAYED_INDEX);
+        assertCommandFailure(editCommand, model, String.format(Messages.MESSAGE_EMPLOYEE_NOT_FOUND, missingId));
     }
 
     /**
-     * Edit filtered list where index is larger than size of filtered list,
-     * but smaller than size of address book
+     * Edits an employee that is in the address book but hidden by the current filter.
      */
     @Test
-    public void execute_invalidEmployeeIndexFilteredList_failure() {
+    public void execute_employeeHiddenByFilter_success() {
         showEmployeeAtIndex(model, INDEX_FIRST_EMPLOYEE);
-        Index outOfBoundIndex = INDEX_SECOND_EMPLOYEE;
-        // ensures that outOfBoundIndex is still in bounds of address book list
-        assertTrue(outOfBoundIndex.getZeroBased() < model.getAddressBook().getEmployeeList().size());
+        Employee hiddenEmployee = model.getAddressBook().getEmployeeList().get(1);
+        // ensures that the employee is not in the filtered list
+        assertFalse(model.getFilteredEmployeeList().contains(hiddenEmployee));
 
-        EditCommand editCommand = new EditCommand(outOfBoundIndex,
+        Employee editedEmployee = new EmployeeBuilder(hiddenEmployee).withName(VALID_NAME_BOB).build();
+        EditCommand editCommand = new EditCommand(hiddenEmployee.getId(),
                 new EditEmployeeDescriptorBuilder().withName(VALID_NAME_BOB).build());
 
-        assertCommandFailure(editCommand, model, Messages.MESSAGE_INVALID_EMPLOYEE_DISPLAYED_INDEX);
+        String expectedMessage = String.format(EditCommand.MESSAGE_EDIT_EMPLOYEE_SUCCESS,
+                Messages.format(editedEmployee));
+
+        Model expectedModel = new ModelManager(new AddressBook(model.getAddressBook()), new UserPrefs());
+        expectedModel.setEmployee(hiddenEmployee, editedEmployee);
+
+        assertCommandSuccess(editCommand, model, expectedMessage, expectedModel);
     }
 
     @Test
     public void equals() {
-        final EditCommand standardCommand = new EditCommand(INDEX_FIRST_EMPLOYEE, DESC_AMY);
+        final EditCommand standardCommand = new EditCommand(ALICE.getId(), DESC_AMY);
 
         // same values -> returns true
         EditEmployeeDescriptor copyDescriptor = new EditEmployeeDescriptor(DESC_AMY);
-        EditCommand commandWithSameValues = new EditCommand(INDEX_FIRST_EMPLOYEE, copyDescriptor);
+        EditCommand commandWithSameValues = new EditCommand(ALICE.getId(), copyDescriptor);
         assertTrue(standardCommand.equals(commandWithSameValues));
 
         // same object -> returns true
@@ -147,20 +153,20 @@ public class EditCommandTest {
         // different types -> returns false
         assertFalse(standardCommand.equals(new ClearCommand()));
 
-        // different index -> returns false
-        assertFalse(standardCommand.equals(new EditCommand(INDEX_SECOND_EMPLOYEE, DESC_AMY)));
+        // different id -> returns false
+        assertFalse(standardCommand.equals(new EditCommand(BENSON.getId(), DESC_AMY)));
 
         // different descriptor -> returns false
-        assertFalse(standardCommand.equals(new EditCommand(INDEX_FIRST_EMPLOYEE, DESC_BOB)));
+        assertFalse(standardCommand.equals(new EditCommand(ALICE.getId(), DESC_BOB)));
     }
 
     @Test
     public void toStringMethod() {
-        Index index = Index.fromOneBased(1);
+        EmployeeId targetId = ALICE.getId();
         EditEmployeeDescriptor editEmployeeDescriptor = new EditEmployeeDescriptor();
-        EditCommand editCommand = new EditCommand(index, editEmployeeDescriptor);
-        String expected = EditCommand.class.getCanonicalName() + "{index=" + index + ", editEmployeeDescriptor="
-                + editEmployeeDescriptor + "}";
+        EditCommand editCommand = new EditCommand(targetId, editEmployeeDescriptor);
+        String expected = EditCommand.class.getCanonicalName() + "{targetId=" + targetId
+                + ", editEmployeeDescriptor=" + editEmployeeDescriptor + "}";
         assertEquals(expected, editCommand.toString());
     }
 
