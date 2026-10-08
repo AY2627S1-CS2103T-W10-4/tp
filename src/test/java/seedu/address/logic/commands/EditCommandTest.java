@@ -104,6 +104,24 @@ public class EditCommandTest {
     }
 
     @Test
+    public void execute_idInDifferentCase_success() {
+        Employee firstEmployee = model.getFilteredEmployeeList().get(0);
+        EmployeeId differentCaseId = new EmployeeId(firstEmployee.getId().value.toLowerCase());
+        Employee editedEmployee = new EmployeeBuilder(firstEmployee).withName(VALID_NAME_BOB).build();
+        EditCommand editCommand = new EditCommand(differentCaseId,
+                new EditEmployeeDescriptorBuilder().withName(VALID_NAME_BOB).build());
+
+        // the stored id is kept, not the id as typed
+        String expectedMessage = String.format(EditCommand.MESSAGE_EDIT_EMPLOYEE_SUCCESS,
+                Messages.format(editedEmployee));
+
+        Model expectedModel = new ModelManager(new AddressBook(model.getAddressBook()), new UserPrefs());
+        expectedModel.setEmployee(firstEmployee, editedEmployee);
+
+        assertCommandSuccess(editCommand, model, expectedMessage, expectedModel);
+    }
+
+    @Test
     public void execute_employeeIdNotFound_failure() {
         EmployeeId missingId = new EmployeeId("E9999");
         EditEmployeeDescriptor descriptor = new EditEmployeeDescriptorBuilder().withName(VALID_NAME_BOB).build();

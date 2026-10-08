@@ -26,8 +26,12 @@ public class EditCommandParser implements Parser<EditCommand> {
      */
     public EditCommand parse(String args) throws ParseException {
         requireNonNull(args);
+        String hiddenArgs = ArgumentPreprocessor.hideNameRelationWords(args);
+        ArgumentPreprocessor.rejectUnknownParameters(hiddenArgs, EditCommand.MESSAGE_USAGE,
+                PREFIX_ID, PREFIX_NAME, PREFIX_PHONE, PREFIX_EMAIL, PREFIX_DEPARTMENT, PREFIX_ROLE);
+
         ArgumentMultimap argMultimap =
-                ArgumentTokenizer.tokenize(args, PREFIX_ID, PREFIX_NAME, PREFIX_PHONE, PREFIX_EMAIL,
+                ArgumentTokenizer.tokenize(hiddenArgs, PREFIX_ID, PREFIX_NAME, PREFIX_PHONE, PREFIX_EMAIL,
                         PREFIX_DEPARTMENT, PREFIX_ROLE);
 
         if (argMultimap.getValue(PREFIX_ID).isEmpty() || !argMultimap.getPreamble().isEmpty()) {
@@ -42,7 +46,9 @@ public class EditCommandParser implements Parser<EditCommand> {
         EditEmployeeDescriptor editEmployeeDescriptor = new EditEmployeeDescriptor();
 
         if (argMultimap.getValue(PREFIX_NAME).isPresent()) {
-            editEmployeeDescriptor.setName(ParserUtil.parseName(argMultimap.getValue(PREFIX_NAME).get()));
+            // only the name can contain hidden slashes, from relation words such as "d/o"
+            String name = ArgumentPreprocessor.restoreHiddenSlashes(argMultimap.getValue(PREFIX_NAME).get());
+            editEmployeeDescriptor.setName(ParserUtil.parseName(name));
         }
         if (argMultimap.getValue(PREFIX_PHONE).isPresent()) {
             editEmployeeDescriptor.setPhone(ParserUtil.parsePhone(argMultimap.getValue(PREFIX_PHONE).get()));

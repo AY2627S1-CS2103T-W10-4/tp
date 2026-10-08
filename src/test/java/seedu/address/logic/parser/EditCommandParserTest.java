@@ -72,8 +72,8 @@ public class EditCommandParserTest {
         // invalid arguments being parsed as preamble
         assertParseFailure(parser, "some random string" + ID_DESC_AMY + NAME_DESC_AMY, MESSAGE_INVALID_FORMAT);
 
-        // invalid prefix being parsed as preamble
-        assertParseFailure(parser, "i/ string" + ID_DESC_AMY + NAME_DESC_AMY, MESSAGE_INVALID_FORMAT);
+        // unknown prefix before the id
+        assertParseFailure(parser, "i/ string" + ID_DESC_AMY + NAME_DESC_AMY, unknownParameterMessage("i/"));
     }
 
     @Test
@@ -117,6 +117,22 @@ public class EditCommandParserTest {
         EditCommand expectedCommand = new EditCommand(TARGET_ID, descriptor);
 
         assertParseSuccess(parser, userInput, expectedCommand);
+    }
+
+    @Test
+    public void parse_unknownParameter_failure() {
+        assertParseFailure(parser, ID_DESC_AMY + " x/foo" + PHONE_DESC_AMY, unknownParameterMessage("x/"));
+    }
+
+    @Test
+    public void parse_relationWordInName_success() {
+        // d/o inside the name is part of the name, not the department prefix
+        EditEmployeeDescriptor descriptor = new EditEmployeeDescriptorBuilder().withName("Nur Aisha d/o Ali").build();
+        assertParseSuccess(parser, ID_DESC_AMY + " n/Nur Aisha d/o Ali", new EditCommand(TARGET_ID, descriptor));
+
+        // d/ outside the name is still the department prefix
+        descriptor = new EditEmployeeDescriptorBuilder().withDepartment("O & G").build();
+        assertParseSuccess(parser, ID_DESC_AMY + " d/O & G", new EditCommand(TARGET_ID, descriptor));
     }
 
     @Test
@@ -186,5 +202,10 @@ public class EditCommandParserTest {
         userInput = ID_DESC_AMY + ID_DESC_AMY + PHONE_DESC_AMY;
 
         assertParseFailure(parser, userInput, Messages.getErrorMessageForDuplicatePrefixes(PREFIX_ID));
+    }
+
+    private static String unknownParameterMessage(String parameter) {
+        return String.format(MESSAGE_INVALID_COMMAND_FORMAT,
+                "Unknown parameter: " + parameter + "\n" + EditCommand.MESSAGE_USAGE);
     }
 }

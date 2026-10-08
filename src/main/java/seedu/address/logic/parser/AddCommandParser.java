@@ -8,10 +8,6 @@ import static seedu.address.logic.parser.CliSyntax.PREFIX_NAME;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_PHONE;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_ROLE;
 
-import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import seedu.address.logic.commands.AddCommand;
@@ -30,30 +26,14 @@ import seedu.address.model.employee.Role;
 public class AddCommandParser implements Parser<AddCommand> {
 
     /**
-     * Words such as "s/o" (son of) and "d/o" (daughter of) look like command prefixes but are part of a name,
-     * so they are hidden from the tokenizer while the arguments are split. They are only treated as name text
-     * as whole words that appear inside the name field, i.e. after {@code n/} and before the next prefix, so
-     * {@code d/O & G} after the email is still read as the department "O & G". The remaining ambiguous case is a
-     * department that starts with the word "o" and is typed straight after the name.
-     */
-    private static final Pattern NAME_RELATION_WORD = Pattern.compile("(s/o|d/o|a/l|a/p)(?=\\s|$)",
-            Pattern.CASE_INSENSITIVE);
-    private static final char HIDDEN_SLASH = '\uE000';
-
-    /** Something that looks like a parameter ("x/"), found at the start of the input or after whitespace. */
-    private static final Pattern PARAMETER_LIKE = Pattern.compile("(?:^|\\s)([A-Za-z]+/)");
-
-    private static final Set<String> KNOWN_PREFIXES = Stream.of(PREFIX_ID, PREFIX_NAME, PREFIX_PHONE, PREFIX_EMAIL,
-            PREFIX_DEPARTMENT, PREFIX_ROLE).map(Prefix::getPrefix).collect(Collectors.toSet());
-
-    /**
      * Parses the given {@code String} of arguments in the context of the AddCommand
      * and returns an AddCommand object for execution.
      * @throws ParseException if the user input does not conform to the expected format
      */
     public AddCommand parse(String args) throws ParseException {
-        String hiddenArgs = hideNameRelationWords(args);
-        rejectUnknownParameters(hiddenArgs);
+        String hiddenArgs = ArgumentPreprocessor.hideNameRelationWords(args);
+        ArgumentPreprocessor.rejectUnknownParameters(hiddenArgs, AddCommand.MESSAGE_USAGE,
+                PREFIX_ID, PREFIX_NAME, PREFIX_PHONE, PREFIX_EMAIL, PREFIX_DEPARTMENT, PREFIX_ROLE);
 
         ArgumentMultimap argMultimap = ArgumentTokenizer.tokenize(hiddenArgs,
                 PREFIX_ID, PREFIX_NAME, PREFIX_PHONE, PREFIX_EMAIL, PREFIX_DEPARTMENT, PREFIX_ROLE);
@@ -79,50 +59,11 @@ public class AddCommandParser implements Parser<AddCommand> {
     }
 
     /**
-     * Returns {@code args} with the slash hidden in relation words such as "s/o" and "d/o" that are part of the
-     * name, so that they are not mistaken for command prefixes.
-     */
-    private static String hideNameRelationWords(String args) {
-        StringBuilder hidden = new StringBuilder(args);
-        Matcher parameterMatcher = PARAMETER_LIKE.matcher(args);
-        String currentPrefix = "";
-        while (parameterMatcher.find()) {
-            String prefix = parameterMatcher.group(1);
-            int prefixStart = parameterMatcher.start(1);
-            if (currentPrefix.equals(PREFIX_NAME.getPrefix()) && isRelationWordAt(args, prefixStart)) {
-                hidden.setCharAt(prefixStart + prefix.length() - 1, HIDDEN_SLASH);
-            } else {
-                currentPrefix = prefix;
-            }
-        }
-        return hidden.toString();
-    }
-
-    private static boolean isRelationWordAt(String args, int start) {
-        return NAME_RELATION_WORD.matcher(args).region(start, args.length()).lookingAt();
-    }
-
-    /**
-     * Throws a {@code ParseException} if {@code hiddenArgs} contains a parameter that this command does not have,
-     * such as {@code x/foo}.
-     */
-    private static void rejectUnknownParameters(String hiddenArgs) throws ParseException {
-        Matcher matcher = PARAMETER_LIKE.matcher(hiddenArgs);
-        while (matcher.find()) {
-            String parameter = matcher.group(1);
-            if (!KNOWN_PREFIXES.contains(parameter)) {
-                throw new ParseException(String.format(MESSAGE_INVALID_COMMAND_FORMAT,
-                        "Unknown parameter: " + parameter + "\n" + AddCommand.MESSAGE_USAGE));
-            }
-        }
-    }
-
-    /**
      * Returns the value given for {@code prefix}, with any hidden slashes restored.
      * The prefix must be present.
      */
     private static String valueOf(ArgumentMultimap argMultimap, Prefix prefix) {
-        return argMultimap.getValue(prefix).get().replace(HIDDEN_SLASH, '/');
+        return ArgumentPreprocessor.restoreHiddenSlashes(argMultimap.getValue(prefix).get());
     }
 
     /**
