@@ -50,6 +50,8 @@ The bulk of the app's work is done by the following four components:
 
 **How the architecture components interact with each other**
 
+The architecture and logic sequence diagrams below retain AB3's former index-based delete examples. HuntR's current syntax and lookup behavior are described in [Delete an employee by ID](#delete-an-employee-by-id).
+
 The *Sequence Diagram* below shows how the components interact with each other for the scenario where the user issues the command `delete 1`.
 
 <puml src="diagrams/ArchitectureSequenceDiagram.puml" width="574" />
@@ -158,6 +160,14 @@ Classes used by multiple components are in the `seedu.address.commons` package.
 ## **Implementation**
 
 This section describes some noteworthy details on how certain features are implemented.
+
+### Delete an employee by ID
+
+`DeleteCommandParser` accepts `delete id/EMPLOYEE_ID` with exactly one `id/` parameter. It distinguishes unknown parameters, a missing parameter, a blank ID, an invalid ID format and duplicate parameters. A preamble before `id/` is rejected as unexpected arguments. Parsing errors include the command usage; see the [User Guide](UserGuide.md#deleting-an-employee-delete) for messages and examples.
+
+ID validation uses `ParserUtil.parseEmployeeId` and the existing `EmployeeId` rules: 1 to 20 letters, digits, hyphens or underscores, with no spaces. IDs retain their original casing and compare case-insensitively.
+
+`DeleteCommand` searches `model.getAddressBook().getEmployeeList()` for the matching `EmployeeId`, so a target can be deleted even when hidden by the current filter. It deletes that stored employee and returns all their details. The filter and remaining roster order are preserved. An absent ID produces `No employee with ID X was found.` without usage, where `X` is the entered ID. This command uses the existing saving flow.
 
 ### \[Proposed\] Undo/redo feature
 
@@ -462,26 +472,32 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 
 **MSS**
 
-1. User requests to delete an employee using `delete INDEX`.
-2. HuntR finds the employee record with the specified employee ID.
-3. HuntR deletes the specified employee record.
+1. User requests to delete an employee using `delete id/EMPLOYEE_ID`.
+2. HuntR validates the ID and finds the employee in the complete roster, comparing IDs case-insensitively.
+3. HuntR deletes the specified employee record and saves the updated records, preserving the current search filter.
 4. HuntR displays the deleted employee's details as confirmation.
 
     Use case ends.
 
 **Extensions**
 
-* 1a. The employee ID is missing, malformed, or accompanied by additional arguments.
+* 1a. The parameter is missing or unknown, the ID is blank or malformed, or the command contains repeated parameters or unexpected arguments.
 
-  * 1a1. HuntR shows the correct command format.
+  * 1a1. HuntR identifies the specific input error and shows the command usage. Records remain unchanged.
 
     Use case resumes at step 1.
 
 * 2a. No employee has the specified employee ID.
 
-  * 2a1. HuntR informs the user that no employee with the specified employee ID was found.
+  * 2a1. HuntR displays `No employee with ID X was found.`, using the entered ID for `X`. Records remain unchanged.
 
     Use case ends.
+
+* 3a. The employee is hidden by the current search.
+
+  * 3a1. HuntR deletes that employee from the complete roster while retaining the search filter.
+
+    Use case resumes at step 4.
 
 *{More to be added}*
 
@@ -531,7 +547,7 @@ These definitions describe HuntR's employee-management domain. The inherited cod
 | **Displayed index** | An employee's position in the currently displayed list, starting at 1. It can change when the list changes and is distinct from the employee ID. HuntR's specified `delete` command uses the employee ID. |
 | **Duplicate employee record** | A record with the same employee ID as another record. Two employees with the same name but different employee IDs are distinct records. |
 | **Employee** | A member of the organisation whose information the HR administrator manages in HuntR. An employee record contains an employee ID, name, phone number, email, department, and role. |
-| **Employee ID** | The unique identifier for an employee record: uppercase `E` followed by exactly four digits, such as `E0123`. It is supplied using `id/` and distinguishes employees even when their names are identical. |
+| **Employee ID** | The unique identifier for an employee record: 1 to 20 letters, digits, hyphens or underscores, with no spaces, such as `E0123`, `EMP-0042` or `2024-017`. It is stored as typed and compared case-insensitively. It is supplied using `id/` and distinguishes employees even when their names are identical. |
 | **Filtered employee list** | The subset of stored employee records currently displayed after applying search criteria. Filtering changes the view without deleting records from the workforce roster. |
 | **Graphical user interface (GUI)** | The application's visual interface, including the command box, result display, and employee list. |
 | **HR administrator** | The human resources staff member who operates HuntR to maintain the organisation's employee records; the application's target user. |
@@ -575,22 +591,16 @@ testers are expected to do more *exploratory* testing.
 
 1. _{ more test cases … }_
 
-### Deleting a person
+### Deleting an employee
 
-1. Deleting a person while all persons are being shown
+Prepare employees with IDs `EMP-0042`, `E0123` and `abc`; give the first two the same name and the third a different name. Restore the records before each independent test.
 
-   1. Prerequisites: List all persons using the `list` command, with multiple persons in the list.
-
-   1. Test case: `delete 1`<br>
-      Expected: The first contact is deleted from the list. The status message shows the deleted contact's details.
-
-   1. Test case: `delete 0`<br>
-      Expected: No person is deleted. The status message shows error details.
-
-   1. Other incorrect delete commands to try: `delete`, `delete x`, `...` (where x is larger than the list size)<br>
-      Expected: Similar to previous.
-
-1. _{ more test cases … }_
+1. Run `delete id/EMP-0042`. Expect only `EMP-0042` to be deleted, with all its details in the success message. The employee with the same name remains.
+2. Run `delete id/e0123`. Expect the employee stored as `E0123` to be deleted, with `E0123` in the success message. Also verify deletion of `abc`.
+3. Search for the name of `abc`, then run `delete id/EMP-0042`. Expect the hidden target to be deleted while the search results remain unchanged. Run `list` to verify removal. Repeat with a search that has no results.
+4. Try `delete`, `delete id/`, `delete x/value`, `delete id/abc!`, `delete id/abc id/abc` and `delete extra id/abc`. Expect the distinct messages and usage documented in the User Guide; records and filtering remain unchanged.
+5. Delete an absent valid ID and repeat a successful deletion. Expect `No employee with ID X was found.`, using the entered ID for `X`, with no usage or record changes.
+6. Delete the last employee, exit and relaunch. Expect an empty roster. Add a new employee using the deleted ID and verify that it can be reused.
 
 ### Saving data
 

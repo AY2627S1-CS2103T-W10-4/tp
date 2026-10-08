@@ -23,6 +23,7 @@ import seedu.address.logic.commands.HelpCommand;
 import seedu.address.logic.commands.ListCommand;
 import seedu.address.logic.parser.exceptions.ParseException;
 import seedu.address.model.employee.Employee;
+import seedu.address.model.employee.EmployeeId;
 import seedu.address.model.employee.NameContainsKeywordsPredicate;
 import seedu.address.testutil.EditEmployeeDescriptorBuilder;
 import seedu.address.testutil.EmployeeBuilder;
@@ -48,8 +49,14 @@ public class AddressBookParserTest {
     @Test
     public void parseCommand_delete() throws Exception {
         DeleteCommand command = (DeleteCommand) parser.parseCommand(
-                DeleteCommand.COMMAND_WORD + " " + INDEX_FIRST_EMPLOYEE.getOneBased());
-        assertEquals(new DeleteCommand(INDEX_FIRST_EMPLOYEE), command);
+                DeleteCommand.COMMAND_WORD + " id/EMP-0042");
+        assertEquals(new DeleteCommand(new EmployeeId("EMP-0042")), command);
+    }
+
+    @Test
+    public void parseCommand_deleteMixedCaseId_preservesIdAsTyped() throws Exception {
+        DeleteCommand command = (DeleteCommand) parser.parseCommand("delete id/eMp-0042");
+        assertEquals("eMp-0042", command.getTargetId().value);
     }
 
     @Test
