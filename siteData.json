@@ -114,7 +114,7 @@
         "features": "Features",
         "viewing-help-help": "Viewing help: help",
         "adding-a-person-add": "Adding a person: add",
-        "listing-all-persons-list": "Listing all persons: list",
+        "listing-all-employees-list": "Listing all employees: list",
         "editing-a-person-edit": "Editing a person: edit",
         "finding-employees-by-name-find": "Finding employees by name: find",
         "deleting-an-employee-delete": "Deleting an employee: delete",
