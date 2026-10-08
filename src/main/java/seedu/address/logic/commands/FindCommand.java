@@ -17,8 +17,8 @@ public class FindCommand extends Command {
 
     public static final String MESSAGE_USAGE = COMMAND_WORD + ": Finds all employees whose names contain any of "
             + "the specified keywords (case-insensitive) and displays them as a list with index numbers.\n"
-            + "Parameters: KEYWORD [MORE_KEYWORDS]...\n"
-            + "Example: " + COMMAND_WORD + " alice bob charlie";
+            + "Parameters: KEYWORD [MORE_KEYWORDS]\n"
+            + "Example: " + COMMAND_WORD + " John Joe";
 
     private final NameContainsKeywordsPredicate predicate;
 
@@ -31,7 +31,7 @@ public class FindCommand extends Command {
         requireNonNull(model);
         model.updateFilteredEmployeeList(predicate);
         return new CommandResult(
-                String.format(Messages.MESSAGE_EMPLOYEES_LISTED_OVERVIEW, model.getFilteredEmployeeList().size()));
+                Messages.getEmployeesListedOverview(model.getFilteredEmployeeList().size()));
     }
 
     @Override

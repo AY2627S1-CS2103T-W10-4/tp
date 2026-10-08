@@ -29,6 +29,17 @@ public class FindCommandParserTest {
 
         // multiple whitespaces between keywords
         assertParseSuccess(parser, " \n Alice \n \t Bob  \t", expectedFindCommand);
+
+        // alphanumeric keywords
+        FindCommand expectedAlphanumericFindCommand =
+                new FindCommand(new NameContainsKeywordsPredicate(List.of("Alice2", "3Bob")));
+        assertParseSuccess(parser, "Alice2 3Bob", expectedAlphanumericFindCommand);
+
+        // keywords containing punctuation and symbols
+        FindCommand expectedSymbolsFindCommand =
+                new FindCommand(new NameContainsKeywordsPredicate(
+                        List.of("@@@", "/John", "John!", "s/o", "d/o", "O'Brien")));
+        assertParseSuccess(parser, "@@@ /John John! s/o d/o O'Brien", expectedSymbolsFindCommand);
     }
 
 }

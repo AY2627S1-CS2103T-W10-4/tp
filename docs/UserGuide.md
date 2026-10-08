@@ -113,9 +113,9 @@ Examples:
 *  `edit 1 p/91234567 e/johndoe@example.com` Edits the phone number and email address of the 1st person to be `91234567` and `johndoe@example.com` respectively.
 *  `edit 2 n/Betsy Crower t/` Edits the name of the 2nd person to be `Betsy Crower` and clears all existing tags.
 
-### Locating persons by name: `find`
+### Finding employees by name: `find`
 
-Finds persons whose names contain any of the given keywords.
+Finds employees whose names contain any of the given keywords and displays them in the employee list.
 
 Format: `find KEYWORD [MORE_KEYWORDS]`
 
@@ -123,10 +123,14 @@ Format: `find KEYWORD [MORE_KEYWORDS]`
 * Keyword order does not matter; for example, `Hans Bo` matches `Bo Hans`.
 * The search considers only names.
 * Only full words match; for example, `Han` does not match `Hans`.
-* Persons matching at least one keyword are returned (an `OR` search); for example, `Hans Bo` returns `Hans Gruber` and `Bo Yang`.
+* Employees matching at least one keyword are returned (an `OR` search); for example, `Hans Bo` returns `Hans Gruber` and `Bo Yang`.
+* At least one non-blank keyword must be provided. A keyword may contain punctuation or symbols; a search with no
+  matching name is still valid.
+* Leading and trailing spaces are ignored, and multiple spaces between keywords are treated as separators.
+* A search with no matches is successful and displays an empty employee list.
 
 Examples:
-* `find John` returns `john` and `John Doe`
+* `find John` returns employees named `john` and `John Doe`
 * `find alex david` returns `Alex Yeoh`, `David Li`<br>
   ![result for 'find alex david'](images/findAlexDavidResult.png)
 
