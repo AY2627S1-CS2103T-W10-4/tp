@@ -20,11 +20,6 @@ public class Phone {
 
     public static final int MINIMUM_DIGITS = 3;
 
-    /*
-     * Phone numbers come in many layouts, so spaces, +, -, commas, full stops and bracketed labels such as (HP)
-     * are accepted as well as plain digits.
-     */
-    public static final String VALIDATION_REGEX = "(?:[0-9+\\-,. ]|\\([A-Za-z0-9 +\\-]+\\))+";
     public final String value;
 
     /**
@@ -42,7 +37,53 @@ public class Phone {
      * Returns true if a given string is a valid phone number.
      */
     public static boolean isValidPhone(String test) {
-        return test.matches(VALIDATION_REGEX) && countDigits(test) >= MINIMUM_DIGITS;
+        return hasValidLayout(test) && countDigits(test) >= MINIMUM_DIGITS;
+    }
+
+    /**
+     * Returns true if {@code test} only uses allowed characters and its brackets are used correctly.
+     *
+     * <p>Phone numbers come in many layouts, so digits, spaces and the symbols + - , . are accepted, as well as
+     * labels such as (HP) inside brackets. Brackets must not be nested or empty. This is checked with a loop
+     * rather than a regular expression, because a regular expression with a repeated group needs stack space
+     * proportional to the input length and overflows the stack on very long input.
+     */
+    public static boolean hasValidLayout(String test) {
+        requireNonNull(test);
+        if (test.isEmpty()) {
+            return false;
+        }
+        boolean insideBrackets = false;
+        int charactersInsideBrackets = 0;
+        for (int i = 0; i < test.length(); i++) {
+            char c = test.charAt(i);
+            if (insideBrackets) {
+                if (c == ')') {
+                    if (charactersInsideBrackets == 0) {
+                        return false;
+                    }
+                    insideBrackets = false;
+                } else if (isLabelCharacter(c)) {
+                    charactersInsideBrackets++;
+                } else {
+                    return false;
+                }
+            } else if (c == '(') {
+                insideBrackets = true;
+                charactersInsideBrackets = 0;
+            } else if (!isPlainCharacter(c)) {
+                return false;
+            }
+        }
+        return !insideBrackets;
+    }
+
+    private static boolean isPlainCharacter(char c) {
+        return (c >= '0' && c <= '9') || c == ' ' || c == '+' || c == '-' || c == ',' || c == '.';
+    }
+
+    private static boolean isLabelCharacter(char c) {
+        return isPlainCharacter(c) || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z');
     }
 
     /**

@@ -31,10 +31,12 @@ public class AddCommandParser implements Parser<AddCommand> {
 
     /**
      * Words such as "s/o" (son of) and "d/o" (daughter of) look like command prefixes but are part of a name,
-     * so they are hidden from the tokenizer while the arguments are split. They are only recognised as whole
-     * words. A department that is literally just "o" therefore cannot be entered with {@code d/o}.
+     * so they are hidden from the tokenizer while the arguments are split. They are only treated as name text
+     * as whole words that appear inside the name field, i.e. after {@code n/} and before the next prefix, so
+     * {@code d/O & G} after the email is still read as the department "O & G". The remaining ambiguous case is a
+     * department that starts with the word "o" and is typed straight after the name.
      */
-    private static final Pattern NAME_RELATION_WORD = Pattern.compile("(?<=\\s)(s/o|d/o|a/l|a/p)(?=\\s|$)",
+    private static final Pattern NAME_RELATION_WORD = Pattern.compile("(s/o|d/o|a/l|a/p)(?=\\s|$)",
             Pattern.CASE_INSENSITIVE);
     private static final char HIDDEN_SLASH = '\uE000';
 
@@ -77,18 +79,27 @@ public class AddCommandParser implements Parser<AddCommand> {
     }
 
     /**
-     * Returns {@code args} with the slash in words such as "s/o" and "d/o" hidden, so that they are not mistaken
-     * for command prefixes.
+     * Returns {@code args} with the slash hidden in relation words such as "s/o" and "d/o" that are part of the
+     * name, so that they are not mistaken for command prefixes.
      */
     private static String hideNameRelationWords(String args) {
-        Matcher matcher = NAME_RELATION_WORD.matcher(args);
-        StringBuilder result = new StringBuilder();
-        while (matcher.find()) {
-            matcher.appendReplacement(result, Matcher.quoteReplacement(
-                    matcher.group().replace('/', HIDDEN_SLASH)));
+        StringBuilder hidden = new StringBuilder(args);
+        Matcher parameterMatcher = PARAMETER_LIKE.matcher(args);
+        String currentPrefix = "";
+        while (parameterMatcher.find()) {
+            String prefix = parameterMatcher.group(1);
+            int prefixStart = parameterMatcher.start(1);
+            if (currentPrefix.equals(PREFIX_NAME.getPrefix()) && isRelationWordAt(args, prefixStart)) {
+                hidden.setCharAt(prefixStart + prefix.length() - 1, HIDDEN_SLASH);
+            } else {
+                currentPrefix = prefix;
+            }
         }
-        matcher.appendTail(result);
-        return result.toString();
+        return hidden.toString();
+    }
+
+    private static boolean isRelationWordAt(String args, int start) {
+        return NAME_RELATION_WORD.matcher(args).region(start, args.length()).lookingAt();
     }
 
     /**

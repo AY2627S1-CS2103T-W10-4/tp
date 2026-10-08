@@ -238,6 +238,20 @@ public class ParserUtilTest {
     }
 
     @Test
+    public void parsePhone_veryLongInput_doesNotOverflowTheStack() throws Exception {
+        String longPhone = "1".repeat(10000);
+        assertEquals(longPhone, ParserUtil.parsePhone(longPhone).value);
+        assertThrows(ParseException.class, Phone.MESSAGE_CONSTRAINTS, () ->
+                ParserUtil.parsePhone(longPhone + "x"));
+    }
+
+    @Test
+    public void parseName_decomposedAccent_returnsStandardForm() throws Exception {
+        assertEquals("Jos\u00e9", ParserUtil.parseName("Jose\u0301").fullName);
+        assertEquals("\u0BAE\u0BA4\u0BA9\u0BCD", ParserUtil.parseName("\u0BAE\u0BA4\u0BA9\u0BCD").fullName);
+    }
+
+    @Test
     public void parsePhone_blankTooFewDigitsAndInvalid_giveDifferentMessages() {
         assertThrows(ParseException.class, Phone.MESSAGE_BLANK, () -> ParserUtil.parsePhone("  "));
         assertThrows(ParseException.class, Phone.MESSAGE_TOO_FEW_DIGITS, () -> ParserUtil.parsePhone("12"));

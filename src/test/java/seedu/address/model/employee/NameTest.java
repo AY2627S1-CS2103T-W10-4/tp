@@ -33,6 +33,7 @@ public class NameTest {
         assertFalse(Name.isValidName("peter&jack")); // ampersand not allowed
         assertFalse(Name.isValidName("-peter")); // must start with a letter or digit
         assertFalse(Name.isValidName("'peter")); // must start with a letter or digit
+        assertFalse(Name.isValidName("\u0301peter")); // must not start with a combining mark
 
         // valid name
         assertTrue(Name.isValidName("peter jack")); // alphabets only
@@ -47,6 +48,9 @@ public class NameTest {
         assertTrue(Name.isValidName("Dr. Tan, Jr")); // full stop and comma
         assertTrue(Name.isValidName("Jos\u00e9 M\u00fcller")); // accented letters
         assertTrue(Name.isValidName("\u674e\u5c0f\u9f99")); // non-Latin letters
+        assertTrue(Name.isValidName("\u0BAE\u0BA4\u0BA9\u0BCD")); // Tamil name, ends with a combining mark
+        assertTrue(Name.isValidName("Jose\u0301")); // accent stored as a separate combining character
+        assertTrue(Name.isValidName("A".repeat(10000))); // very long input does not overflow the stack
     }
 
     @Test
@@ -75,6 +79,14 @@ public class NameTest {
         // different name -> returns false
         assertFalse(name.isSimilarTo(new Name("John Doe Jr")));
         assertFalse(name.isSimilarTo(new Name("Jane Doe")));
+    }
+
+    @Test
+    public void constructor_decomposedAccent_storedInStandardForm() {
+        // "e" followed by a separate acute accent is the same name as the single character "\u00e9"
+        assertEquals(new Name("Jos\u00e9"), new Name("Jose\u0301"));
+        assertEquals("Jos\u00e9", new Name("Jose\u0301").fullName);
+        assertTrue(new Name("Jos\u00e9").isSimilarTo(new Name("JOSE\u0301")));
     }
 
     @Test

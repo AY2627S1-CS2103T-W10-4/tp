@@ -215,6 +215,31 @@ public class AddCommandParserTest {
     }
 
     @Test
+    public void parse_departmentStartingWithRelationWord_notTreatedAsName() {
+        // "d/O & G" comes after other fields, so it is the department "O & G" and not part of the name
+        Employee expected = new EmployeeBuilder(BOB).withName("Alice").withDepartment("O & G")
+                .withRole("Engineer").build();
+        assertParseSuccess(parser, ID_DESC_BOB + " n/Alice" + PHONE_DESC_BOB + EMAIL_DESC_BOB
+                + " d/O & G" + " r/Engineer", new AddCommand(expected));
+
+        // the same with the department typed before the name
+        assertParseSuccess(parser, ID_DESC_BOB + " d/O & G" + " n/Alice" + PHONE_DESC_BOB + EMAIL_DESC_BOB
+                + " r/Engineer", new AddCommand(expected));
+
+        // a relation word in the name is still part of the name, followed by a department that starts with "o"
+        Employee expectedWithRelation = new EmployeeBuilder(BOB).withName("Nur Aisha d/o Ali")
+                .withDepartment("O & G").withRole("Engineer").build();
+        assertParseSuccess(parser, ID_DESC_BOB + " n/Nur Aisha d/o Ali" + PHONE_DESC_BOB + EMAIL_DESC_BOB
+                + " d/O & G" + " r/Engineer", new AddCommand(expectedWithRelation));
+    }
+
+    @Test
+    public void parse_relationWordOutsideName_failure() {
+        // "s/o" is only accepted inside the name, so elsewhere it is an unknown parameter
+        assertParseFailure(parser, REQUIRED_FIELDS_BOB + " s/o", unknownParameterMessage("s/"));
+    }
+
+    @Test
     public void parse_extraSpacesInName_collapsed() {
         assertParseSuccess(parser, ID_DESC_BOB + " n/  Bob     Choo  " + PHONE_DESC_BOB + EMAIL_DESC_BOB
                 + DEPARTMENT_DESC_BOB + ROLE_DESC_BOB, new AddCommand(new EmployeeBuilder(BOB).build()));

@@ -67,7 +67,7 @@ public class ParserUtil {
         if (trimmedPhone.isEmpty()) {
             throw new ParseException(Phone.MESSAGE_BLANK);
         }
-        if (!trimmedPhone.matches(Phone.VALIDATION_REGEX)) {
+        if (!Phone.hasValidLayout(trimmedPhone)) {
             throw new ParseException(Phone.MESSAGE_CONSTRAINTS);
         }
         if (!Phone.isValidPhone(trimmedPhone)) {
