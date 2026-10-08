@@ -115,9 +115,10 @@ public class AddressBookParserTest {
     @Test
     public void parseCommand_unknownCommand_throwsParseException() {
         String unknownCommand = "unknownCommand";
-        assertThrows(ParseException.class, String.format(MESSAGE_UNKNOWN_COMMAND, unknownCommand),
-                () -> parser.parseCommand(unknownCommand));
-        assertThrows(ParseException.class, String.format(MESSAGE_UNKNOWN_COMMAND, "LIST"),
-                () -> parser.parseCommand("LIST"));
+        String unknownCommandMessage = String.format(MESSAGE_UNKNOWN_COMMAND, unknownCommand);
+        String uppercaseCommandMessage = String.format(MESSAGE_UNKNOWN_COMMAND, "LIST");
+
+        assertThrows(ParseException.class, unknownCommandMessage, () -> parser.parseCommand(unknownCommand));
+        assertThrows(ParseException.class, uppercaseCommandMessage, () -> parser.parseCommand("LIST"));
     }
 }
