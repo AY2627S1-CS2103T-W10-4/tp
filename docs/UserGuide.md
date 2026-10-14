@@ -117,6 +117,7 @@ Format: `edit id/EMPLOYEE_ID [n/NAME] [p/PHONE] [e/EMAIL] [d/DEPARTMENT] [r/ROLE
 * The `id/` parameter identifies the employee to edit. The employee ID itself cannot be changed.
 * Employee ID matching is case-insensitive: `edit id/e0001 ...` identifies employee `E0001`.
 * HuntR searches the complete employee roster, so an employee hidden by the current `find` result can still be edited.
+* After a successful edit, HuntR resets the list to show all employees, clearing any active `find` result.
 * If an employee ID such as `E9999` does not exist, HuntR displays `No employee with ID E9999 was found.` and does not change any records.
 
 Examples:
