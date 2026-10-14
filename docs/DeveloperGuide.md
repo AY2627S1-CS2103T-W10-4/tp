@@ -674,6 +674,7 @@ testers are expected to do more *exploratory* testing.
 6. Enter `edit id/E0001 p/91234567 p/81234567`.<br>
    Expected: HuntR reports multiple values for `p/` and leaves `E0001` unchanged.
 
+
 ### Deleting an employee
 
 **Prerequisites:** Add employees with IDs `EMP-0042`, `E0123` and `abc`. Give `EMP-0042` and `E0123` the same name, and give `abc` a different name. Restore these records before each independent test case below.
@@ -690,6 +691,7 @@ testers are expected to do more *exploratory* testing.
    Expected: HuntR displays `No employee with ID E9999 was found.` No usage text is appended and no record is changed.
 6. Delete the last remaining employee, enter `exit`, and relaunch HuntR.<br>
    Expected: The roster remains empty after relaunch. The deleted ID can be used again in a new `add` command.
+
 
 ### Saving data
 
