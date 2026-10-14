@@ -31,11 +31,15 @@ AddressBook Level 3 (AB3) is a **desktop application for managing contacts, opti
 
    * `list` : Lists all employees.
 
-   * `add n/John Doe p/98765432 e/johnd@example.com a/John street, block 123, #01-01` : Adds a contact named `John Doe` to the Address Book.
+   * `add id/E0123 n/John Tan p/91234567 e/johntan@example.com d/Engineering r/Software Engineer` : Adds an employee named `John Tan` to HuntR.
 
-   * `delete id/EMP-0042` : Deletes employee `EMP-0042`, including when hidden by a search.
+   * `edit id/E0123 p/92345678 r/Senior Software Engineer` : Updates the phone number and role of employee `E0123`.
 
-   * `clear` : Deletes all contacts.
+   * `find Alex` : Finds employees whose names contain the word `Alex`.
+
+   * `delete id/E0123` : Deletes employee `E0123`, including when hidden by a search.
+
+   * `clear` : Deletes all employees.
 
    * `exit` : Exits the app.
 
@@ -50,13 +54,10 @@ AddressBook Level 3 (AB3) is a **desktop application for managing contacts, opti
 **Notes about the command format:**<br>
 
 * Words in `UPPER_CASE` are the parameters to be supplied by the user.<br>
-  For example, in `add n/NAME`, replace `NAME` with a value such as `John Doe`.
+  For example, in `add id/EMPLOYEE_ID n/NAME`, replace `EMPLOYEE_ID` and `NAME` with values such as `E0123` and `John Doe`.
 
 * Items in square brackets are optional.<br>
-  For example, `n/NAME [t/TAG]` can be used as `n/John Doe t/friend` or as `n/John Doe`.
-
-* Items followed by `...` can appear zero or more times.<br>
-  For example, `[t/TAG]... ` may be omitted, or written as `t/friend` or `t/friend t/family`.
+  For example, `edit id/EMPLOYEE_ID [p/PHONE]` can be used as `edit id/E0001 p/91234567`.
 
 * Parameters can be in any order.<br>
   For example, if the command specifies `n/NAME p/PHONE_NUMBER`, `p/PHONE_NUMBER n/NAME` is also acceptable.
@@ -76,20 +77,23 @@ Shows a message explaining how to access the help page.
 Format: `help`
 
 
-### Adding a person: `add`
+### Adding an employee: `add`
 
-Adds a person to the address book.
+Adds an employee to HuntR.
 
-Format: `add n/NAME p/PHONE_NUMBER e/EMAIL a/ADDRESS [t/TAG]... `
+Format: `add id/EMPLOYEE_ID n/NAME p/PHONE e/EMAIL d/DEPARTMENT r/ROLE`
 
-<box type="tip" seamless>
+All six fields are required. The employee ID must be 1 to 20 characters long and contain only letters, digits,
+hyphens and underscores. Employee IDs are compared case-insensitively, so `E0123` and `e0123` identify the
+same employee. For example, if `E0123` is already in use, HuntR displays
+`An employee with Employee ID E0123 already exists.` and does not add the employee.
 
-**Tip:** A person can have any number of tags, including zero.
-</box>
+Parameters can be supplied in any order.
 
 Examples:
-* `add n/John Doe p/98765432 e/johnd@example.com a/John street, block 123, #01-01`
-* `add n/Betsy Crowe t/friend e/betsycrowe@example.com a/Newgate Prison p/1234567 t/criminal`
+* `add id/E0123 n/John Tan p/91234567 e/johntan@example.com d/Engineering r/Software Engineer`
+* `add id/EMP-0042 n/Nur Aisyah p/87654321 e/nur.aisyah@example.com d/Human Resources r/HR Executive`
+* `add id/2024-017 n/Marcus Lee p/90001111 e/marcus.lee@example.com d/Finance r/Accountant`
 
 ### Listing all employees: `list`
 
@@ -102,21 +106,23 @@ The command takes no parameters. Leading and trailing spaces are ignored, but ad
 
 If there are no employee records, HuntR displays an empty employee list and explains how to add an employee.
 
-### Editing a person: `edit`
+### Editing an employee: `edit`
 
-Edits an existing person in the address book.
+Edits an existing employee in HuntR using their employee ID.
 
-Format: `edit INDEX [n/NAME] [p/PHONE] [e/EMAIL] [a/ADDRESS] [t/TAG]... `
+Format: `edit id/EMPLOYEE_ID [n/NAME] [p/PHONE] [e/EMAIL] [d/DEPARTMENT] [r/ROLE]`
 
-* Edits the person at the specified `INDEX`. The index refers to the index number shown in the displayed person list. The index **must be a positive integer** 1, 2, 3, ...
 * At least one of the optional fields must be provided.
 * Existing values will be updated to the input values.
-* When editing tags, all of the person's existing tags are removed; adding tags is not cumulative.
-* To remove all of a person's tags, enter `t/` without a tag after it.
+* The `id/` parameter identifies the employee to edit. The employee ID itself cannot be changed.
+* Employee ID matching is case-insensitive: `edit id/e0001 ...` identifies employee `E0001`.
+* HuntR searches the complete employee roster, so an employee hidden by the current `find` result can still be edited.
+* After a successful edit, HuntR resets the list to show all employees, clearing any active `find` result.
+* If an employee ID such as `E9999` does not exist, HuntR displays `No employee with ID E9999 was found.` and does not change any records.
 
 Examples:
-*  `edit 1 p/91234567 e/johndoe@example.com` Edits the phone number and email address of the 1st person to be `91234567` and `johndoe@example.com` respectively.
-*  `edit 2 n/Betsy Crower t/` Edits the name of the 2nd person to be `Betsy Crower` and clears all existing tags.
+* `edit id/E0001 p/91234567 e/alex@example.com` updates the phone number and email address of employee `E0001`.
+* `edit id/e0002 r/HR Manager` updates the role of employee `E0002`, using case-insensitive ID matching.
 
 ### Finding employees by name: `find`
 
@@ -231,10 +237,11 @@ _Details coming soon ..._
 
 Action     | Format, Examples
 -----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------
-**Add**    | `add n/NAME p/PHONE_NUMBER e/EMAIL a/ADDRESS [t/TAG]... ` <br> e.g., `add n/James Ho p/22224444 e/jamesho@example.com a/123, Clementi Rd, 1234665 t/friend t/colleague`
+**Add**    | `add id/EMPLOYEE_ID n/NAME p/PHONE e/EMAIL d/DEPARTMENT r/ROLE`<br>e.g., `add id/E0123 n/John Tan p/91234567 e/johntan@example.com d/Engineering r/Software Engineer`
 **Clear**  | `clear`
 **Delete** | `delete id/EMPLOYEE_ID`<br> e.g., `delete id/EMP-0042`
-**Edit**   | `edit INDEX [n/NAME] [p/PHONE_NUMBER] [e/EMAIL] [a/ADDRESS] [t/TAG]... `<br> e.g.,`edit 2 n/James Lee e/jameslee@example.com`
+**Edit**   | `edit id/EMPLOYEE_ID [n/NAME] [p/PHONE] [e/EMAIL] [d/DEPARTMENT] [r/ROLE]`<br>e.g., `edit id/E0001 p/91234567 e/alex@example.com`
 **Find**   | `find KEYWORD [MORE_KEYWORDS]`<br> e.g., `find James Jake`
 **List**   | `list`
 **Help**   | `help`
+**Exit**   | `exit`
