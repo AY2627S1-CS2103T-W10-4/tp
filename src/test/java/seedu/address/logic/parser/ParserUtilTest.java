@@ -1,36 +1,34 @@
 package seedu.address.logic.parser;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.logic.parser.ParserUtil.MESSAGE_INVALID_INDEX;
 import static seedu.address.testutil.Assert.assertThrows;
-import static seedu.address.testutil.TypicalIndexes.INDEX_FIRST_PERSON;
-
-import java.util.List;
-import java.util.Set;
+import static seedu.address.testutil.TypicalIndexes.INDEX_FIRST_EMPLOYEE;
 
 import org.junit.jupiter.api.Test;
 
 import seedu.address.logic.parser.exceptions.ParseException;
-import seedu.address.model.person.Address;
-import seedu.address.model.person.Email;
-import seedu.address.model.person.Name;
-import seedu.address.model.person.Phone;
-import seedu.address.model.tag.Tag;
+import seedu.address.model.employee.Department;
+import seedu.address.model.employee.Email;
+import seedu.address.model.employee.EmployeeId;
+import seedu.address.model.employee.Name;
+import seedu.address.model.employee.Phone;
+import seedu.address.model.employee.Role;
 
 public class ParserUtilTest {
     private static final String INVALID_NAME = "R@chel";
-    private static final String INVALID_PHONE = "+651234";
-    private static final String INVALID_ADDRESS = " ";
+    private static final String INVALID_PHONE = "911a";
+    private static final String INVALID_EMPLOYEE_ID = "E 01";
+    private static final String INVALID_DEPARTMENT = " ";
+    private static final String INVALID_ROLE = " ";
     private static final String INVALID_EMAIL = "example.com";
-    private static final String INVALID_TAG = "#friend";
 
     private static final String VALID_NAME = "Rachel Walker";
     private static final String VALID_PHONE = "123456";
-    private static final String VALID_ADDRESS = "123 Main Street #0505";
+    private static final String VALID_EMPLOYEE_ID = "E0123";
+    private static final String VALID_DEPARTMENT = "Engineering";
+    private static final String VALID_ROLE = "Software Engineer";
     private static final String VALID_EMAIL = "rachel@example.com";
-    private static final String VALID_TAG_1 = "friend";
-    private static final String VALID_TAG_2 = "neighbour";
 
     private static final String WHITESPACE = " \t\r\n";
 
@@ -48,10 +46,10 @@ public class ParserUtilTest {
     @Test
     public void parseIndex_validInput_success() throws Exception {
         // No whitespaces
-        assertEquals(INDEX_FIRST_PERSON, ParserUtil.parseIndex("1"));
+        assertEquals(INDEX_FIRST_EMPLOYEE, ParserUtil.parseIndex("1"));
 
         // Leading and trailing whitespaces
-        assertEquals(INDEX_FIRST_PERSON, ParserUtil.parseIndex("  1  "));
+        assertEquals(INDEX_FIRST_EMPLOYEE, ParserUtil.parseIndex("  1  "));
     }
 
     @Test
@@ -101,26 +99,95 @@ public class ParserUtilTest {
     }
 
     @Test
-    public void parseAddress_null_throwsNullPointerException() {
-        assertThrows(NullPointerException.class, () -> ParserUtil.parseAddress((String) null));
+    public void parseEmployeeId_null_throwsNullPointerException() {
+        assertThrows(NullPointerException.class, () -> ParserUtil.parseEmployeeId((String) null));
     }
 
     @Test
-    public void parseAddress_invalidValue_throwsParseException() {
-        assertThrows(ParseException.class, () -> ParserUtil.parseAddress(INVALID_ADDRESS));
+    public void parseEmployeeId_invalidValue_throwsParseException() {
+        assertThrows(ParseException.class, () -> ParserUtil.parseEmployeeId(INVALID_EMPLOYEE_ID));
     }
 
     @Test
-    public void parseAddress_validValueWithoutWhitespace_returnsAddress() throws Exception {
-        Address expectedAddress = new Address(VALID_ADDRESS);
-        assertEquals(expectedAddress, ParserUtil.parseAddress(VALID_ADDRESS));
+    public void parseEmployeeId_validValueWithoutWhitespace_returnsEmployeeId() throws Exception {
+        EmployeeId expectedEmployeeId = new EmployeeId(VALID_EMPLOYEE_ID);
+        assertEquals(expectedEmployeeId, ParserUtil.parseEmployeeId(VALID_EMPLOYEE_ID));
     }
 
     @Test
-    public void parseAddress_validValueWithWhitespace_returnsTrimmedAddress() throws Exception {
-        String addressWithWhitespace = WHITESPACE + VALID_ADDRESS + WHITESPACE;
-        Address expectedAddress = new Address(VALID_ADDRESS);
-        assertEquals(expectedAddress, ParserUtil.parseAddress(addressWithWhitespace));
+    public void parseEmployeeId_validValueWithWhitespace_returnsTrimmedEmployeeId() throws Exception {
+        String idWithWhitespace = WHITESPACE + VALID_EMPLOYEE_ID + WHITESPACE;
+        EmployeeId expectedEmployeeId = new EmployeeId(VALID_EMPLOYEE_ID);
+        assertEquals(expectedEmployeeId, ParserUtil.parseEmployeeId(idWithWhitespace));
+    }
+
+    @Test
+    public void parseDepartment_null_throwsNullPointerException() {
+        assertThrows(NullPointerException.class, () -> ParserUtil.parseDepartment((String) null));
+    }
+
+    @Test
+    public void parseDepartment_invalidValue_throwsParseException() {
+        assertThrows(ParseException.class, () -> ParserUtil.parseDepartment(INVALID_DEPARTMENT));
+    }
+
+    @Test
+    public void parseDepartment_validValueWithoutWhitespace_returnsDepartment() throws Exception {
+        Department expectedDepartment = new Department(VALID_DEPARTMENT);
+        assertEquals(expectedDepartment, ParserUtil.parseDepartment(VALID_DEPARTMENT));
+    }
+
+    @Test
+    public void parseDepartment_validValueWithWhitespace_returnsTrimmedDepartment() throws Exception {
+        String departmentWithWhitespace = WHITESPACE + VALID_DEPARTMENT + WHITESPACE;
+        Department expectedDepartment = new Department(VALID_DEPARTMENT);
+        assertEquals(expectedDepartment, ParserUtil.parseDepartment(departmentWithWhitespace));
+    }
+
+    @Test
+    public void parseRole_null_throwsNullPointerException() {
+        assertThrows(NullPointerException.class, () -> ParserUtil.parseRole((String) null));
+    }
+
+    @Test
+    public void parseRole_invalidValue_throwsParseException() {
+        assertThrows(ParseException.class, () -> ParserUtil.parseRole(INVALID_ROLE));
+    }
+
+    @Test
+    public void parseRole_validValueWithoutWhitespace_returnsRole() throws Exception {
+        Role expectedRole = new Role(VALID_ROLE);
+        assertEquals(expectedRole, ParserUtil.parseRole(VALID_ROLE));
+    }
+
+    @Test
+    public void parseRole_validValueWithWhitespace_returnsTrimmedRole() throws Exception {
+        String roleWithWhitespace = WHITESPACE + VALID_ROLE + WHITESPACE;
+        Role expectedRole = new Role(VALID_ROLE);
+        assertEquals(expectedRole, ParserUtil.parseRole(roleWithWhitespace));
+    }
+
+    @Test
+    public void parseEmployeeId_differentCase_returnsEqualId() throws Exception {
+        assertEquals(ParserUtil.parseEmployeeId("e0123"), ParserUtil.parseEmployeeId("E0123"));
+    }
+
+    @Test
+    public void parseEmployeeId_variousSchemes_accepted() throws Exception {
+        assertEquals("EMP-0042", ParserUtil.parseEmployeeId("EMP-0042").value);
+        assertEquals("2024_017", ParserUtil.parseEmployeeId("2024_017").value);
+        assertEquals("1", ParserUtil.parseEmployeeId("1").value);
+    }
+
+    @Test
+    public void parseEmployeeId_tooLong_throwsParseException() {
+        assertThrows(ParseException.class, () -> ParserUtil.parseEmployeeId("E".repeat(21)));
+    }
+
+    @Test
+    public void parseDepartmentAndRole_punctuation_accepted() throws Exception {
+        assertEquals("R&D", ParserUtil.parseDepartment("R&D").value);
+        assertEquals("Software Engineer (Backend)", ParserUtil.parseRole("Software Engineer (Backend)").value);
     }
 
     @Test
@@ -147,48 +214,69 @@ public class ParserUtilTest {
     }
 
     @Test
-    public void parseTag_null_throwsNullPointerException() {
-        assertThrows(NullPointerException.class, () -> ParserUtil.parseTag(null));
+    public void parseName_extraSpaces_collapsedToSingleSpaces() throws Exception {
+        assertEquals(new Name("Rachel Walker"), ParserUtil.parseName("  Rachel     Walker  "));
     }
 
     @Test
-    public void parseTag_invalidValue_throwsParseException() {
-        assertThrows(ParseException.class, () -> ParserUtil.parseTag(INVALID_TAG));
+    public void parseName_relationWordsAndPunctuation_accepted() throws Exception {
+        assertEquals("Ravi s/o Kumar", ParserUtil.parseName("Ravi s/o Kumar").fullName);
+        assertEquals("Nur Aisha d/o Ali", ParserUtil.parseName("Nur Aisha d/o Ali").fullName);
+        assertEquals("Mary-Ann O'Brien", ParserUtil.parseName("Mary-Ann O'Brien").fullName);
     }
 
     @Test
-    public void parseTag_validValueWithoutWhitespace_returnsTag() throws Exception {
-        Tag expectedTag = new Tag(VALID_TAG_1);
-        assertEquals(expectedTag, ParserUtil.parseTag(VALID_TAG_1));
+    public void parseName_blankAndInvalid_giveDifferentMessages() {
+        assertThrows(ParseException.class, Name.MESSAGE_BLANK, () -> ParserUtil.parseName("   "));
+        assertThrows(ParseException.class, Name.MESSAGE_CONSTRAINTS, () -> ParserUtil.parseName("James&"));
     }
 
     @Test
-    public void parseTag_validValueWithWhitespace_returnsTrimmedTag() throws Exception {
-        String tagWithWhitespace = WHITESPACE + VALID_TAG_1 + WHITESPACE;
-        Tag expectedTag = new Tag(VALID_TAG_1);
-        assertEquals(expectedTag, ParserUtil.parseTag(tagWithWhitespace));
+    public void parsePhone_variousLayouts_accepted() throws Exception {
+        assertEquals("9123 4567 (HP)", ParserUtil.parsePhone("  9123 4567 (HP) ").value);
+        assertEquals("+65 6123-4567", ParserUtil.parsePhone("+65 6123-4567").value);
     }
 
     @Test
-    public void parseTags_null_throwsNullPointerException() {
-        assertThrows(NullPointerException.class, () -> ParserUtil.parseTags(null));
+    public void parsePhone_veryLongInput_doesNotOverflowTheStack() throws Exception {
+        String longPhone = "1".repeat(10000);
+        assertEquals(longPhone, ParserUtil.parsePhone(longPhone).value);
+        assertThrows(ParseException.class, Phone.MESSAGE_CONSTRAINTS, () ->
+                ParserUtil.parsePhone(longPhone + "x"));
     }
 
     @Test
-    public void parseTags_collectionWithInvalidTags_throwsParseException() {
-        assertThrows(ParseException.class, () -> ParserUtil.parseTags(List.of(VALID_TAG_1, INVALID_TAG)));
+    public void parseName_decomposedAccent_returnsStandardForm() throws Exception {
+        assertEquals("Jos\u00e9", ParserUtil.parseName("Jose\u0301").fullName);
+        assertEquals("\u0BAE\u0BA4\u0BA9\u0BCD", ParserUtil.parseName("\u0BAE\u0BA4\u0BA9\u0BCD").fullName);
     }
 
     @Test
-    public void parseTags_emptyCollection_returnsEmptySet() throws Exception {
-        assertTrue(ParserUtil.parseTags(List.of()).isEmpty());
+    public void parsePhone_blankTooFewDigitsAndInvalid_giveDifferentMessages() {
+        assertThrows(ParseException.class, Phone.MESSAGE_BLANK, () -> ParserUtil.parsePhone("  "));
+        assertThrows(ParseException.class, Phone.MESSAGE_TOO_FEW_DIGITS, () -> ParserUtil.parsePhone("12"));
+        assertThrows(ParseException.class, Phone.MESSAGE_CONSTRAINTS, () -> ParserUtil.parsePhone("hello"));
     }
 
     @Test
-    public void parseTags_collectionWithValidTags_returnsTagSet() throws Exception {
-        Set<Tag> actualTagSet = ParserUtil.parseTags(List.of(VALID_TAG_1, VALID_TAG_2));
-        Set<Tag> expectedTagSet = Set.of(new Tag(VALID_TAG_1), new Tag(VALID_TAG_2));
+    public void parseEmployeeId_blankTooLongAndInvalid_giveDifferentMessages() {
+        assertThrows(ParseException.class, ParserUtil.MESSAGE_BLANK_EMPLOYEE_ID, () ->
+                ParserUtil.parseEmployeeId("  "));
+        assertThrows(ParseException.class, ParserUtil.MESSAGE_EMPLOYEE_ID_TOO_LONG, () ->
+                ParserUtil.parseEmployeeId("E".repeat(21)));
+        assertThrows(ParseException.class, EmployeeId.MESSAGE_CONSTRAINTS, () ->
+                ParserUtil.parseEmployeeId("E 01"));
+    }
 
-        assertEquals(expectedTagSet, actualTagSet);
+    @Test
+    public void parseDepartmentAndRole_blankTooLongAndInvalid_giveDifferentMessages() {
+        assertThrows(ParseException.class, Department.MESSAGE_BLANK, () -> ParserUtil.parseDepartment(" "));
+        assertThrows(ParseException.class, Department.MESSAGE_TOO_LONG, () ->
+                ParserUtil.parseDepartment("D".repeat(101)));
+        assertThrows(ParseException.class, Department.MESSAGE_CONSTRAINTS, () -> ParserUtil.parseDepartment("@@@"));
+
+        assertThrows(ParseException.class, Role.MESSAGE_BLANK, () -> ParserUtil.parseRole(" "));
+        assertThrows(ParseException.class, Role.MESSAGE_TOO_LONG, () -> ParserUtil.parseRole("R".repeat(101)));
+        assertThrows(ParseException.class, Role.MESSAGE_CONSTRAINTS, () -> ParserUtil.parseRole("###"));
     }
 }

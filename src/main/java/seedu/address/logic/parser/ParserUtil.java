@@ -2,18 +2,15 @@ package seedu.address.logic.parser;
 
 import static java.util.Objects.requireNonNull;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
-
 import seedu.address.commons.core.index.Index;
 import seedu.address.commons.util.StringUtil;
 import seedu.address.logic.parser.exceptions.ParseException;
-import seedu.address.model.person.Address;
-import seedu.address.model.person.Email;
-import seedu.address.model.person.Name;
-import seedu.address.model.person.Phone;
-import seedu.address.model.tag.Tag;
+import seedu.address.model.employee.Department;
+import seedu.address.model.employee.Email;
+import seedu.address.model.employee.EmployeeId;
+import seedu.address.model.employee.Name;
+import seedu.address.model.employee.Phone;
+import seedu.address.model.employee.Role;
 
 /**
  * Contains utility methods used for parsing strings in the various *Parser classes.
@@ -21,6 +18,11 @@ import seedu.address.model.tag.Tag;
 public class ParserUtil {
 
     public static final String MESSAGE_INVALID_INDEX = "Index must be a positive integer.";
+    /** Maximum length of an employee ID; see {@link EmployeeId#VALIDATION_REGEX}. */
+    public static final int EMPLOYEE_ID_MAX_LENGTH = 20;
+    public static final String MESSAGE_BLANK_EMPLOYEE_ID = "Employee ID should not be blank.";
+    public static final String MESSAGE_EMPLOYEE_ID_TOO_LONG = "Employee ID should be at most "
+            + EMPLOYEE_ID_MAX_LENGTH + " characters long.";
 
     /**
      * Parses {@code oneBasedIndex} into an {@code Index} and returns it. Leading and trailing whitespaces will be
@@ -43,11 +45,14 @@ public class ParserUtil {
      */
     public static Name parseName(String name) throws ParseException {
         requireNonNull(name);
-        String trimmedName = name.trim();
-        if (!Name.isValidName(trimmedName)) {
+        String normalisedName = Name.normalise(name);
+        if (normalisedName.isEmpty()) {
+            throw new ParseException(Name.MESSAGE_BLANK);
+        }
+        if (!Name.isValidName(normalisedName)) {
             throw new ParseException(Name.MESSAGE_CONSTRAINTS);
         }
-        return new Name(trimmedName);
+        return new Name(normalisedName);
     }
 
     /**
@@ -59,25 +64,76 @@ public class ParserUtil {
     public static Phone parsePhone(String phone) throws ParseException {
         requireNonNull(phone);
         String trimmedPhone = phone.trim();
-        if (!Phone.isValidPhone(trimmedPhone)) {
+        if (trimmedPhone.isEmpty()) {
+            throw new ParseException(Phone.MESSAGE_BLANK);
+        }
+        if (!Phone.hasValidLayout(trimmedPhone)) {
             throw new ParseException(Phone.MESSAGE_CONSTRAINTS);
+        }
+        if (!Phone.isValidPhone(trimmedPhone)) {
+            throw new ParseException(Phone.MESSAGE_TOO_FEW_DIGITS);
         }
         return new Phone(trimmedPhone);
     }
 
     /**
-     * Parses a {@code String address} into an {@code Address}.
+     * Parses a {@code String employeeId} into a {@code EmployeeId}.
      * Leading and trailing whitespaces will be trimmed.
      *
-     * @throws ParseException if the given {@code address} is invalid.
+     * @throws ParseException if the given {@code employeeId} is invalid.
      */
-    public static Address parseAddress(String address) throws ParseException {
-        requireNonNull(address);
-        String trimmedAddress = address.trim();
-        if (!Address.isValidAddress(trimmedAddress)) {
-            throw new ParseException(Address.MESSAGE_CONSTRAINTS);
+    public static EmployeeId parseEmployeeId(String employeeId) throws ParseException {
+        requireNonNull(employeeId);
+        String trimmedEmployeeId = employeeId.trim();
+        if (trimmedEmployeeId.isEmpty()) {
+            throw new ParseException(MESSAGE_BLANK_EMPLOYEE_ID);
         }
-        return new Address(trimmedAddress);
+        if (!EmployeeId.isValidEmployeeId(trimmedEmployeeId)) {
+            boolean onlyTooLong = trimmedEmployeeId.length() > EMPLOYEE_ID_MAX_LENGTH
+                    && EmployeeId.isValidEmployeeId(trimmedEmployeeId.substring(0, EMPLOYEE_ID_MAX_LENGTH));
+            throw new ParseException(onlyTooLong ? MESSAGE_EMPLOYEE_ID_TOO_LONG : EmployeeId.MESSAGE_CONSTRAINTS);
+        }
+        return new EmployeeId(trimmedEmployeeId);
+    }
+
+    /**
+     * Parses a {@code String department} into a {@code Department}.
+     * Leading and trailing whitespaces will be trimmed.
+     *
+     * @throws ParseException if the given {@code department} is invalid.
+     */
+    public static Department parseDepartment(String department) throws ParseException {
+        requireNonNull(department);
+        String trimmedDepartment = department.trim();
+        if (trimmedDepartment.isEmpty()) {
+            throw new ParseException(Department.MESSAGE_BLANK);
+        }
+        if (!Department.isValidDepartment(trimmedDepartment)) {
+            boolean onlyTooLong = trimmedDepartment.length() > Department.MAX_LENGTH
+                    && Department.isValidDepartment(trimmedDepartment.substring(0, Department.MAX_LENGTH));
+            throw new ParseException(onlyTooLong ? Department.MESSAGE_TOO_LONG : Department.MESSAGE_CONSTRAINTS);
+        }
+        return new Department(trimmedDepartment);
+    }
+
+    /**
+     * Parses a {@code String role} into a {@code Role}.
+     * Leading and trailing whitespaces will be trimmed.
+     *
+     * @throws ParseException if the given {@code role} is invalid.
+     */
+    public static Role parseRole(String role) throws ParseException {
+        requireNonNull(role);
+        String trimmedRole = role.trim();
+        if (trimmedRole.isEmpty()) {
+            throw new ParseException(Role.MESSAGE_BLANK);
+        }
+        if (!Role.isValidRole(trimmedRole)) {
+            boolean onlyTooLong = trimmedRole.length() > Role.MAX_LENGTH
+                    && Role.isValidRole(trimmedRole.substring(0, Role.MAX_LENGTH));
+            throw new ParseException(onlyTooLong ? Role.MESSAGE_TOO_LONG : Role.MESSAGE_CONSTRAINTS);
+        }
+        return new Role(trimmedRole);
     }
 
     /**
@@ -95,30 +151,4 @@ public class ParserUtil {
         return new Email(trimmedEmail);
     }
 
-    /**
-     * Parses a {@code String tag} into a {@code Tag}.
-     * Leading and trailing whitespaces will be trimmed.
-     *
-     * @throws ParseException if the given {@code tag} is invalid.
-     */
-    public static Tag parseTag(String tag) throws ParseException {
-        requireNonNull(tag);
-        String trimmedTag = tag.trim();
-        if (!Tag.isValidTagName(trimmedTag)) {
-            throw new ParseException(Tag.MESSAGE_CONSTRAINTS);
-        }
-        return new Tag(trimmedTag);
-    }
-
-    /**
-     * Parses {@code Collection<String> tags} into a {@code Set<Tag>}.
-     */
-    public static Set<Tag> parseTags(Collection<String> tags) throws ParseException {
-        requireNonNull(tags);
-        final Set<Tag> tagSet = new HashSet<>();
-        for (String tagName : tags) {
-            tagSet.add(parseTag(tagName));
-        }
-        return tagSet;
-    }
 }

@@ -29,11 +29,11 @@ AddressBook Level 3 (AB3) is a **desktop application for managing contacts, opti
 1. Type a command in the command box and press Enter to execute it. For example, type **`help`** and press Enter to open the help window.<br>
    Some example commands you can try:
 
-   * `list` : Lists all contacts.
+   * `list` : Lists all employees.
 
    * `add n/John Doe p/98765432 e/johnd@example.com a/John street, block 123, #01-01` : Adds a contact named `John Doe` to the Address Book.
 
-   * `delete 3` : Deletes the 3rd contact shown in the current list.
+   * `delete id/EMP-0042` : Deletes employee `EMP-0042`, including when hidden by a search.
 
    * `clear` : Deletes all contacts.
 
@@ -61,7 +61,7 @@ AddressBook Level 3 (AB3) is a **desktop application for managing contacts, opti
 * Parameters can be in any order.<br>
   For example, if the command specifies `n/NAME p/PHONE_NUMBER`, `p/PHONE_NUMBER n/NAME` is also acceptable.
 
-* Extraneous parameters for commands that take no parameters, such as `help`, `list`, `exit`, and `clear`, are ignored.<br>
+* Extraneous parameters for commands that take no parameters, such as `help` and `clear`, are ignored.<br>
   For example, `help 123` is interpreted as `help`.
 
 * If you are using a PDF version of this document, be careful when copying and pasting commands that span multiple lines as space characters surrounding line-breaks may be omitted when copied over to the application.
@@ -91,11 +91,16 @@ Examples:
 * `add n/John Doe p/98765432 e/johnd@example.com a/John street, block 123, #01-01`
 * `add n/Betsy Crowe t/friend e/betsycrowe@example.com a/Newgate Prison p/1234567 t/criminal`
 
-### Listing all persons: `list`
+### Listing all employees: `list`
 
-Shows a list of all persons in the address book.
+Shows all employees stored in HuntR as a numbered list. Each entry includes the employee's name, employee ID,
+phone number, email, department, and role.
 
 Format: `list`
+
+The command takes no parameters. Leading and trailing spaces are ignored, but additional text is rejected.
+
+If there are no employee records, HuntR displays an empty employee list and explains how to add an employee.
 
 ### Editing a person: `edit`
 
@@ -113,9 +118,9 @@ Examples:
 *  `edit 1 p/91234567 e/johndoe@example.com` Edits the phone number and email address of the 1st person to be `91234567` and `johndoe@example.com` respectively.
 *  `edit 2 n/Betsy Crower t/` Edits the name of the 2nd person to be `Betsy Crower` and clears all existing tags.
 
-### Locating persons by name: `find`
+### Finding employees by name: `find`
 
-Finds persons whose names contain any of the given keywords.
+Finds employees whose names contain any of the given keywords and displays them in the employee list.
 
 Format: `find KEYWORD [MORE_KEYWORDS]`
 
@@ -123,26 +128,57 @@ Format: `find KEYWORD [MORE_KEYWORDS]`
 * Keyword order does not matter; for example, `Hans Bo` matches `Bo Hans`.
 * The search considers only names.
 * Only full words match; for example, `Han` does not match `Hans`.
-* Persons matching at least one keyword are returned (an `OR` search); for example, `Hans Bo` returns `Hans Gruber` and `Bo Yang`.
+* Employees matching at least one keyword are returned (an `OR` search); for example, `Hans Bo` returns `Hans Gruber` and `Bo Yang`.
+* At least one non-blank keyword must be provided. A keyword may contain punctuation or symbols; a search with no
+  matching name is still valid.
+* Leading and trailing spaces are ignored, and multiple spaces between keywords are treated as separators.
+* A search with no matches is successful and displays an empty employee list.
 
 Examples:
-* `find John` returns `john` and `John Doe`
+* `find John` returns employees named `john` and `John Doe`
 * `find alex david` returns `Alex Yeoh`, `David Li`<br>
   ![result for 'find alex david'](images/findAlexDavidResult.png)
 
-### Deleting a person: `delete`
+### Deleting an employee: `delete`
 
-Deletes the specified person from the address book.
+Permanently deletes one employee from the complete roster using their employee ID.
 
-Format: `delete INDEX`
+Format: `delete id/EMPLOYEE_ID`
 
-* Deletes the person at the specified `INDEX`.
-* The index refers to the index number shown in the displayed person list.
-* The index **must be a positive integer** 1, 2, 3, ...
+* Employee IDs contain 1 to 20 letters, digits, hyphens or underscores, with no spaces. For example, `E0001`, `EMP-0042`, `2024-017`, `abc` and `e0123` are valid.
+* ID matching ignores letter case: `e0123` identifies the same employee as `E0123`. The success message shows the ID as stored.
+* Supply exactly one `id/` parameter. Surrounding spaces and tabs are accepted; spaces within an ID, repeated `id/` parameters and other parameters are rejected.
+* The command searches all employee records, including employees hidden by `find`. Employees may share a name; deletion uses only the ID.
+* The current search filter and the order of remaining employees are preserved.
+* Deletion is immediate, with no confirmation or undo. The final employee can be deleted, and a deleted ID can be reused.
 
-Examples:
-* `list` followed by `delete 2` deletes the 2nd person in the address book.
-* `find Betsy` followed by `delete 1` deletes the 1st person in the results of the `find` command.
+Examples, assuming the target employee exists:
+
+* `delete id/EMP-0042` deletes employee `EMP-0042`.
+* `delete id/e0123` deletes employee `E0123`.
+* `find Betsy` followed by `delete id/EMP-0042` deletes `EMP-0042` even when hidden by that search. The Betsy search remains active.
+
+On success, the message starts with `Deleted employee:` and includes the deleted employee's ID, name, phone, email, department and role.
+
+The following input errors leave the records unchanged. Each message is followed by the usage block below.
+
+| Input | Error message |
+| --- | --- |
+| `delete` or `delete 1` | `Missing parameter: id/EMPLOYEE_ID.` |
+| `delete id/` or a whitespace-only ID | `Employee ID cannot be blank.` |
+| `delete x/value` or `delete id/abc x/value` | `Unknown parameter: x/. Only id/ is supported.` |
+| `delete id/abc!`, `delete id/abc def` or an ID longer than 20 characters | `Employee ID should be 1 to 20 characters long and contain only letters, digits, hyphens and underscores.` |
+| `delete id/abc id/abc` | `Multiple values specified for the following single-valued field(s): id/` |
+| `delete extra id/abc` | `Unexpected arguments. Specify exactly one employee ID using id/EMPLOYEE_ID.` |
+
+```text
+delete: Deletes one employee by employee ID from all stored employee records.
+Parameters: id/EMPLOYEE_ID
+Employee ID should be 1 to 20 characters long and contain only letters, digits, hyphens and underscores.
+Example: delete id/EMP-0042
+```
+
+A valid ID that does not exist produces `No employee with ID EMP-0042 was found.` (using the entered ID), without the usage block. No records are changed. This also applies to deleting an employee twice or deleting from an empty roster.
 
 ### Clearing all entries: `clear`
 
@@ -197,7 +233,7 @@ Action     | Format, Examples
 -----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 **Add**    | `add n/NAME p/PHONE_NUMBER e/EMAIL a/ADDRESS [t/TAG]... ` <br> e.g., `add n/James Ho p/22224444 e/jamesho@example.com a/123, Clementi Rd, 1234665 t/friend t/colleague`
 **Clear**  | `clear`
-**Delete** | `delete INDEX`<br> e.g., `delete 3`
+**Delete** | `delete id/EMPLOYEE_ID`<br> e.g., `delete id/EMP-0042`
 **Edit**   | `edit INDEX [n/NAME] [p/PHONE_NUMBER] [e/EMAIL] [a/ADDRESS] [t/TAG]... `<br> e.g.,`edit 2 n/James Lee e/jameslee@example.com`
 **Find**   | `find KEYWORD [MORE_KEYWORDS]`<br> e.g., `find James Jake`
 **List**   | `list`
