@@ -9,15 +9,17 @@
 
 ![Ui](images/Ui.png)
 
+## About HuntR
+
+**HuntR is a desktop app for the sole HR administrator at a small or medium-sized company.** It helps them keep employee records accurate and quickly find the information they need. It is optimised for administrators who prefer typing commands, while still showing results in a graphical interface.
+
+This version (v1.3) provides the core employee-record features: add, list, find, edit and delete employees, with automatic saving. Views of reporting relationships and workforce summaries are planned for later versions.
+
 ## User interface
 
-**HuntR is a desktop app for the sole HR administrator at a small or medium-sized company.** It helps them keep employee records accurate, see how staff relate to each other, such as who reports to whom and who works in which team, and get an overall picture of the workforce. It is optimised for administrators who prefer typing commands, while still showing results in a graphical interface.
+The main window has a menu bar (**File** and **Help**), a command box at the top, a result display below it, and the list of employees underneath. Each employee card shows the employee's ID, name, phone number, email, department and role. The status bar at the bottom shows where the data file is saved.
 
-The UI mockup presents HuntR as a workforce management dashboard. The navigation bar on the left gives users quick access to the Overview, Employees, Teams, and Relationships pages. On the Overview page, summary cards show the total numbers of employees, departments, and follow-ups. Users can search for employees and scan key information such as employee ID, department, role, and reporting manager in the central table.
-
-Selecting an employee displays their profile and reporting relationships in the panel on the right, including their manager, teammates, and direct reports. Users can also add, list, find, or edit employees through the command bar at the bottom; for example, they can type `find Maya Chen` and press <kbd>Enter</kbd>. This combination of visual navigation and keyboard commands helps users understand their workforce at a glance while completing common tasks efficiently.
-
-Employee-specific fields and commands are still under development. The guides describe the current application and its planned development.
+Type a command in the command box and press <kbd>Enter</kbd>. For example, `find John` shows only the employees whose names contain `John`, and `list` shows everyone again.
 
 * If you are interested in using HuntR, head over to the [_Quick Start_ section of the **User Guide**](UserGuide.html#quick-start).
 * If you are interested in developing HuntR, the [**Developer Guide**](DeveloperGuide.html) is a good place to start.
