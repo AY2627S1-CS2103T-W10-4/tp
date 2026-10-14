@@ -1,0 +1,105 @@
+@startuml
+!include style.puml
+skinparam ArrowFontStyle plain
+
+box Logic LOGIC_COLOR_T1
+participant ":LogicManager" as LogicManager LOGIC_COLOR
+participant ":AddressBookParser" as AddressBookParser LOGIC_COLOR
+participant ":EditCommandParser" as EditCommandParser LOGIC_COLOR
+participant "e:EditCommand" as EditCommand LOGIC_COLOR
+participant "r:CommandResult" as CommandResult LOGIC_COLOR
+end box
+
+box Model MODEL_COLOR_T1
+participant "m:Model" as Model MODEL_COLOR
+participant "ab:ReadOnlyAddressBook" as AddressBook MODEL_COLOR
+end box
+
+[-> LogicManager : execute(\n"edit id/E0001 r/Manager")
+activate LogicManager
+
+LogicManager -> AddressBookParser : parseCommand(\n"edit id/E0001 r/Manager")
+activate AddressBookParser
+
+create EditCommandParser
+AddressBookParser -> EditCommandParser
+activate EditCommandParser
+EditCommandParser --> AddressBookParser
+deactivate EditCommandParser
+
+AddressBookParser -> EditCommandParser : parse(" id/E0001 r/Manager")
+activate EditCommandParser
+note right of EditCommandParser
+Validate the ID and role.
+Store the role in an
+EditEmployeeDescriptor.
+end note
+
+create EditCommand
+EditCommandParser -> EditCommand : new EditCommand(\ntargetId, descriptor)
+activate EditCommand
+EditCommand --> EditCommandParser
+deactivate EditCommand
+
+EditCommandParser --> AddressBookParser : e
+deactivate EditCommandParser
+'Hidden arrow to position the destroy marker below the end of the activation bar.
+EditCommandParser -[hidden]-> AddressBookParser
+destroy EditCommandParser
+
+AddressBookParser --> LogicManager : e
+deactivate AddressBookParser
+
+LogicManager -> EditCommand : execute(m)
+activate EditCommand
+
+EditCommand -> Model : getAddressBook()
+activate Model
+Model --> EditCommand : ab
+deactivate Model
+
+EditCommand -> AddressBook : getEmployeeList()
+activate AddressBook
+AddressBook --> EditCommand : employeeList
+deactivate AddressBook
+
+note right of EditCommand
+Find employeeToEdit by case-insensitive ID
+in the full list, including hidden employees.
+end note
+
+EditCommand -> EditCommand : createEditedEmployee(\nemployeeToEdit, descriptor)
+activate EditCommand
+note right of EditCommand
+Keep the stored ID and all omitted fields.
+end note
+EditCommand --> EditCommand : editedEmployee
+deactivate EditCommand
+
+EditCommand -> Model : setEmployee(\nemployeeToEdit, editedEmployee)
+activate Model
+Model --> EditCommand
+deactivate Model
+
+EditCommand -> Model : updateFilteredEmployeeList(\nPREDICATE_SHOW_ALL_EMPLOYEES)
+activate Model
+Model --> EditCommand
+deactivate Model
+
+create CommandResult
+EditCommand -> CommandResult : new CommandResult(\nsuccessMessage)
+activate CommandResult
+CommandResult --> EditCommand
+deactivate CommandResult
+
+EditCommand --> LogicManager : r
+deactivate EditCommand
+
+note over LogicManager
+Save the address book via Storage
+(interactions omitted).
+end note
+
+[<-- LogicManager : r
+deactivate LogicManager
+@enduml
