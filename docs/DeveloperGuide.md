@@ -169,6 +169,34 @@ ID validation uses `ParserUtil.parseEmployeeId` and the existing `EmployeeId` ru
 
 `DeleteCommand` searches `model.getAddressBook().getEmployeeList()` for the matching `EmployeeId`, so a target can be deleted even when hidden by the current filter. It deletes that stored employee and returns all their details. The filter and remaining roster order are preserved. An absent ID produces `No employee with ID X was found.` without usage, where `X` is the entered ID. This command uses the existing saving flow.
 
+### Edit an employee by ID
+
+`EditCommandParser` requires exactly one `id/` parameter and at least one field: `n/`, `p/`, `e/`, `d/` or `r/`. It rejects unknown parameters, a non-empty preamble and repeated prefixes. A missing ID or unexpected preamble produces `Invalid command format.` followed by usage; an ID without any fields produces `At least one field to edit must be provided.`
+
+`ParserUtil` validates the ID and supplied field values, returning the corresponding validation messages for invalid values. The parser stores validated changes in an `EditEmployeeDescriptor`; omitted fields keep their existing values. The ID only selects the employee and cannot be changed.
+
+`EditCommand` searches `model.getAddressBook().getEmployeeList()` using case-insensitive `EmployeeId` equality, so filtered-out employees can be edited. It creates a replacement employee with the stored ID, including its original casing, and calls `model.setEmployee`. It then calls `updateFilteredEmployeeList(PREDICATE_SHOW_ALL_EMPLOYEES)` to show the full roster and returns `Edited employee: ` followed by the updated details. An unknown ID produces `No employee with ID X was found.` without usage, where `X` is the entered ID. Successful edits use the existing saving flow.
+
+The sequence diagram below shows a successful `edit id/E0001 r/Manager`, adapted from the delete sequence diagram in the Logic component section. It focuses on parsing and model updates; `LogicManager` saves the address book before returning the result, as usual.
+
+<puml src="diagrams/EditSequenceDiagram.puml" alt="Interactions for editing an employee by ID" />
+
+### Find employees by name
+
+`FindCommandParser` trims the arguments and splits them into keywords on whitespace using `split("\\s+")`. Empty or whitespace-only arguments produce `Invalid command format.` followed by the command usage. Otherwise, it creates a `NameContainsKeywordsPredicate` and passes it to `FindCommand`.
+
+`NameContainsKeywordsPredicate` uses `StringUtil.containsWordIgnoreCase` to match any keyword against a full, whitespace-separated word in the employee's name. Matching is case-insensitive and uses OR semantics: `find alex david` matches either name, while `find al` does not match `Alex`. It does not search employee IDs or other fields.
+
+`FindCommand` calls `model.updateFilteredEmployeeList(predicate)` to replace the current filter over the full employee list, without changing employee records. It returns the filtered list's size through `Messages.getEmployeesListedOverview`, using `1 employee listed!` or `N employees listed!`. No matches is a successful search returning `0 employees listed!`.
+
+### Duplicate employee detection
+
+`Employee#isSameEmployee` compares employee IDs only, using case-insensitive `EmployeeId` equality. Employees with IDs `E0001` and `e0001` are duplicates even if their other details differ. Matching names or contact details with different IDs do not make employees duplicates; `Employee#equals` separately compares all fields.
+
+`UniqueEmployeeList` enforces this identity rule when adding employees, replacing an employee or replacing the whole list. An operation that would introduce duplicate IDs throws `DuplicateEmployeeException`. `AddCommand` first calls `model.hasEmployee(toAdd)`, which checks the full address book through `UniqueEmployeeList`. A duplicate produces `An employee with Employee ID X already exists.`, where `X` is the supplied ID, without adding the employee. Otherwise, it calls `model.addEmployee`; a same or similar name only adds a warning to the success message.
+
+When loading JSON, `JsonSerializableAddressBook#toModelType` converts and validates each stored employee, then checks `addressBook.hasEmployee` before adding it. Duplicate IDs, including IDs differing only in case, cause an `IllegalValueException` with `Employees list contains duplicate employee(s).`, rejecting the data file rather than returning a partially loaded address book.
+
 ### \[Proposed\] Undo/redo feature
 
 #### Proposed Implementation
