@@ -20,6 +20,9 @@ public class FindCommand extends Command {
             + "Parameters: KEYWORD [MORE_KEYWORDS]\n"
             + "Example: " + COMMAND_WORD + " John Joe";
 
+    public static final String MESSAGE_KEYWORD_CONSTRAINTS = "Keywords should start with a letter or digit and may "
+            + "only contain letters, digits and the symbols ' . , / -.";
+
     private final NameContainsKeywordsPredicate predicate;
 
     public FindCommand(NameContainsKeywordsPredicate predicate) {

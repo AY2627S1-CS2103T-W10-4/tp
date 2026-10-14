@@ -183,7 +183,7 @@ The sequence diagram below shows a successful `edit id/E0001 r/Manager`, adapted
 
 ### Find employees by name
 
-`FindCommandParser` trims the arguments and splits them into keywords on whitespace using `split("\\s+")`. Empty or whitespace-only arguments produce `Invalid command format.` followed by the command usage. Otherwise, it creates a `NameContainsKeywordsPredicate` and passes it to `FindCommand`.
+`FindCommandParser` trims the arguments and splits them into keywords on whitespace using `split("\\s+")`. Empty or whitespace-only arguments, and arguments beginning with `/`, produce `Invalid command format.` followed by the command usage. Each keyword is then checked against the existing `Name` validation rules; an invalid keyword produces the keyword validation error. Otherwise, the parser creates a `NameContainsKeywordsPredicate` and passes it to `FindCommand`.
 
 `NameContainsKeywordsPredicate` uses `StringUtil.containsWordIgnoreCase` to match any keyword against a full, whitespace-separated word in the employee's name. Matching is case-insensitive and uses OR semantics: `find alex david` matches either name, while `find al` does not match `Alex`. It does not search employee IDs or other fields.
 

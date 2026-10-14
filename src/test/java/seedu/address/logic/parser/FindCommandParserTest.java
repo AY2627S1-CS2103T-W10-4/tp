@@ -21,6 +21,19 @@ public class FindCommandParserTest {
     }
 
     @Test
+    public void parse_invalidKeyword_throwsParseException() {
+        assertParseFailure(parser, "@@@", FindCommand.MESSAGE_KEYWORD_CONSTRAINTS);
+        assertParseFailure(parser, "John valid!", FindCommand.MESSAGE_KEYWORD_CONSTRAINTS);
+    }
+
+    @Test
+    public void parse_unexpectedCommandFormat_throwsParseException() {
+        String expectedMessage = String.format(MESSAGE_INVALID_COMMAND_FORMAT, FindCommand.MESSAGE_USAGE);
+        assertParseFailure(parser, "/John", expectedMessage);
+        assertParseFailure(parser, "Alice /John", expectedMessage);
+    }
+
+    @Test
     public void parse_validArgs_returnsFindCommand() {
         // no leading and trailing whitespaces
         FindCommand expectedFindCommand =
@@ -35,11 +48,11 @@ public class FindCommandParserTest {
                 new FindCommand(new NameContainsKeywordsPredicate(List.of("Alice2", "3Bob")));
         assertParseSuccess(parser, "Alice2 3Bob", expectedAlphanumericFindCommand);
 
-        // keywords containing punctuation and symbols
+        // keywords containing punctuation permitted in names
         FindCommand expectedSymbolsFindCommand =
                 new FindCommand(new NameContainsKeywordsPredicate(
-                        List.of("@@@", "/John", "John!", "s/o", "d/o", "O'Brien")));
-        assertParseSuccess(parser, "@@@ /John John! s/o d/o O'Brien", expectedSymbolsFindCommand);
+                        List.of("Mary-Ann", "John.", "s/o", "d/o", "O'Brien")));
+        assertParseSuccess(parser, "Mary-Ann John. s/o d/o O'Brien", expectedSymbolsFindCommand);
     }
 
 }
