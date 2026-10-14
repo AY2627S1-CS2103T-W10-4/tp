@@ -8,7 +8,7 @@ import seedu.address.model.Model;
 import seedu.address.model.employee.NameContainsKeywordsPredicate;
 
 /**
- * Finds and lists all employees in the address book whose name contains any of the argument keywords.
+ * Finds and lists all employees whose name contains any of the argument keywords.
  * Keyword matching is case insensitive.
  */
 public class FindCommand extends Command {
@@ -19,6 +19,9 @@ public class FindCommand extends Command {
             + "the specified keywords (case-insensitive) and displays them as a list with index numbers.\n"
             + "Parameters: KEYWORD [MORE_KEYWORDS]\n"
             + "Example: " + COMMAND_WORD + " John Joe";
+
+    public static final String MESSAGE_KEYWORD_CONSTRAINTS = "Keywords should start with a letter or digit and may "
+            + "only contain letters, digits and the symbols ' . , / -.";
 
     private final NameContainsKeywordsPredicate predicate;
 
