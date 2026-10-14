@@ -17,7 +17,7 @@ import seedu.address.model.employee.Role;
 
 public class ParserUtilTest {
     private static final String INVALID_NAME = "R@chel";
-    private static final String INVALID_PHONE = "+651234";
+    private static final String INVALID_PHONE = "911a";
     private static final String INVALID_EMPLOYEE_ID = "E 01";
     private static final String INVALID_DEPARTMENT = " ";
     private static final String INVALID_ROLE = " ";
@@ -211,5 +211,72 @@ public class ParserUtilTest {
         String emailWithWhitespace = WHITESPACE + VALID_EMAIL + WHITESPACE;
         Email expectedEmail = new Email(VALID_EMAIL);
         assertEquals(expectedEmail, ParserUtil.parseEmail(emailWithWhitespace));
+    }
+
+    @Test
+    public void parseName_extraSpaces_collapsedToSingleSpaces() throws Exception {
+        assertEquals(new Name("Rachel Walker"), ParserUtil.parseName("  Rachel     Walker  "));
+    }
+
+    @Test
+    public void parseName_relationWordsAndPunctuation_accepted() throws Exception {
+        assertEquals("Ravi s/o Kumar", ParserUtil.parseName("Ravi s/o Kumar").fullName);
+        assertEquals("Nur Aisha d/o Ali", ParserUtil.parseName("Nur Aisha d/o Ali").fullName);
+        assertEquals("Mary-Ann O'Brien", ParserUtil.parseName("Mary-Ann O'Brien").fullName);
+    }
+
+    @Test
+    public void parseName_blankAndInvalid_giveDifferentMessages() {
+        assertThrows(ParseException.class, Name.MESSAGE_BLANK, () -> ParserUtil.parseName("   "));
+        assertThrows(ParseException.class, Name.MESSAGE_CONSTRAINTS, () -> ParserUtil.parseName("James&"));
+    }
+
+    @Test
+    public void parsePhone_variousLayouts_accepted() throws Exception {
+        assertEquals("9123 4567 (HP)", ParserUtil.parsePhone("  9123 4567 (HP) ").value);
+        assertEquals("+65 6123-4567", ParserUtil.parsePhone("+65 6123-4567").value);
+    }
+
+    @Test
+    public void parsePhone_veryLongInput_doesNotOverflowTheStack() throws Exception {
+        String longPhone = "1".repeat(10000);
+        assertEquals(longPhone, ParserUtil.parsePhone(longPhone).value);
+        assertThrows(ParseException.class, Phone.MESSAGE_CONSTRAINTS, () ->
+                ParserUtil.parsePhone(longPhone + "x"));
+    }
+
+    @Test
+    public void parseName_decomposedAccent_returnsStandardForm() throws Exception {
+        assertEquals("Jos\u00e9", ParserUtil.parseName("Jose\u0301").fullName);
+        assertEquals("\u0BAE\u0BA4\u0BA9\u0BCD", ParserUtil.parseName("\u0BAE\u0BA4\u0BA9\u0BCD").fullName);
+    }
+
+    @Test
+    public void parsePhone_blankTooFewDigitsAndInvalid_giveDifferentMessages() {
+        assertThrows(ParseException.class, Phone.MESSAGE_BLANK, () -> ParserUtil.parsePhone("  "));
+        assertThrows(ParseException.class, Phone.MESSAGE_TOO_FEW_DIGITS, () -> ParserUtil.parsePhone("12"));
+        assertThrows(ParseException.class, Phone.MESSAGE_CONSTRAINTS, () -> ParserUtil.parsePhone("hello"));
+    }
+
+    @Test
+    public void parseEmployeeId_blankTooLongAndInvalid_giveDifferentMessages() {
+        assertThrows(ParseException.class, ParserUtil.MESSAGE_BLANK_EMPLOYEE_ID, () ->
+                ParserUtil.parseEmployeeId("  "));
+        assertThrows(ParseException.class, ParserUtil.MESSAGE_EMPLOYEE_ID_TOO_LONG, () ->
+                ParserUtil.parseEmployeeId("E".repeat(21)));
+        assertThrows(ParseException.class, EmployeeId.MESSAGE_CONSTRAINTS, () ->
+                ParserUtil.parseEmployeeId("E 01"));
+    }
+
+    @Test
+    public void parseDepartmentAndRole_blankTooLongAndInvalid_giveDifferentMessages() {
+        assertThrows(ParseException.class, Department.MESSAGE_BLANK, () -> ParserUtil.parseDepartment(" "));
+        assertThrows(ParseException.class, Department.MESSAGE_TOO_LONG, () ->
+                ParserUtil.parseDepartment("D".repeat(101)));
+        assertThrows(ParseException.class, Department.MESSAGE_CONSTRAINTS, () -> ParserUtil.parseDepartment("@@@"));
+
+        assertThrows(ParseException.class, Role.MESSAGE_BLANK, () -> ParserUtil.parseRole(" "));
+        assertThrows(ParseException.class, Role.MESSAGE_TOO_LONG, () -> ParserUtil.parseRole("R".repeat(101)));
+        assertThrows(ParseException.class, Role.MESSAGE_CONSTRAINTS, () -> ParserUtil.parseRole("###"));
     }
 }

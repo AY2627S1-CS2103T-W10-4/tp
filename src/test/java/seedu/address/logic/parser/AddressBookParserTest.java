@@ -4,8 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.logic.Messages.MESSAGE_INVALID_COMMAND_FORMAT;
 import static seedu.address.logic.Messages.MESSAGE_UNKNOWN_COMMAND;
+import static seedu.address.logic.parser.CliSyntax.PREFIX_ID;
 import static seedu.address.testutil.Assert.assertThrows;
-import static seedu.address.testutil.TypicalIndexes.INDEX_FIRST_EMPLOYEE;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -64,8 +64,8 @@ public class AddressBookParserTest {
         Employee employee = new EmployeeBuilder().build();
         EditEmployeeDescriptor descriptor = new EditEmployeeDescriptorBuilder(employee).build();
         EditCommand command = (EditCommand) parser.parseCommand(EditCommand.COMMAND_WORD + " "
-                + INDEX_FIRST_EMPLOYEE.getOneBased() + " " + EmployeeUtil.getEditEmployeeDescriptorDetails(descriptor));
-        assertEquals(new EditCommand(INDEX_FIRST_EMPLOYEE, descriptor), command);
+                + PREFIX_ID + employee.getId().value + " " + EmployeeUtil.getEditEmployeeDescriptorDetails(descriptor));
+        assertEquals(new EditCommand(employee.getId(), descriptor), command);
     }
 
     @Test
@@ -99,7 +99,18 @@ public class AddressBookParserTest {
     @Test
     public void parseCommand_list() throws Exception {
         assertTrue(parser.parseCommand(ListCommand.COMMAND_WORD) instanceof ListCommand);
-        assertTrue(parser.parseCommand(ListCommand.COMMAND_WORD + " 3") instanceof ListCommand);
+        assertTrue(parser.parseCommand("  " + ListCommand.COMMAND_WORD + "  ") instanceof ListCommand);
+    }
+
+    @Test
+    public void parseCommand_listWithArguments_throwsParseException() {
+        String expectedMessage = String.format(MESSAGE_INVALID_COMMAND_FORMAT, ListCommand.MESSAGE_USAGE);
+        assertThrows(ParseException.class, expectedMessage, () ->
+                parser.parseCommand(ListCommand.COMMAND_WORD + " employee"));
+        assertThrows(ParseException.class, expectedMessage, () ->
+                parser.parseCommand(ListCommand.COMMAND_WORD + " 1"));
+        assertThrows(ParseException.class, expectedMessage, () ->
+                parser.parseCommand(ListCommand.COMMAND_WORD + " d/Engineering"));
     }
 
     @Test
@@ -110,6 +121,11 @@ public class AddressBookParserTest {
 
     @Test
     public void parseCommand_unknownCommand_throwsParseException() {
-        assertThrows(ParseException.class, MESSAGE_UNKNOWN_COMMAND, () -> parser.parseCommand("unknownCommand"));
+        String unknownCommand = "unknownCommand";
+        String unknownCommandMessage = String.format(MESSAGE_UNKNOWN_COMMAND, unknownCommand);
+        String uppercaseCommandMessage = String.format(MESSAGE_UNKNOWN_COMMAND, "LIST");
+
+        assertThrows(ParseException.class, unknownCommandMessage, () -> parser.parseCommand(unknownCommand));
+        assertThrows(ParseException.class, uppercaseCommandMessage, () -> parser.parseCommand("LIST"));
     }
 }

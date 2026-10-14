@@ -18,7 +18,7 @@ import seedu.address.model.employee.Role;
 public class JsonAdaptedEmployeeTest {
     private static final String INVALID_ID = "E 01";
     private static final String INVALID_NAME = "R@chel";
-    private static final String INVALID_PHONE = "+651234";
+    private static final String INVALID_PHONE = "911a";
     private static final String INVALID_EMAIL = "example.com";
     private static final String INVALID_DEPARTMENT = " ";
     private static final String INVALID_ROLE = " ";

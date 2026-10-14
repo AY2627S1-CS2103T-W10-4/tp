@@ -175,11 +175,11 @@ public class AddCommandParserTest {
 
         // invalid department
         assertParseFailure(parser, ID_DESC_BOB + NAME_DESC_BOB + PHONE_DESC_BOB + EMAIL_DESC_BOB
-                + INVALID_DEPARTMENT_DESC + ROLE_DESC_BOB, Department.MESSAGE_CONSTRAINTS);
+                + INVALID_DEPARTMENT_DESC + ROLE_DESC_BOB, Department.MESSAGE_BLANK);
 
         // invalid role
         assertParseFailure(parser, ID_DESC_BOB + NAME_DESC_BOB + PHONE_DESC_BOB + EMAIL_DESC_BOB
-                + DEPARTMENT_DESC_BOB + INVALID_ROLE_DESC, Role.MESSAGE_CONSTRAINTS);
+                + DEPARTMENT_DESC_BOB + INVALID_ROLE_DESC, Role.MESSAGE_BLANK);
 
         // two invalid values, only first invalid value reported
         assertParseFailure(parser, ID_DESC_BOB + INVALID_NAME_DESC + PHONE_DESC_BOB + EMAIL_DESC_BOB
@@ -188,5 +188,119 @@ public class AddCommandParserTest {
         // non-empty preamble
         assertParseFailure(parser, PREAMBLE_NON_EMPTY + REQUIRED_FIELDS_BOB,
                 String.format(MESSAGE_INVALID_COMMAND_FORMAT, AddCommand.MESSAGE_USAGE));
+    }
+
+    @Test
+    public void parse_nameWithRelationWords_success() {
+        String rest = PHONE_DESC_BOB + EMAIL_DESC_BOB + DEPARTMENT_DESC_BOB + ROLE_DESC_BOB;
+
+        // s/o
+        assertParseSuccess(parser, ID_DESC_BOB + " n/Ravi s/o Kumar" + rest,
+                new AddCommand(new EmployeeBuilder(BOB).withName("Ravi s/o Kumar").build()));
+
+        // d/o, which looks like the department prefix but is part of the name
+        assertParseSuccess(parser, ID_DESC_BOB + " n/Nur Aisha d/o Ali" + rest,
+                new AddCommand(new EmployeeBuilder(BOB).withName("Nur Aisha d/o Ali").build()));
+
+        // d/o in the name and the real department prefix afterwards
+        assertParseSuccess(parser, " n/Nur Aisha d/o Ali" + ID_DESC_BOB + PHONE_DESC_BOB + EMAIL_DESC_BOB
+                + ROLE_DESC_BOB + DEPARTMENT_DESC_BOB,
+                new AddCommand(new EmployeeBuilder(BOB).withName("Nur Aisha d/o Ali").build()));
+
+        // upper case, and a/l
+        assertParseSuccess(parser, ID_DESC_BOB + " n/Siti D/O Hassan" + rest,
+                new AddCommand(new EmployeeBuilder(BOB).withName("Siti D/O Hassan").build()));
+        assertParseSuccess(parser, ID_DESC_BOB + " n/Ravi a/l Kumar" + rest,
+                new AddCommand(new EmployeeBuilder(BOB).withName("Ravi a/l Kumar").build()));
+    }
+
+    @Test
+    public void parse_departmentStartingWithRelationWord_notTreatedAsName() {
+        // "d/O & G" comes after other fields, so it is the department "O & G" and not part of the name
+        Employee expected = new EmployeeBuilder(BOB).withName("Alice").withDepartment("O & G")
+                .withRole("Engineer").build();
+        assertParseSuccess(parser, ID_DESC_BOB + " n/Alice" + PHONE_DESC_BOB + EMAIL_DESC_BOB
+                + " d/O & G" + " r/Engineer", new AddCommand(expected));
+
+        // the same with the department typed before the name
+        assertParseSuccess(parser, ID_DESC_BOB + " d/O & G" + " n/Alice" + PHONE_DESC_BOB + EMAIL_DESC_BOB
+                + " r/Engineer", new AddCommand(expected));
+
+        // a relation word in the name is still part of the name, followed by a department that starts with "o"
+        Employee expectedWithRelation = new EmployeeBuilder(BOB).withName("Nur Aisha d/o Ali")
+                .withDepartment("O & G").withRole("Engineer").build();
+        assertParseSuccess(parser, ID_DESC_BOB + " n/Nur Aisha d/o Ali" + PHONE_DESC_BOB + EMAIL_DESC_BOB
+                + " d/O & G" + " r/Engineer", new AddCommand(expectedWithRelation));
+    }
+
+    @Test
+    public void parse_relationWordOutsideName_failure() {
+        // "s/o" is only accepted inside the name, so elsewhere it is an unknown parameter
+        assertParseFailure(parser, REQUIRED_FIELDS_BOB + " s/o", unknownParameterMessage("s/"));
+    }
+
+    @Test
+    public void parse_extraSpacesInName_collapsed() {
+        assertParseSuccess(parser, ID_DESC_BOB + " n/  Bob     Choo  " + PHONE_DESC_BOB + EMAIL_DESC_BOB
+                + DEPARTMENT_DESC_BOB + ROLE_DESC_BOB, new AddCommand(new EmployeeBuilder(BOB).build()));
+    }
+
+    @Test
+    public void parse_lenientPhoneAndPunctuationInFields_success() {
+        Employee expected = new EmployeeBuilder(BOB).withPhone("9123 4567 (HP) 1111-3333 (Office)")
+                .withDepartment("R&D").withRole("Software Engineer (Backend)").build();
+        assertParseSuccess(parser, ID_DESC_BOB + NAME_DESC_BOB + " p/9123 4567 (HP) 1111-3333 (Office)"
+                + EMAIL_DESC_BOB + " d/R&D" + " r/Software Engineer (Backend)", new AddCommand(expected));
+    }
+
+    @Test
+    public void parse_unknownParameter_failure() {
+        // an extra parameter
+        assertParseFailure(parser, REQUIRED_FIELDS_BOB + " x/foo", unknownParameterMessage("x/"));
+
+        // tags are not part of HuntR
+        assertParseFailure(parser, REQUIRED_FIELDS_BOB + " t/friends", unknownParameterMessage("t/"));
+
+        // prefixes are case sensitive
+        assertParseFailure(parser, " ID/E5" + NAME_DESC_BOB + PHONE_DESC_BOB + EMAIL_DESC_BOB
+                + DEPARTMENT_DESC_BOB + ROLE_DESC_BOB, unknownParameterMessage("ID/"));
+    }
+
+    @Test
+    public void parse_blankValues_failure() {
+        assertParseFailure(parser, " id/" + NAME_DESC_BOB + PHONE_DESC_BOB + EMAIL_DESC_BOB
+                + DEPARTMENT_DESC_BOB + ROLE_DESC_BOB, ParserUtil.MESSAGE_BLANK_EMPLOYEE_ID);
+        assertParseFailure(parser, ID_DESC_BOB + " n/" + PHONE_DESC_BOB + EMAIL_DESC_BOB
+                + DEPARTMENT_DESC_BOB + ROLE_DESC_BOB, Name.MESSAGE_BLANK);
+        assertParseFailure(parser, ID_DESC_BOB + NAME_DESC_BOB + " p/" + EMAIL_DESC_BOB
+                + DEPARTMENT_DESC_BOB + ROLE_DESC_BOB, Phone.MESSAGE_BLANK);
+    }
+
+    @Test
+    public void parse_specificErrorMessages_failure() {
+        // phone with too few digits is reported differently from a phone with invalid characters
+        assertParseFailure(parser, ID_DESC_BOB + NAME_DESC_BOB + " p/12" + EMAIL_DESC_BOB
+                + DEPARTMENT_DESC_BOB + ROLE_DESC_BOB, Phone.MESSAGE_TOO_FEW_DIGITS);
+        assertParseFailure(parser, ID_DESC_BOB + NAME_DESC_BOB + INVALID_PHONE_DESC + EMAIL_DESC_BOB
+                + DEPARTMENT_DESC_BOB + ROLE_DESC_BOB, Phone.MESSAGE_CONSTRAINTS);
+
+        // ID that is too long is reported differently from an ID with invalid characters
+        assertParseFailure(parser, " id/" + "E".repeat(21) + NAME_DESC_BOB + PHONE_DESC_BOB + EMAIL_DESC_BOB
+                + DEPARTMENT_DESC_BOB + ROLE_DESC_BOB, ParserUtil.MESSAGE_EMPLOYEE_ID_TOO_LONG);
+
+        // department and role: too long, and invalid characters
+        assertParseFailure(parser, ID_DESC_BOB + NAME_DESC_BOB + PHONE_DESC_BOB + EMAIL_DESC_BOB
+                + " d/" + "D".repeat(101) + ROLE_DESC_BOB, Department.MESSAGE_TOO_LONG);
+        assertParseFailure(parser, ID_DESC_BOB + NAME_DESC_BOB + PHONE_DESC_BOB + EMAIL_DESC_BOB
+                + " d/@@@" + ROLE_DESC_BOB, Department.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, ID_DESC_BOB + NAME_DESC_BOB + PHONE_DESC_BOB + EMAIL_DESC_BOB
+                + DEPARTMENT_DESC_BOB + " r/" + "R".repeat(101), Role.MESSAGE_TOO_LONG);
+        assertParseFailure(parser, ID_DESC_BOB + NAME_DESC_BOB + PHONE_DESC_BOB + EMAIL_DESC_BOB
+                + DEPARTMENT_DESC_BOB + " r/###", Role.MESSAGE_CONSTRAINTS);
+    }
+
+    private static String unknownParameterMessage(String parameter) {
+        return String.format(MESSAGE_INVALID_COMMAND_FORMAT,
+                "Unknown parameter: " + parameter + "\n" + AddCommand.MESSAGE_USAGE);
     }
 }

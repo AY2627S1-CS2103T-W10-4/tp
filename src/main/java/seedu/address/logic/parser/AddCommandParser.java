@@ -31,7 +31,11 @@ public class AddCommandParser implements Parser<AddCommand> {
      * @throws ParseException if the user input does not conform to the expected format
      */
     public AddCommand parse(String args) throws ParseException {
-        ArgumentMultimap argMultimap = ArgumentTokenizer.tokenize(args,
+        String hiddenArgs = ArgumentPreprocessor.hideNameRelationWords(args);
+        ArgumentPreprocessor.rejectUnknownParameters(hiddenArgs, AddCommand.MESSAGE_USAGE,
+                PREFIX_ID, PREFIX_NAME, PREFIX_PHONE, PREFIX_EMAIL, PREFIX_DEPARTMENT, PREFIX_ROLE);
+
+        ArgumentMultimap argMultimap = ArgumentTokenizer.tokenize(hiddenArgs,
                 PREFIX_ID, PREFIX_NAME, PREFIX_PHONE, PREFIX_EMAIL, PREFIX_DEPARTMENT, PREFIX_ROLE);
 
         if (!arePrefixesPresent(argMultimap,
@@ -42,16 +46,24 @@ public class AddCommandParser implements Parser<AddCommand> {
 
         argMultimap.verifyNoDuplicatePrefixesFor(
                 PREFIX_ID, PREFIX_NAME, PREFIX_PHONE, PREFIX_EMAIL, PREFIX_DEPARTMENT, PREFIX_ROLE);
-        EmployeeId id = ParserUtil.parseEmployeeId(argMultimap.getValue(PREFIX_ID).get());
-        Name name = ParserUtil.parseName(argMultimap.getValue(PREFIX_NAME).get());
-        Phone phone = ParserUtil.parsePhone(argMultimap.getValue(PREFIX_PHONE).get());
-        Email email = ParserUtil.parseEmail(argMultimap.getValue(PREFIX_EMAIL).get());
-        Department department = ParserUtil.parseDepartment(argMultimap.getValue(PREFIX_DEPARTMENT).get());
-        Role role = ParserUtil.parseRole(argMultimap.getValue(PREFIX_ROLE).get());
+        EmployeeId id = ParserUtil.parseEmployeeId(valueOf(argMultimap, PREFIX_ID));
+        Name name = ParserUtil.parseName(valueOf(argMultimap, PREFIX_NAME));
+        Phone phone = ParserUtil.parsePhone(valueOf(argMultimap, PREFIX_PHONE));
+        Email email = ParserUtil.parseEmail(valueOf(argMultimap, PREFIX_EMAIL));
+        Department department = ParserUtil.parseDepartment(valueOf(argMultimap, PREFIX_DEPARTMENT));
+        Role role = ParserUtil.parseRole(valueOf(argMultimap, PREFIX_ROLE));
 
         Employee employee = new Employee(id, name, phone, email, department, role);
 
         return new AddCommand(employee);
+    }
+
+    /**
+     * Returns the value given for {@code prefix}, with any hidden slashes restored.
+     * The prefix must be present.
+     */
+    private static String valueOf(ArgumentMultimap argMultimap, Prefix prefix) {
+        return ArgumentPreprocessor.restoreHiddenSlashes(argMultimap.getValue(prefix).get());
     }
 
     /**

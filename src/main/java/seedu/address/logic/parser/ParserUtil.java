@@ -18,6 +18,11 @@ import seedu.address.model.employee.Role;
 public class ParserUtil {
 
     public static final String MESSAGE_INVALID_INDEX = "Index must be a positive integer.";
+    /** Maximum length of an employee ID; see {@link EmployeeId#VALIDATION_REGEX}. */
+    public static final int EMPLOYEE_ID_MAX_LENGTH = 20;
+    public static final String MESSAGE_BLANK_EMPLOYEE_ID = "Employee ID should not be blank.";
+    public static final String MESSAGE_EMPLOYEE_ID_TOO_LONG = "Employee ID should be at most "
+            + EMPLOYEE_ID_MAX_LENGTH + " characters long.";
 
     /**
      * Parses {@code oneBasedIndex} into an {@code Index} and returns it. Leading and trailing whitespaces will be
@@ -40,11 +45,14 @@ public class ParserUtil {
      */
     public static Name parseName(String name) throws ParseException {
         requireNonNull(name);
-        String trimmedName = name.trim();
-        if (!Name.isValidName(trimmedName)) {
+        String normalisedName = Name.normalise(name);
+        if (normalisedName.isEmpty()) {
+            throw new ParseException(Name.MESSAGE_BLANK);
+        }
+        if (!Name.isValidName(normalisedName)) {
             throw new ParseException(Name.MESSAGE_CONSTRAINTS);
         }
-        return new Name(trimmedName);
+        return new Name(normalisedName);
     }
 
     /**
@@ -56,8 +64,14 @@ public class ParserUtil {
     public static Phone parsePhone(String phone) throws ParseException {
         requireNonNull(phone);
         String trimmedPhone = phone.trim();
-        if (!Phone.isValidPhone(trimmedPhone)) {
+        if (trimmedPhone.isEmpty()) {
+            throw new ParseException(Phone.MESSAGE_BLANK);
+        }
+        if (!Phone.hasValidLayout(trimmedPhone)) {
             throw new ParseException(Phone.MESSAGE_CONSTRAINTS);
+        }
+        if (!Phone.isValidPhone(trimmedPhone)) {
+            throw new ParseException(Phone.MESSAGE_TOO_FEW_DIGITS);
         }
         return new Phone(trimmedPhone);
     }
@@ -71,8 +85,13 @@ public class ParserUtil {
     public static EmployeeId parseEmployeeId(String employeeId) throws ParseException {
         requireNonNull(employeeId);
         String trimmedEmployeeId = employeeId.trim();
+        if (trimmedEmployeeId.isEmpty()) {
+            throw new ParseException(MESSAGE_BLANK_EMPLOYEE_ID);
+        }
         if (!EmployeeId.isValidEmployeeId(trimmedEmployeeId)) {
-            throw new ParseException(EmployeeId.MESSAGE_CONSTRAINTS);
+            boolean onlyTooLong = trimmedEmployeeId.length() > EMPLOYEE_ID_MAX_LENGTH
+                    && EmployeeId.isValidEmployeeId(trimmedEmployeeId.substring(0, EMPLOYEE_ID_MAX_LENGTH));
+            throw new ParseException(onlyTooLong ? MESSAGE_EMPLOYEE_ID_TOO_LONG : EmployeeId.MESSAGE_CONSTRAINTS);
         }
         return new EmployeeId(trimmedEmployeeId);
     }
@@ -86,8 +105,13 @@ public class ParserUtil {
     public static Department parseDepartment(String department) throws ParseException {
         requireNonNull(department);
         String trimmedDepartment = department.trim();
+        if (trimmedDepartment.isEmpty()) {
+            throw new ParseException(Department.MESSAGE_BLANK);
+        }
         if (!Department.isValidDepartment(trimmedDepartment)) {
-            throw new ParseException(Department.MESSAGE_CONSTRAINTS);
+            boolean onlyTooLong = trimmedDepartment.length() > Department.MAX_LENGTH
+                    && Department.isValidDepartment(trimmedDepartment.substring(0, Department.MAX_LENGTH));
+            throw new ParseException(onlyTooLong ? Department.MESSAGE_TOO_LONG : Department.MESSAGE_CONSTRAINTS);
         }
         return new Department(trimmedDepartment);
     }
@@ -101,8 +125,13 @@ public class ParserUtil {
     public static Role parseRole(String role) throws ParseException {
         requireNonNull(role);
         String trimmedRole = role.trim();
+        if (trimmedRole.isEmpty()) {
+            throw new ParseException(Role.MESSAGE_BLANK);
+        }
         if (!Role.isValidRole(trimmedRole)) {
-            throw new ParseException(Role.MESSAGE_CONSTRAINTS);
+            boolean onlyTooLong = trimmedRole.length() > Role.MAX_LENGTH
+                    && Role.isValidRole(trimmedRole.substring(0, Role.MAX_LENGTH));
+            throw new ParseException(onlyTooLong ? Role.MESSAGE_TOO_LONG : Role.MESSAGE_CONSTRAINTS);
         }
         return new Role(trimmedRole);
     }

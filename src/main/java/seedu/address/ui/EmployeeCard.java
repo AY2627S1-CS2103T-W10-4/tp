@@ -48,10 +48,10 @@ public class EmployeeCard extends UiPart<Region> {
         this.employee = employee;
         id.setText(displayedIndex + ". ");
         name.setText(employee.getName().fullName);
-        phone.setText(employee.getPhone().value);
+        phone.setText("Phone: " + employee.getPhone().value);
         employeeId.setText("ID: " + employee.getId().value);
-        email.setText(employee.getEmail().value);
-        department.setText(employee.getDepartment().value);
-        role.setText(employee.getRole().value);
+        email.setText("Email: " + employee.getEmail().value);
+        department.setText("Department: " + employee.getDepartment().value);
+        role.setText("Role: " + employee.getRole().value);
     }
 }

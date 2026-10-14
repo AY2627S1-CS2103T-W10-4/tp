@@ -81,12 +81,17 @@ public class DeleteCommandParserTest {
     @Test
     public void parse_invalidIdFormat_throwsConstraintMessage() {
         String[] invalidIds = {"EMP 0042", "EMP\t0042", "EMP\n0042", "EMP/0042", "EMP@0042", "EMP.0042",
-            "EMP+0042", "A".repeat(21), "E0001 extra"};
+            "EMP+0042", "E0001 extra"};
         String expectedMessage = withUsage("Employee ID should be 1 to 20 characters long and contain only "
                 + "letters, digits, hyphens and underscores.");
         for (String id : invalidIds) {
             assertParseFailure(parser, " id/" + id, expectedMessage);
         }
+    }
+
+    @Test
+    public void parse_tooLongId_throwsTooLongMessage() {
+        assertParseFailure(parser, " id/" + "A".repeat(21), withUsage(ParserUtil.MESSAGE_EMPLOYEE_ID_TOO_LONG));
     }
 
     private String withUsage(String message) {

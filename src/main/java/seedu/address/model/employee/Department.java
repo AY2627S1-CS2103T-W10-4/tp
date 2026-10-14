@@ -9,6 +9,12 @@ import static seedu.address.commons.util.AppUtil.checkArgument;
  */
 public class Department {
 
+    public static final int MAX_LENGTH = 100;
+
+    public static final String MESSAGE_BLANK = "Department should not be blank.";
+
+    public static final String MESSAGE_TOO_LONG = "Department should be at most " + MAX_LENGTH + " characters long.";
+
     public static final String MESSAGE_CONSTRAINTS =
             "Department should not be blank, should start with a letter or digit, and may contain only letters, "
                     + "digits, spaces and the symbols & ' ( ) , . - (up to 100 characters).";
