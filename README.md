@@ -4,19 +4,23 @@
 
 ![Ui](docs/images/Ui.png)
 
+## About HuntR
+
+HuntR is a desktop app for the sole HR administrator at a small or medium-sized company. It helps them keep employee records accurate and quickly find the information they need. It is optimised for administrators who prefer typing commands, while still showing results in a graphical interface.
+
+This version (v1.3) provides the core employee-record features listed below. Views of reporting relationships and workforce summaries are planned for later versions.
+
 ## User interface
 
-HuntR is a desktop app for the sole HR administrator at a small or medium-sized company. It helps them keep employee records accurate, see how staff relate to each other, such as who reports to whom and who works in which team, and get an overall picture of the workforce. It is optimised for administrators who prefer typing commands, while still showing results in a graphical interface.
+The main window has a menu bar (**File** and **Help**), a command box at the top, a result display below it, and the list of employees underneath. Each employee card shows the employee's ID, name, phone number, email, department and role. The status bar at the bottom shows where the data file is saved.
 
-The UI mockup presents HuntR as a workforce management dashboard. The navigation bar on the left gives users quick access to the Overview, Employees, Teams, and Relationships pages. On the Overview page, summary cards show the total numbers of employees, departments, and follow-ups. Users can search for employees and scan key information such as employee ID, department, role, and reporting manager in the central table.
+Type a command in the command box and press <kbd>Enter</kbd>. For example, `find John` shows only the employees whose names contain the word `John`, and `list` shows everyone again.
 
-Selecting an employee displays their profile and reporting relationships in the panel on the right, including their manager, teammates, and direct reports. Users can also add, list, find, or edit employees through the command bar at the bottom; for example, they can type `find Maya Chen` and press <kbd>Enter</kbd>. This combination of visual navigation and keyboard commands helps users understand their workforce at a glance while completing common tasks efficiently.
+For the detailed documentation of this project, see the **[HuntR Product Website](https://ay2627s1-cs2103t-w10-4.github.io/tp/)** and the **[User Guide](https://ay2627s1-cs2103t-w10-4.github.io/tp/UserGuide.html)**.
 
-For the detailed documentation of this project, see the **[HuntR Product Website](https://ay2627-cs2103t-w10-4.github.io/tp/)**.
+## Features
 
-## Planned features
-
-The features below describe the intended employee-management functionality. Employee-specific fields and commands are still under development.
+The features below are available in v1.3. See the [User Guide](https://ay2627s1-cs2103t-w10-4.github.io/tp/UserGuide.html) for the full command formats.
 
 ### Add employees
 
@@ -31,6 +35,13 @@ HuntR allows HR administrators to view all employees currently stored in the app
 
 Example:
 `list`
+
+### Edit employees
+
+HuntR allows HR administrators to update an employee's details using the employee's unique employee ID. Only the fields you give are changed, and the employee ID itself cannot be changed.
+
+Example:
+`edit id/E0123 p/98765432 r/Senior Engineer`
 
 ### Delete employees
 
