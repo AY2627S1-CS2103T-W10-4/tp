@@ -603,37 +603,134 @@ testers are expected to do more *exploratory* testing.
 
 ### Launch and shutdown
 
-1. Initial launch
+**Prerequisites:** Download the release JAR named `huntr.jar` and place it in an empty, writable folder. Open a terminal in that folder and ensure Java 25 is installed.
 
-   1. Download the JAR file and copy it into an empty folder.
+1. Run `java -jar huntr.jar`.<br>
+   Expected: The HuntR GUI opens and displays six sample employees. Each employee has an employee ID, name, phone number, email, department and role. The initial window size may not be optimal.
+2. Resize the window, move it to a different location, and close it using the window close button.<br>
+   Expected: HuntR closes and a `preferences.json` file is created or updated in the folder containing `huntr.jar`.
+3. Run `java -jar huntr.jar` again.<br>
+   Expected: The GUI opens at the most recently saved size and location, with the employee records retained.
+4. Enter `exit` in the command box.<br>
+   Expected: HuntR closes normally.
 
-   1. Double-click the JAR file.<br>
-      Expected: The GUI opens with a set of sample contacts. The window size may not be optimal.
+### Adding an employee
 
-1. Saving window preferences
+**Prerequisites:** Launch HuntR with the sample employees. The employee ID `E1001` must not already exist.
 
-   1. Resize the window to an optimal size. Move the window to a different location. Close the window.
+1. Enter `add id/E1001 n/Mary-Ann O'Brien p/+65 6123-4567 (HP) e/mary.ann@example.com d/Research & Development r/Software Engineer (Backend)`.<br>
+   Expected: HuntR displays `New employee added:` followed by all six details. The employee appears in the list with ID `E1001`.
+2. Enter `add id/e1001 n/Another Employee p/91234567 e/another@example.com d/Operations r/Analyst`.<br>
+   Expected: HuntR reports that an employee with ID `e1001` already exists. No employee is added because employee IDs are compared case-insensitively.
+3. Enter `add id/E1002 n/  mary-ann   o'brien  p/81234567 e/mary2@example.com d/Finance r/Analyst`.<br>
+   Expected: HuntR adds `E1002`, normalises repeated spaces in the name, and displays a warning that an employee with the same or a very similar name already exists. `E1001` remains unchanged.
+4. Enter `add id/E1003 n/Test User p/12 e/test@example.com d/QA r/Tester`.<br>
+   Expected: HuntR reports that phone numbers must contain at least 3 digits. No employee is added.
+5. Enter `add id/E1003 n/Test User p/91234567 e/test@example.com d/QA`.<br>
+   Expected: HuntR reports an invalid command format and shows the `add` command usage because the required `r/` field is missing. No employee is added.
 
-   1. Relaunch the app by double-clicking the JAR file.<br>
-       Expected: The most recent window size and location are retained.
+### Listing employees
 
-1. _{ more test cases … }_
+**Prerequisites:** Launch HuntR with at least two employees whose names are different.
+
+1. Enter `find Alex`.<br>
+   Expected: Only employees whose names contain the whole-word keyword `Alex`, ignoring case, are displayed.
+2. Enter `list`.<br>
+   Expected: HuntR displays `Listed all employees.` and restores the complete employee roster.
+3. Enter `clear`, followed by `list`.<br>
+   Expected: After `clear`, all employee records are removed. `list` displays an empty list and a message beginning with `You don’t have any employees yet.`, followed by the `add` command format.
+
+### Finding employees
+
+**Prerequisites:** Launch HuntR with the original sample employees, including `Alex Yeoh`, `David Li` and `Charlotte Oliveiro`.
+
+1. Enter `find alex`.<br>
+   Expected: Only `Alex Yeoh` is displayed and HuntR reports `1 employee listed!`. Matching is case-insensitive.
+2. Enter `find Alex David`.<br>
+   Expected: `Alex Yeoh` and `David Li` are displayed and HuntR reports `2 employees listed!`. An employee matches when its name contains any one of the whole-word keywords.
+3. Enter `find NotPresent`.<br>
+   Expected: The employee list is empty and HuntR reports `0 employees listed!`.
+4. Enter `find`, with no keyword.<br>
+   Expected: HuntR reports an invalid command format and shows the `find` command usage. The previously displayed empty result remains unchanged.
+5. Enter `find /Alex`.<br>
+   Expected: HuntR reports an invalid command format and shows the `find` command usage because a keyword cannot begin with `/`.
+6. Enter `find Alex valid!`.<br>
+   Expected: HuntR reports the keyword constraints because `!` is not allowed. The employee list and stored data remain unchanged.
+
+### Editing an employee
+
+**Prerequisites:** Launch HuntR with the original sample employees. Confirm that `E0001` is `Alex Yeoh` and `E0002` is `Bernice Yu`.
+
+1. Enter `edit id/e0001 p/+65 6123-4567 (Office) d/Research & Development r/Principal Engineer`.<br>
+   Expected: HuntR displays `Edited employee:` followed by the complete updated record. The stored ID remains `E0001`, the three supplied fields are updated, and the name and email remain unchanged.
+2. Enter `find Alex`, followed by `edit id/E0002 n/Bernice Tan`.<br>
+   Expected: `E0002` is edited even though it was hidden by the search. HuntR then displays the complete roster, with `E0002` renamed to `Bernice Tan`.
+3. Enter `edit id/E9999 n/Missing Employee`.<br>
+   Expected: HuntR displays `No employee with ID E9999 was found.` and no employee is changed.
+4. Enter `edit id/E0001`.<br>
+   Expected: HuntR displays `At least one field to edit must be provided.` and no employee is changed.
+5. Enter `edit id/E0001 p/12`.<br>
+   Expected: HuntR reports that phone numbers must contain at least 3 digits and leaves `E0001` unchanged.
+6. Enter `edit id/E0001 p/91234567 p/81234567`.<br>
+   Expected: HuntR reports multiple values for `p/` and leaves `E0001` unchanged.
+
 
 ### Deleting an employee
 
-Prepare employees with IDs `EMP-0042`, `E0123` and `abc`; give the first two the same name and the third a different name. Restore the records before each independent test.
+**Prerequisites:** Add employees with IDs `EMP-0042`, `E0123` and `abc`. Give `EMP-0042` and `E0123` the same name, and give `abc` a different name. Restore these records before each independent test case below.
 
-1. Run `delete id/EMP-0042`. Expect only `EMP-0042` to be deleted, with all its details in the success message. The employee with the same name remains.
-2. Run `delete id/e0123`. Expect the employee stored as `E0123` to be deleted, with `E0123` in the success message. Also verify deletion of `abc`.
-3. Search for the name of `abc`, then run `delete id/EMP-0042`. Expect the hidden target to be deleted while the search results remain unchanged. Run `list` to verify removal. Repeat with a search that has no results.
-4. Try `delete`, `delete id/`, `delete x/value`, `delete id/abc!`, `delete id/abc id/abc` and `delete extra id/abc`. Expect the distinct messages and usage documented in the User Guide; records and filtering remain unchanged.
-5. Delete an absent valid ID and repeat a successful deletion. Expect `No employee with ID X was found.`, using the entered ID for `X`, with no usage or record changes.
-6. Delete the last employee, exit and relaunch. Expect an empty roster. Add a new employee using the deleted ID and verify that it can be reused.
+1. Enter `delete id/EMP-0042`.<br>
+   Expected: Only `EMP-0042` is deleted. HuntR displays `Deleted employee:` followed by all its details. `E0123`, which has the same name, remains.
+2. Enter `delete id/e0123`.<br>
+   Expected: The employee stored as `E0123` is deleted, and the success message uses the stored ID `E0123`. Employee IDs are matched case-insensitively. Repeat with `delete id/abc` to verify an all-letter ID.
+3. Enter `find` followed by the name of employee `abc`, then enter `delete id/EMP-0042`.<br>
+   Expected: The hidden employee `EMP-0042` is deleted from the complete roster while the current search result remains displayed. Enter `list` to confirm that `EMP-0042` is gone. Repeat after a search that displays zero employees.
+4. Enter each of `delete`, `delete id/`, `delete x/value`, `delete id/abc!`, `delete id/abc id/abc` and `delete extra id/abc` separately.<br>
+   Expected: HuntR respectively reports a missing ID, a blank ID, an unknown parameter, an invalid ID, a repeated `id/` field, or unexpected arguments, together with the `delete` usage. No record or active filter is changed.
+5. Enter `delete id/E9999`.<br>
+   Expected: HuntR displays `No employee with ID E9999 was found.` No usage text is appended and no record is changed.
+6. Delete the last remaining employee, enter `exit`, and relaunch HuntR.<br>
+   Expected: The roster remains empty after relaunch. The deleted ID can be used again in a new `add` command.
+
 
 ### Saving data
 
-1. Dealing with missing/corrupted data files
+The employee data file is `data/addressbook.json`, relative to the folder from which `java -jar huntr.jar` is run. Back up this file before the following tests and restore it afterwards.
 
-   1. _{Explain how to simulate missing or corrupted data files and state the expected behavior.}_
+**Persisting a successful change**
 
-1. _{ more test cases … }_
+**Prerequisites:** Launch HuntR and ensure employee ID `SAVE-001` does not exist.
+
+1. Enter `add id/SAVE-001 n/Save Test p/91234567 e/save@example.com d/QA r/Tester`.<br>
+   Expected: HuntR reports that the employee was added and updates `data/addressbook.json` without requiring a separate save command.
+2. Enter `exit`, then run `java -jar huntr.jar` again.<br>
+   Expected: Employee `SAVE-001` is loaded with all six fields unchanged.
+3. Enter `delete id/SAVE-001`, exit, and relaunch HuntR.<br>
+   Expected: Employee `SAVE-001` remains deleted after relaunch.
+
+**Dealing with a missing data file**
+
+**Prerequisites:** Close HuntR. Move `data/addressbook.json` to a backup location so that the original path does not exist.
+
+1. Run `java -jar huntr.jar`.<br>
+   Expected: HuntR starts with the six sample employees instead of failing to launch.
+2. Enter `list` and close HuntR.<br>
+   Expected: HuntR creates a new `data/addressbook.json` containing the sample employees. Restore the backup after closing the app if the original data is still needed.
+
+**Dealing with a corrupted data file**
+
+**Prerequisites:** Close HuntR and back up `data/addressbook.json`. Replace its contents with text that is not valid JSON, such as `{ invalid json`.
+
+1. Run `java -jar huntr.jar`.<br>
+   Expected: HuntR starts with an empty employee list. It does not load sample employees for a corrupted file, and the log records a warning that the data file could not be loaded.
+2. Enter `list`.<br>
+   Expected: HuntR remains usable, displays the empty-list guidance, and replaces the corrupted file with a valid JSON representation of the current empty roster. Close HuntR and restore the backup after the test.
+
+**Dealing with invalid employee data**
+
+**Prerequisites:** Close HuntR and back up `data/addressbook.json`. Edit one stored employee so that its ID contains an invalid character, or duplicate an employee using the same ID with different letter case.
+
+1. Run `java -jar huntr.jar`.<br>
+   Expected: HuntR rejects the entire file and starts with an empty employee list; it does not partially load valid employees. The log records a warning describing the invalid data.
+2. Close HuntR without entering a command and restore the backup.<br>
+   Expected: The original employee data is available again on the next launch.
