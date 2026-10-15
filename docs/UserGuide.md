@@ -72,11 +72,14 @@ HuntR is based on [AddressBook-Level3](https://github.com/se-edu/addressbook-lev
 
 ### Viewing help: `help`
 
-Shows a message explaining how to access the help page.
+Opens a help window that lists the format of every command and links to this user guide.
 
 ![help message](images/helpMessage.png)
 
 Format: `help`
+
+* Click **Copy URL** to copy the link to this user guide.
+* You can also open the help window by pressing <kbd>F1</kbd> or choosing **Help** in the menu bar.
 
 
 ### Adding an employee: `add`

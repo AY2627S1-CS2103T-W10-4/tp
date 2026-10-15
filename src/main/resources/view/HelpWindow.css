@@ -1,4 +1,4 @@
-#copyButton, #helpMessage {
+#copyButton, #helpMessage, #commandSummary {
     -fx-text-fill: white;
 }
 
