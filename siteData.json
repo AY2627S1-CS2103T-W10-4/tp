@@ -67,6 +67,10 @@
         "glossary": "Glossary",
         "appendix-instructions-for-manual-testing": "Appendix: Instructions for manual testing",
         "launch-and-shutdown": "Launch and shutdown",
+        "adding-an-employee": "Adding an employee",
+        "listing-employees": "Listing employees",
+        "finding-employees": "Finding employees",
+        "editing-an-employee": "Editing an employee",
         "deleting-an-employee": "Deleting an employee",
         "saving-data": "Saving data"
       },
