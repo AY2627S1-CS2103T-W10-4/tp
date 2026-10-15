@@ -135,8 +135,11 @@ Format: `find KEYWORD [MORE_KEYWORDS]`
 * The search considers only names.
 * Only full words match; for example, `Han` does not match `Hans`.
 * Employees matching at least one keyword are returned (an `OR` search); for example, `Hans Bo` returns `Hans Gruber` and `Bo Yang`.
-* At least one non-blank keyword must be provided. A keyword may contain punctuation or symbols; a search with no
-  matching name is still valid.
+* At least one non-blank keyword must be provided.
+* Each keyword must start with a letter or digit. Apostrophes, full stops, commas, slashes and hyphens are allowed
+  after the first character.
+* An argument beginning with `/` is rejected as an invalid command format.
+* A search with no matching name is still valid.
 * Leading and trailing spaces are ignored, and multiple spaces between keywords are treated as separators.
 * A search with no matches is successful and displays an empty employee list.
 

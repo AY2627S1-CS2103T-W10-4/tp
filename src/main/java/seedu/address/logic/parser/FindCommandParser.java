@@ -6,6 +6,7 @@ import java.util.List;
 
 import seedu.address.logic.commands.FindCommand;
 import seedu.address.logic.parser.exceptions.ParseException;
+import seedu.address.model.employee.Name;
 import seedu.address.model.employee.NameContainsKeywordsPredicate;
 
 /**
@@ -26,6 +27,14 @@ public class FindCommandParser implements Parser<FindCommand> {
         }
 
         List<String> nameKeywords = List.of(trimmedArgs.split("\\s+"));
+        if (nameKeywords.stream().anyMatch(keyword -> keyword.startsWith("/"))) {
+            throw new ParseException(
+                    String.format(MESSAGE_INVALID_COMMAND_FORMAT, FindCommand.MESSAGE_USAGE));
+        }
+        if (nameKeywords.stream().anyMatch(keyword -> !Name.isValidName(keyword))) {
+            throw new ParseException(FindCommand.MESSAGE_KEYWORD_CONSTRAINTS);
+        }
+
         return new FindCommand(new NameContainsKeywordsPredicate(nameKeywords));
     }
 
