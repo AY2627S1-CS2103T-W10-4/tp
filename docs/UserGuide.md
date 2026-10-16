@@ -4,9 +4,11 @@
   pageNav: 3
 ---
 
-# AB-3 User Guide
+# HuntR User Guide
 
-AddressBook Level 3 (AB3) is a **desktop application for managing contacts, optimized for use through a Command Line Interface (CLI)** while retaining the benefits of a Graphical User Interface (GUI). If you type quickly, AB3 can help you manage contacts faster than traditional GUI applications.
+HuntR is a **desktop application for a sole HR administrator to manage employee records, optimised for use through a Command Line Interface (CLI)** while retaining the benefits of a Graphical User Interface (GUI). If you can type quickly, HuntR can help you add, find, update and remove employee records faster than traditional GUI-based HR tools.
+
+HuntR is based on [AddressBook-Level3](https://github.com/se-edu/addressbook-level3) from SE-EDU. This guide covers version 1.3.
 
 <!-- * Table of Contents -->
 <page-nav-print />
@@ -18,11 +20,11 @@ AddressBook Level 3 (AB3) is a **desktop application for managing contacts, opti
 1. Ensure that Java `25` or later is installed on your computer.<br>
    **Mac users:** Ensure you have the precise JDK version prescribed [here](https://se-education.org/guides/tutorials/javaInstallationMac.html).
 
-1. Download the latest `.jar` file from [here](https://github.com/se-edu/addressbook-level3/releases).
+1. Download the latest `huntr.jar` file from [here](https://github.com/AY2627S1-CS2103T-W10-4/tp/releases).
 
-1. Copy the file to the folder you want to use as the _home folder_ for your AddressBook.
+1. Copy the file to the folder you want to use as the _home folder_ for HuntR.
 
-1. Open a terminal, `cd` to the folder containing the JAR file, and run `java -jar addressbook.jar`.<br>
+1. Open a terminal, `cd` to the folder containing the JAR file, and run `java -jar huntr.jar`.<br>
    A GUI similar to the one below should appear in a few seconds. Note how the app contains some sample data.<br>
    ![Ui](images/Ui.png)
 
@@ -31,11 +33,15 @@ AddressBook Level 3 (AB3) is a **desktop application for managing contacts, opti
 
    * `list` : Lists all employees.
 
-   * `add n/John Doe p/98765432 e/johnd@example.com a/John street, block 123, #01-01` : Adds a contact named `John Doe` to the Address Book.
+   * `add id/E0123 n/John Tan p/91234567 e/johntan@example.com d/Engineering r/Software Engineer` : Adds an employee named `John Tan` to HuntR.
 
-   * `delete id/EMP-0042` : Deletes employee `EMP-0042`, including when hidden by a search.
+   * `edit id/E0123 p/92345678 r/Senior Software Engineer` : Updates the phone number and role of employee `E0123`.
 
-   * `clear` : Deletes all contacts.
+   * `find Alex` : Finds employees whose names contain the word `Alex`.
+
+   * `delete id/E0123` : Deletes employee `E0123`, including when hidden by a search.
+
+   * `clear` : Deletes all employees.
 
    * `exit` : Exits the app.
 
@@ -50,46 +56,49 @@ AddressBook Level 3 (AB3) is a **desktop application for managing contacts, opti
 **Notes about the command format:**<br>
 
 * Words in `UPPER_CASE` are the parameters to be supplied by the user.<br>
-  For example, in `add n/NAME`, replace `NAME` with a value such as `John Doe`.
+  For example, in `add id/EMPLOYEE_ID n/NAME`, replace `EMPLOYEE_ID` and `NAME` with values such as `E0123` and `John Doe`.
 
 * Items in square brackets are optional.<br>
-  For example, `n/NAME [t/TAG]` can be used as `n/John Doe t/friend` or as `n/John Doe`.
-
-* Items followed by `...` can appear zero or more times.<br>
-  For example, `[t/TAG]... ` may be omitted, or written as `t/friend` or `t/friend t/family`.
+  For example, `edit id/EMPLOYEE_ID [p/PHONE]` can be used as `edit id/E0001 p/91234567`.
 
 * Parameters can be in any order.<br>
-  For example, if the command specifies `n/NAME p/PHONE_NUMBER`, `p/PHONE_NUMBER n/NAME` is also acceptable.
+  For example, if the command specifies `n/NAME p/PHONE`, `p/PHONE n/NAME` is also acceptable.
 
-* Extraneous parameters for commands that take no parameters, such as `help` and `clear`, are ignored.<br>
-  For example, `help 123` is interpreted as `help`.
+* Extraneous parameters for `help` and `clear` are ignored.<br>
+  For example, `help 123` is interpreted as `help`. The `list` and `exit` commands also take no parameters but reject extra text, so `list 1` and `exit now` show an error.
 
 * If you are using a PDF version of this document, be careful when copying and pasting commands that span multiple lines as space characters surrounding line-breaks may be omitted when copied over to the application.
 </box>
 
 ### Viewing help: `help`
 
-Shows a message explaining how to access the help page.
+Opens a help window that lists the format of every command and links to this user guide.
 
 ![help message](images/helpMessage.png)
 
 Format: `help`
 
+* Click **Copy URL** to copy the link to this user guide.
+* You can also open the help window by pressing <kbd>F1</kbd> or choosing **Help** in the menu bar.
 
-### Adding a person: `add`
 
-Adds a person to the address book.
+### Adding an employee: `add`
 
-Format: `add n/NAME p/PHONE_NUMBER e/EMAIL a/ADDRESS [t/TAG]... `
+Adds an employee to HuntR.
 
-<box type="tip" seamless>
+Format: `add id/EMPLOYEE_ID n/NAME p/PHONE e/EMAIL d/DEPARTMENT r/ROLE`
 
-**Tip:** A person can have any number of tags, including zero.
-</box>
+All six fields are required. The employee ID must be 1 to 20 characters long and contain only letters, digits,
+hyphens and underscores. Employee IDs are compared case-insensitively, so `E0123` and `e0123` identify the
+same employee. For example, if `E0123` is already in use, HuntR displays
+`An employee with Employee ID E0123 already exists.` and does not add the employee.
+
+Parameters can be supplied in any order.
 
 Examples:
-* `add n/John Doe p/98765432 e/johnd@example.com a/John street, block 123, #01-01`
-* `add n/Betsy Crowe t/friend e/betsycrowe@example.com a/Newgate Prison p/1234567 t/criminal`
+* `add id/E0123 n/John Tan p/91234567 e/johntan@example.com d/Engineering r/Software Engineer`
+* `add id/EMP-0042 n/Nur Aisyah p/87654321 e/nur.aisyah@example.com d/Human Resources r/HR Executive`
+* `add id/2024-017 n/Marcus Lee p/90001111 e/marcus.lee@example.com d/Finance r/Accountant`
 
 ### Listing all employees: `list`
 
@@ -102,21 +111,23 @@ The command takes no parameters. Leading and trailing spaces are ignored, but ad
 
 If there are no employee records, HuntR displays an empty employee list and explains how to add an employee.
 
-### Editing a person: `edit`
+### Editing an employee: `edit`
 
-Edits an existing person in the address book.
+Edits an existing employee in HuntR using their employee ID.
 
-Format: `edit INDEX [n/NAME] [p/PHONE] [e/EMAIL] [a/ADDRESS] [t/TAG]... `
+Format: `edit id/EMPLOYEE_ID [n/NAME] [p/PHONE] [e/EMAIL] [d/DEPARTMENT] [r/ROLE]`
 
-* Edits the person at the specified `INDEX`. The index refers to the index number shown in the displayed person list. The index **must be a positive integer** 1, 2, 3, ...
 * At least one of the optional fields must be provided.
 * Existing values will be updated to the input values.
-* When editing tags, all of the person's existing tags are removed; adding tags is not cumulative.
-* To remove all of a person's tags, enter `t/` without a tag after it.
+* The `id/` parameter identifies the employee to edit. The employee ID itself cannot be changed.
+* Employee ID matching is case-insensitive: `edit id/e0001 ...` identifies employee `E0001`.
+* HuntR searches the complete employee roster, so an employee hidden by the current `find` result can still be edited.
+* After a successful edit, HuntR resets the list to show all employees, clearing any active `find` result.
+* If an employee ID such as `E9999` does not exist, HuntR displays `No employee with ID E9999 was found.` and does not change any records.
 
 Examples:
-*  `edit 1 p/91234567 e/johndoe@example.com` Edits the phone number and email address of the 1st person to be `91234567` and `johndoe@example.com` respectively.
-*  `edit 2 n/Betsy Crower t/` Edits the name of the 2nd person to be `Betsy Crower` and clears all existing tags.
+* `edit id/E0001 p/91234567 e/alex@example.com` updates the phone number and email address of employee `E0001`.
+* `edit id/e0002 r/HR Manager` updates the role of employee `E0002`, using case-insensitive ID matching.
 
 ### Finding employees by name: `find`
 
@@ -129,8 +140,11 @@ Format: `find KEYWORD [MORE_KEYWORDS]`
 * The search considers only names.
 * Only full words match; for example, `Han` does not match `Hans`.
 * Employees matching at least one keyword are returned (an `OR` search); for example, `Hans Bo` returns `Hans Gruber` and `Bo Yang`.
-* At least one non-blank keyword must be provided. A keyword may contain punctuation or symbols; a search with no
-  matching name is still valid.
+* At least one non-blank keyword must be provided.
+* Each keyword must start with a letter or digit. Apostrophes, full stops, commas, slashes and hyphens are allowed
+  after the first character.
+* An argument beginning with `/` is rejected as an invalid command format.
+* A search with no matching name is still valid.
 * Leading and trailing spaces are ignored, and multiple spaces between keywords are treated as separators.
 * A search with no matches is successful and displays an empty employee list.
 
@@ -180,43 +194,48 @@ Example: delete id/EMP-0042
 
 A valid ID that does not exist produces `No employee with ID EMP-0042 was found.` (using the entered ID), without the usage block. No records are changed. This also applies to deleting an employee twice or deleting from an empty roster.
 
-### Clearing all entries: `clear`
+### Clearing all employees: `clear`
 
-Clears all entries from the address book.
+Clears all employee records from HuntR.
 
 Format: `clear`
 
+<box type="warning" seamless>
+
+**Caution:** There is no confirmation and no undo. After `clear`, the empty list is saved immediately.
+</box>
+
 ### Exiting the program: `exit`
 
-Exits the program.
+Closes HuntR. Your employee records are saved after every command, so nothing is lost when you exit.
 
 Format: `exit`
 
+The command takes no parameters, and extra text such as `exit now` is rejected.
+
 ### Saving the data
 
-AddressBook automatically saves data after every command. You do not need to save manually.
+HuntR automatically saves data after every command. You do not need to save manually.
 
 ### Editing the data file
 
-AddressBook data is saved automatically as a JSON file `[JAR file location]/data/addressbook.json`. Advanced users are welcome to update data directly by editing that data file.
+HuntR data is saved automatically as a JSON file `[JAR file location]/data/addressbook.json`. Advanced users are welcome to update data directly by editing that data file.
+
+Every employee in the file must follow the same rules as the `add` command, and no two employees may have the same employee ID (ignoring letter case).
 
 <box type="warning" seamless>
 
 **Caution:**
-If your changes make the data file invalid, AddressBook starts with an empty address book at the next run. The invalid file remains on disk until you run a command (AddressBook saves after every command). Still, we recommend backing up the file before editing it.<br>
-Furthermore, certain edits can cause the AddressBook to behave in unexpected ways (e.g., if a value entered is outside of the acceptable range). Therefore, edit the data file only if you are confident that you can update it correctly.
+If your changes make the data file invalid, HuntR rejects the whole file (it does not load only the valid employees) and starts with an empty employee list at the next run. The invalid file remains on disk until you run a command (HuntR saves after every command, which then overwrites it). Therefore, always back up the file before editing it.<br>
+Furthermore, certain edits can cause HuntR to behave in unexpected ways (e.g., if a value entered is outside of the acceptable range). Therefore, edit the data file only if you are confident that you can update it correctly.
 </box>
-
-### Archiving data files `[coming in v2.0]`
-
-_Details coming soon ..._
 
 --------------------------------------------------------------------------------------------------------------------
 
 ## FAQ
 
 **Q**: How do I transfer my data to another computer?<br>
-**A**: Install the app on the other computer and overwrite the data file it creates with the data file from your previous AddressBook home folder.
+**A**: Install the app on the other computer, run it, enter any command (such as `list`) so that the data file is created, and exit. Then overwrite that data file (`data/addressbook.json`) with the data file from your previous HuntR home folder.
 
 --------------------------------------------------------------------------------------------------------------------
 
@@ -231,10 +250,11 @@ _Details coming soon ..._
 
 Action     | Format, Examples
 -----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------
-**Add**    | `add n/NAME p/PHONE_NUMBER e/EMAIL a/ADDRESS [t/TAG]... ` <br> e.g., `add n/James Ho p/22224444 e/jamesho@example.com a/123, Clementi Rd, 1234665 t/friend t/colleague`
+**Add**    | `add id/EMPLOYEE_ID n/NAME p/PHONE e/EMAIL d/DEPARTMENT r/ROLE`<br>e.g., `add id/E0123 n/John Tan p/91234567 e/johntan@example.com d/Engineering r/Software Engineer`
 **Clear**  | `clear`
 **Delete** | `delete id/EMPLOYEE_ID`<br> e.g., `delete id/EMP-0042`
-**Edit**   | `edit INDEX [n/NAME] [p/PHONE_NUMBER] [e/EMAIL] [a/ADDRESS] [t/TAG]... `<br> e.g.,`edit 2 n/James Lee e/jameslee@example.com`
+**Edit**   | `edit id/EMPLOYEE_ID [n/NAME] [p/PHONE] [e/EMAIL] [d/DEPARTMENT] [r/ROLE]`<br>e.g., `edit id/E0001 p/91234567 e/alex@example.com`
 **Find**   | `find KEYWORD [MORE_KEYWORDS]`<br> e.g., `find James Jake`
 **List**   | `list`
 **Help**   | `help`
+**Exit**   | `exit`
