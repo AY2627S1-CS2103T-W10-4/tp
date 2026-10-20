@@ -3,17 +3,25 @@ package seedu.address.logic;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static seedu.address.logic.Messages.MESSAGE_UNKNOWN_COMMAND;
 import static seedu.address.logic.commands.CommandTestUtil.DEPARTMENT_DESC_AMY;
+import static seedu.address.logic.commands.CommandTestUtil.DEPARTMENT_DESC_BOB;
 import static seedu.address.logic.commands.CommandTestUtil.EMAIL_DESC_AMY;
+import static seedu.address.logic.commands.CommandTestUtil.EMAIL_DESC_BOB;
 import static seedu.address.logic.commands.CommandTestUtil.ID_DESC_AMY;
+import static seedu.address.logic.commands.CommandTestUtil.ID_DESC_BOB;
 import static seedu.address.logic.commands.CommandTestUtil.NAME_DESC_AMY;
+import static seedu.address.logic.commands.CommandTestUtil.NAME_DESC_BOB;
 import static seedu.address.logic.commands.CommandTestUtil.PHONE_DESC_AMY;
+import static seedu.address.logic.commands.CommandTestUtil.PHONE_DESC_BOB;
 import static seedu.address.logic.commands.CommandTestUtil.ROLE_DESC_AMY;
+import static seedu.address.logic.commands.CommandTestUtil.ROLE_DESC_BOB;
 import static seedu.address.testutil.Assert.assertThrows;
 import static seedu.address.testutil.TypicalEmployees.AMY;
+import static seedu.address.testutil.TypicalEmployees.BOB;
 
 import java.io.IOException;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.Path;
+import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -90,25 +98,43 @@ public class LogicManagerTest {
     }
 
     @Test
-    public void execute_archiveFindListArchivedUnarchive_switchesFilteredView() throws Exception {
+    public void execute_findThenArchive_showsFullActiveRosterWithoutArchivedEmployee() throws Exception {
         logic.execute("add" + ID_DESC_AMY + NAME_DESC_AMY + PHONE_DESC_AMY + EMAIL_DESC_AMY
                 + DEPARTMENT_DESC_AMY + ROLE_DESC_AMY);
+        logic.execute("add" + ID_DESC_BOB + NAME_DESC_BOB + PHONE_DESC_BOB + EMAIL_DESC_BOB
+                + DEPARTMENT_DESC_BOB + ROLE_DESC_BOB);
+
+        logic.execute("find Amy");
+        assertEquals(List.of(AMY), logic.getFilteredEmployeeList());
+
         CommandResult archiveResult = logic.execute("archive id/E1001");
         assertEquals(String.format(ArchiveCommand.MESSAGE_SUCCESS, Messages.format(AMY)),
                 archiveResult.getFeedbackToUser());
-        assertEquals(0, logic.getFilteredEmployeeList().size());
+        assertEquals(AMY.withArchived(true), model.getAddressBook().getEmployeeList().getFirst());
+        assertEquals(List.of(BOB), logic.getFilteredEmployeeList());
 
-        CommandResult findResult = logic.execute("find Amy");
-        assertEquals("0 employees listed!", findResult.getFeedbackToUser());
         assertCommandException("add" + ID_DESC_AMY + NAME_DESC_AMY + PHONE_DESC_AMY + EMAIL_DESC_AMY
                 + DEPARTMENT_DESC_AMY + ROLE_DESC_AMY,
                 "An employee with Employee ID E1001 already exists.");
+        CommandResult findResult = logic.execute("find Amy");
+        assertEquals("0 employees listed!", findResult.getFeedbackToUser());
+    }
+
+    @Test
+    public void execute_listArchivedThenUnarchive_showsFullActiveRosterWithRestoredEmployee() throws Exception {
+        logic.execute("add" + ID_DESC_AMY + NAME_DESC_AMY + PHONE_DESC_AMY + EMAIL_DESC_AMY
+                + DEPARTMENT_DESC_AMY + ROLE_DESC_AMY);
+        logic.execute("add" + ID_DESC_BOB + NAME_DESC_BOB + PHONE_DESC_BOB + EMAIL_DESC_BOB
+                + DEPARTMENT_DESC_BOB + ROLE_DESC_BOB);
+        logic.execute("archive id/E1001");
+
         CommandResult archivesResult = logic.execute("list archived");
         assertEquals(ListCommand.MESSAGE_ARCHIVED_SUCCESS, archivesResult.getFeedbackToUser());
-        assertEquals(AMY.withArchived(true), logic.getFilteredEmployeeList().getFirst());
+        assertEquals(List.of(AMY.withArchived(true)), logic.getFilteredEmployeeList());
 
         logic.execute("unarchive id/e1001");
-        assertEquals(AMY, logic.getFilteredEmployeeList().getFirst());
+        assertEquals(AMY, model.getAddressBook().getEmployeeList().getFirst());
+        assertEquals(List.of(AMY, BOB), logic.getFilteredEmployeeList());
     }
 
     @Test

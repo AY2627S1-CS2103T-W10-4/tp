@@ -156,6 +156,7 @@ Examples:
 ### Archiving employees: `archive`
 
 Marks an employee as archived. Archived employees remain stored but are hidden from normal `list` and `find` results.
+After a successful archive, HuntR displays the full active employee list.
 
 Format: `archive id/EMPLOYEE_ID`
 
@@ -167,6 +168,7 @@ already archived employee produces `Employee with ID E0123 is already archived.`
 ### Unarchiving employees: `unarchive`
 
 Restores an archived employee to the active roster.
+After a successful unarchive, HuntR displays the full active employee list, including the restored employee.
 
 Format: `unarchive id/EMPLOYEE_ID`
 

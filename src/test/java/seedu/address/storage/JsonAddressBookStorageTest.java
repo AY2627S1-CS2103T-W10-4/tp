@@ -2,6 +2,7 @@ package seedu.address.storage;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.testutil.Assert.assertThrows;
 import static seedu.address.testutil.TypicalEmployees.ALICE;
 import static seedu.address.testutil.TypicalEmployees.HOON;
@@ -59,6 +60,33 @@ public class JsonAddressBookStorageTest {
     @Test
     public void readAddressBook_invalidAndValidEmployeeAddressBook_throwDataLoadingException() {
         assertThrows(DataLoadingException.class, () -> readAddressBook("invalidAndValidEmployeeAddressBook.json"));
+    }
+
+    @Test
+    public void readAddressBook_missingEmployeesField_throwsDataLoadingException() throws IOException {
+        Path filePath = testFolder.resolve("MissingEmployeesAddressBook.json");
+        Files.writeString(filePath, "{}");
+
+        JsonAddressBookStorage storage = new JsonAddressBookStorage(filePath);
+        assertThrows(DataLoadingException.class, storage::readAddressBook);
+    }
+
+    @Test
+    public void readAddressBook_nullEmployeesField_throwsDataLoadingException() throws IOException {
+        Path filePath = testFolder.resolve("NullEmployeesAddressBook.json");
+        Files.writeString(filePath, "{\"employees\":null}");
+
+        JsonAddressBookStorage storage = new JsonAddressBookStorage(filePath);
+        assertThrows(DataLoadingException.class, storage::readAddressBook);
+    }
+
+    @Test
+    public void readAddressBook_emptyEmployeesArray_loadsEmptyAddressBook() throws Exception {
+        Path filePath = testFolder.resolve("EmptyEmployeesAddressBook.json");
+        Files.writeString(filePath, "{\"employees\":[]}");
+
+        JsonAddressBookStorage storage = new JsonAddressBookStorage(filePath);
+        assertTrue(storage.readAddressBook().orElseThrow().getEmployeeList().isEmpty());
     }
 
     @Test

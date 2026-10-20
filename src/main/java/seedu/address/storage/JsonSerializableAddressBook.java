@@ -20,14 +20,17 @@ import seedu.address.model.employee.Employee;
 class JsonSerializableAddressBook {
 
     public static final String MESSAGE_DUPLICATE_EMPLOYEE = "Employees list contains duplicate employee(s).";
+    public static final String MESSAGE_MISSING_EMPLOYEES = "Employees field is missing or null.";
 
     private final List<JsonAdaptedEmployee> employees = new ArrayList<>();
+    private final boolean hasEmployees;
 
     /**
      * Constructs a {@code JsonSerializableAddressBook} with the given employees.
      */
     @JsonCreator
     public JsonSerializableAddressBook(@JsonProperty("employees") List<JsonAdaptedEmployee> employees) {
+        hasEmployees = employees != null;
         if (employees != null) {
             this.employees.addAll(employees);
         }
@@ -39,6 +42,7 @@ class JsonSerializableAddressBook {
      * @param source future changes to this will not affect the created {@code JsonSerializableAddressBook}.
      */
     public JsonSerializableAddressBook(ReadOnlyAddressBook source) {
+        hasEmployees = true;
         employees.addAll(source.getEmployeeList().stream().map(JsonAdaptedEmployee::new).collect(Collectors.toList()));
     }
 
@@ -48,6 +52,9 @@ class JsonSerializableAddressBook {
      * @throws IllegalValueException if there were any data constraints violated.
      */
     public AddressBook toModelType() throws IllegalValueException {
+        if (!hasEmployees) {
+            throw new IllegalValueException(MESSAGE_MISSING_EMPLOYEES);
+        }
         AddressBook addressBook = new AddressBook();
         for (JsonAdaptedEmployee jsonAdaptedEmployee : employees) {
             Employee employee = jsonAdaptedEmployee.toModelType();
