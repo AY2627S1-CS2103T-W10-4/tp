@@ -211,7 +211,7 @@ Saves all employees to a CSV file, which you can open in a spreadsheet program s
 
 Format: `export FILE_PATH`
 
-* `FILE_PATH` is relative to the folder HuntR runs from (the folder that contains the `data` folder), and must end in `.csv` (any letter case). It must stay inside that folder: absolute paths such as `C:\staff.csv` or `/Users/me/staff.csv`, and paths that lead out with `..`, are rejected.
+* `FILE_PATH` is relative to the folder HuntR runs from (the folder that contains the `data` folder), and must end in `.csv` (any letter case). It must stay inside that folder: absolute paths such as `C:\staff.csv` or `/Users/me/staff.csv`, and paths that lead out with `..`, are rejected. So are paths through a shortcut (symbolic link) to a file or folder outside it.
 * Missing folders in `FILE_PATH` are created. **An existing file at `FILE_PATH` is replaced without confirmation.**
 * All employees are exported, including employees hidden by `find`, in the order they are stored.
 * The first line is the header `id,name,phone,email,department,role`, followed by one line per employee. A value that contains a comma, such as `Tan, Ah Kow`, is wrapped in double quotes so that it imports back unchanged.
@@ -228,6 +228,8 @@ On success, HuntR shows `Exported N employee(s) to FILE_PATH`.
 | `export` | `Invalid command format.` followed by the usage |
 | `export staff.txt` or `export staff` | `File path should end in .csv, for example exports/staff.csv.` |
 | `export ../staff.csv` or an absolute path | `File path should be relative to the folder HuntR runs from and stay inside it, for example exports/staff.csv.` |
+| `FILE_PATH` goes through a shortcut (symbolic link) to a place outside the HuntR folder | `File path should be relative to the folder HuntR runs from and stay inside it, for example exports/staff.csv.` |
+| `FILE_PATH` is a shortcut to a file or folder that no longer exists | `Could not check where FILE_PATH is. Check that it is not a shortcut (symbolic link) to a missing file or folder.` |
 | The file is open in Excel, or the folder cannot be written to | `Could not write to FILE_PATH. Check that the file is not open in another program (such as Excel) and that you are allowed to write to that folder.` |
 
 ### Importing employees from a CSV file: `import`
@@ -238,7 +240,7 @@ Format: `import FILE_PATH`
 
 * `FILE_PATH` follows the same rules as for `export`.
 * The first line must be the header `id,name,phone,email,department,role`. Letter case and spaces around each column name are ignored.
-* Each following line is one employee, with values in the header's order. Each value must follow the same rules as in the `add` command. Wrap a value that contains a comma in double quotes, for example `"Tan, Ah Kow"`. Blank lines are skipped.
+* Each following line is one employee, with values in the header's order. Each value must follow the same rules as in the `add` command. Wrap a value that contains a comma in double quotes, for example `"Tan, Ah Kow"`. A double quote may only appear at the start and end of such a wrapped value, or doubled (`""`) inside it, so a row such as `E0001,A"li"ce,...` is rejected rather than read as `Alice`. Blank lines are skipped.
 * Imported employees are added to the existing ones. Afterwards the full employee list is shown.
 * The file must be saved as UTF-8 text. In Excel, choose **Save As** → **CSV UTF-8 (Comma delimited)**.
 
@@ -256,13 +258,15 @@ On success, HuntR shows `Imported N employee(s) from FILE_PATH`.
 | Input or situation | Error message |
 | --- | --- |
 | `import` | `Invalid command format.` followed by the usage |
-| `import staff.txt`, `import ../staff.csv` | Same as for `export` |
+| `import staff.txt`, `import ../staff.csv`, or a path through a shortcut | Same as for `export` |
 | The file does not exist | `File not found: FILE_PATH` |
 | The file is empty | `FILE_PATH is empty.` |
 | The first line is not the header | `FILE_PATH should start with the header id,name,phone,email,department,role` |
 | The file has a header but no employees | `FILE_PATH has no employee rows to import.` |
 | The file is not UTF-8 | `Could not read FILE_PATH because it is not saved as UTF-8 text. In Excel, save it as "CSV UTF-8".` |
 | Row 3 has 5 values | `Nothing was imported. Row 3: Expected 6 values (id,name,phone,email,department,role) but found 5.` |
+| Row 3 has a double quote in the wrong place, such as `A"li"ce` | `Nothing was imported. Row 3: A double quote (") may only start or end a value, or appear doubled ("") inside a value that is wrapped in double quotes.` |
+| Row 3 opens a double quote but never closes it | `Nothing was imported. Row 3: A quoted value is missing its closing double quote (").` |
 | Row 4 has an invalid phone (or any other invalid value) | `Nothing was imported. Row 4:` followed by the same message `add` shows for that value |
 | Row 5 repeats the ID `E0001` from row 2 | `Nothing was imported. Row 5: Employee ID E0001 is also used on row 2.` |
 | Row 2 uses the ID of an employee already in HuntR | `Nothing was imported. Row 2: An employee with Employee ID E0001 already exists.` |
