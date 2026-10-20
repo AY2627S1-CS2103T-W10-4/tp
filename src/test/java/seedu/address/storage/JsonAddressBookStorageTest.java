@@ -81,6 +81,15 @@ public class JsonAddressBookStorageTest {
     }
 
     @Test
+    public void readAddressBook_nullEmployeesWithHasEmployeesTrue_throwsDataLoadingException() throws IOException {
+        Path filePath = testFolder.resolve("NullEmployeesWithHasEmployeesAddressBook.json");
+        Files.writeString(filePath, "{\"employees\":null,\"hasEmployees\":true}");
+
+        JsonAddressBookStorage storage = new JsonAddressBookStorage(filePath);
+        assertThrows(DataLoadingException.class, storage::readAddressBook);
+    }
+
+    @Test
     public void readAddressBook_emptyEmployeesArray_loadsEmptyAddressBook() throws Exception {
         Path filePath = testFolder.resolve("EmptyEmployeesAddressBook.json");
         Files.writeString(filePath, "{\"employees\":[]}");

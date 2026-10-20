@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonRootName;
 
@@ -23,6 +24,7 @@ class JsonSerializableAddressBook {
     public static final String MESSAGE_MISSING_EMPLOYEES = "Employees field is missing or null.";
 
     private final List<JsonAdaptedEmployee> employees = new ArrayList<>();
+    @JsonIgnore
     private final boolean hasEmployees;
 
     /**
