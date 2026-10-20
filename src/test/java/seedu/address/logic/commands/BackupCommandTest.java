@@ -5,8 +5,10 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.logic.commands.CommandTestUtil.assertCommandFailure;
 import static seedu.address.logic.commands.CommandTestUtil.assertCommandSuccess;
+import static seedu.address.logic.commands.CommandTestUtil.showEmployeeAtIndex;
 import static seedu.address.testutil.Assert.assertThrows;
 import static seedu.address.testutil.TypicalEmployees.getTypicalAddressBook;
+import static seedu.address.testutil.TypicalIndexes.INDEX_FIRST_EMPLOYEE;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -52,6 +54,21 @@ public class BackupCommandTest {
 
         AddressBook backedUp = new AddressBook(new JsonAddressBookStorage(backupPath).readAddressBook().get());
         assertEquals(getTypicalAddressBook(), backedUp);
+    }
+
+    @Test
+    public void execute_filteredList_backupHasHiddenEmployeesAndFilterKept() throws Exception {
+        showEmployeeAtIndex(model, INDEX_FIRST_EMPLOYEE);
+        showEmployeeAtIndex(expectedModel, INDEX_FIRST_EMPLOYEE);
+        Path backupPath = testFolder.resolve(EXPECTED_FILE_NAME);
+        int employeeCount = model.getAddressBook().getEmployeeList().size();
+        String expectedMessage = String.format(BackupCommand.MESSAGE_SUCCESS, employeeCount, backupPath);
+
+        assertCommandSuccess(new BackupCommand(testFolder, FIXED_CLOCK), model, expectedMessage, expectedModel);
+
+        AddressBook backedUp = new AddressBook(new JsonAddressBookStorage(backupPath).readAddressBook().get());
+        assertEquals(getTypicalAddressBook(), backedUp);
+        assertEquals(1, model.getFilteredEmployeeList().size());
     }
 
     @Test
