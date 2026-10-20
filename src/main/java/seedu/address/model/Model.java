@@ -41,6 +41,9 @@ public interface Model {
      */
     boolean hasEmployee(Employee employee);
 
+    /** Returns true if an archived employee has the same identity as {@code employee}. */
+    boolean hasArchivedEmployee(Employee employee);
+
     /**
      * Deletes the given employee.
      * The employee must exist in the address book.

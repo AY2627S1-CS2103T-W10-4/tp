@@ -5,7 +5,7 @@ import static seedu.address.logic.parser.CommandParserTestUtil.assertParseSucces
 
 import org.junit.jupiter.api.Test;
 
-import seedu.address.logic.Messages;
+import seedu.address.logic.commands.DeleteCommand;
 import seedu.address.logic.commands.UnarchiveCommand;
 import seedu.address.model.employee.EmployeeId;
 
@@ -19,7 +19,7 @@ public class UnarchiveCommandParserTest {
 
     @Test
     public void parse_unknownPrefix_failure() {
-        assertParseFailure(parser, " x/E0123", String.format(Messages.MESSAGE_INVALID_COMMAND_FORMAT,
-                "Unknown parameter: x/\n" + UnarchiveCommand.MESSAGE_USAGE));
+        assertParseFailure(parser, " x/E0123", String.format(DeleteCommand.MESSAGE_UNKNOWN_PARAMETER, "x/")
+                + "\n" + UnarchiveCommand.MESSAGE_USAGE);
     }
 }

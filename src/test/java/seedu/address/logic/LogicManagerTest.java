@@ -115,7 +115,7 @@ public class LogicManagerTest {
 
         assertCommandException("add" + ID_DESC_AMY + NAME_DESC_AMY + PHONE_DESC_AMY + EMAIL_DESC_AMY
                 + DEPARTMENT_DESC_AMY + ROLE_DESC_AMY,
-                "An employee with Employee ID E1001 already exists.");
+                String.format(AddCommand.MESSAGE_DUPLICATE_ARCHIVED_EMPLOYEE, AMY.getId()));
         CommandResult findResult = logic.execute("find Amy");
         assertEquals("0 employees listed!", findResult.getFeedbackToUser());
     }

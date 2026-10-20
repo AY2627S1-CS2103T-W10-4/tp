@@ -41,6 +41,8 @@ public class AddCommand extends Command {
 
     public static final String MESSAGE_SUCCESS = "New employee added: %1$s";
     public static final String MESSAGE_DUPLICATE_EMPLOYEE = "An employee with Employee ID %1$s already exists.";
+    public static final String MESSAGE_DUPLICATE_ARCHIVED_EMPLOYEE = "An employee with Employee ID %1$s already "
+            + "exists in the archive. Use `list archived` to see it.";
     public static final String MESSAGE_SIMILAR_NAME_WARNING = "Warning: an employee with the same or a very similar "
             + "name already exists (Employee ID %1$s). Please check that this is not a duplicate.";
 
@@ -59,7 +61,10 @@ public class AddCommand extends Command {
         requireNonNull(model);
 
         if (model.hasEmployee(toAdd)) {
-            throw new CommandException(String.format(MESSAGE_DUPLICATE_EMPLOYEE, toAdd.getId()));
+            String duplicateMessage = model.hasArchivedEmployee(toAdd)
+                    ? MESSAGE_DUPLICATE_ARCHIVED_EMPLOYEE
+                    : MESSAGE_DUPLICATE_EMPLOYEE;
+            throw new CommandException(String.format(duplicateMessage, toAdd.getId()));
         }
 
         // Employees may share a name, so a similar name only produces a warning and does not stop the add.

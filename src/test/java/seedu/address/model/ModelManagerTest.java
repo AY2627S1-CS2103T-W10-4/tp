@@ -77,6 +77,15 @@ public class ModelManagerTest {
     }
 
     @Test
+    public void hasArchivedEmployee_activeAndArchivedEmployees_returnsCorrectResult() {
+        modelManager.addEmployee(ALICE);
+        modelManager.addEmployee(BENSON.withArchived(true));
+
+        assertFalse(modelManager.hasArchivedEmployee(ALICE));
+        assertTrue(modelManager.hasArchivedEmployee(BENSON));
+    }
+
+    @Test
     public void getArchivedEmployeeCount_activeAndArchivedEmployees_returnsArchivedCount() {
         modelManager.addEmployee(ALICE);
         modelManager.addEmployee(BENSON.withArchived(true));

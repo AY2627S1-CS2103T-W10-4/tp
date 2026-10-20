@@ -76,6 +76,13 @@ public class ModelManager implements Model {
     }
 
     @Override
+    public boolean hasArchivedEmployee(Employee employee) {
+        requireNonNull(employee);
+        return addressBook.getEmployeeList().stream()
+                .anyMatch(candidate -> candidate.isArchived() && candidate.isSameEmployee(employee));
+    }
+
+    @Override
     public void deleteEmployee(Employee target) {
         addressBook.removeEmployee(target);
     }

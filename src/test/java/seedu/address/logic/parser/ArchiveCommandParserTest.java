@@ -5,8 +5,8 @@ import static seedu.address.logic.parser.CommandParserTestUtil.assertParseSucces
 
 import org.junit.jupiter.api.Test;
 
-import seedu.address.logic.Messages;
 import seedu.address.logic.commands.ArchiveCommand;
+import seedu.address.logic.commands.DeleteCommand;
 import seedu.address.model.employee.EmployeeId;
 
 public class ArchiveCommandParserTest {
@@ -20,13 +20,14 @@ public class ArchiveCommandParserTest {
     @Test
     public void parse_extraMetadata_failure() {
         assertParseFailure(parser, " id/E0123 date/2026-10-19",
-                String.format(Messages.MESSAGE_INVALID_COMMAND_FORMAT,
-                        "Unknown parameter: date/\n" + ArchiveCommand.MESSAGE_USAGE));
+                String.format(DeleteCommand.MESSAGE_UNKNOWN_PARAMETER, "date/")
+                        + "\n" + ArchiveCommand.MESSAGE_USAGE);
     }
 
     @Test
     public void parse_duplicateId_failure() {
         assertParseFailure(parser, " id/E0123 id/E9999",
-                Messages.getErrorMessageForDuplicatePrefixes(CliSyntax.PREFIX_ID));
+                seedu.address.logic.Messages.getErrorMessageForDuplicatePrefixes(CliSyntax.PREFIX_ID)
+                        + "\n" + ArchiveCommand.MESSAGE_USAGE);
     }
 }
