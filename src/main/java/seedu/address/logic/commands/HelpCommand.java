@@ -32,6 +32,7 @@ public class HelpCommand extends Command {
                     + "ROLE]",
             DeleteCommand.COMMAND_WORD + " " + PREFIX_ID + "EMPLOYEE_ID",
             ClearCommand.COMMAND_WORD,
+            BackupCommand.COMMAND_WORD,
             COMMAND_WORD,
             ExitCommand.COMMAND_WORD);
 
