@@ -123,6 +123,11 @@ public class ModelManager implements Model {
     }
 
     @Override
+    public int getArchivedEmployeeCount() {
+        return (int) addressBook.getEmployeeList().stream().filter(Employee::isArchived).count();
+    }
+
+    @Override
     public void updateFilteredEmployeeList(Predicate<Employee> predicate) {
         requireNonNull(predicate);
         filteredEmployees.setPredicate(employee -> !employee.isArchived() && predicate.test(employee));

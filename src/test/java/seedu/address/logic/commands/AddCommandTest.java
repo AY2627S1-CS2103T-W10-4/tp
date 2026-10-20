@@ -155,6 +155,11 @@ public class AddCommandTest {
         }
 
         @Override
+        public int getArchivedEmployeeCount() {
+            throw new AssertionError("This method should not be called.");
+        }
+
+        @Override
         public void updateFilteredEmployeeList(Predicate<Employee> predicate) {
             throw new AssertionError("This method should not be called.");
         }

@@ -77,6 +77,14 @@ public class ModelManagerTest {
     }
 
     @Test
+    public void getArchivedEmployeeCount_activeAndArchivedEmployees_returnsArchivedCount() {
+        modelManager.addEmployee(ALICE);
+        modelManager.addEmployee(BENSON.withArchived(true));
+
+        assertEquals(1, modelManager.getArchivedEmployeeCount());
+    }
+
+    @Test
     public void getFilteredEmployeeList_modifyList_throwsUnsupportedOperationException() {
         assertThrows(UnsupportedOperationException.class, () -> modelManager.getFilteredEmployeeList().remove(0));
     }
