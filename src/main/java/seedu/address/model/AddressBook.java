@@ -2,11 +2,13 @@ package seedu.address.model;
 
 import static java.util.Objects.requireNonNull;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import javafx.collections.ObservableList;
 import seedu.address.commons.util.ToStringBuilder;
 import seedu.address.model.employee.Employee;
+import seedu.address.model.employee.ReportingStructure;
 import seedu.address.model.employee.UniqueEmployeeList;
 
 /**
@@ -34,6 +36,7 @@ public class AddressBook implements ReadOnlyAddressBook {
      * {@code employees} must not contain duplicate employees.
      */
     public void setEmployees(List<Employee> employees) {
+        ReportingStructure.validate(employees);
         this.employees.setEmployees(employees);
     }
 
@@ -61,6 +64,9 @@ public class AddressBook implements ReadOnlyAddressBook {
      * The employee must not already exist in the address book.
      */
     public void addEmployee(Employee p) {
+        List<Employee> updated = new ArrayList<>(getEmployeeList());
+        updated.add(p);
+        ReportingStructure.validate(updated);
         employees.add(p);
     }
 
@@ -73,6 +79,12 @@ public class AddressBook implements ReadOnlyAddressBook {
     public void setEmployee(Employee target, Employee editedEmployee) {
         requireNonNull(editedEmployee);
 
+        List<Employee> updated = new ArrayList<>(getEmployeeList());
+        int targetIndex = updated.indexOf(target);
+        if (targetIndex >= 0) {
+            updated.set(targetIndex, editedEmployee);
+            ReportingStructure.validate(updated);
+        }
         employees.setEmployee(target, editedEmployee);
     }
 
@@ -82,6 +94,12 @@ public class AddressBook implements ReadOnlyAddressBook {
      */
     public void removeEmployee(Employee key) {
         employees.remove(key);
+        // Keep the remaining hierarchy valid when a manager leaves the roster.
+        for (Employee employee : new ArrayList<>(getEmployeeList())) {
+            if (employee.getManagerId().filter(key.getId()::equals).isPresent()) {
+                employees.setEmployee(employee, employee.withManager(null));
+            }
+        }
     }
 
     //// util methods

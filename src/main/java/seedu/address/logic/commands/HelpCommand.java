@@ -31,6 +31,11 @@ public class HelpCommand extends Command {
                     + "PHONE] [" + PREFIX_EMAIL + "EMAIL] [" + PREFIX_DEPARTMENT + "DEPARTMENT] [" + PREFIX_ROLE
                     + "ROLE]",
             DeleteCommand.COMMAND_WORD + " " + PREFIX_ID + "EMPLOYEE_ID",
+            "manager id/EMPLOYEE_ID m/MANAGER_ID",
+            "unassign-manager id/EMPLOYEE_ID",
+            "team id/MANAGER_ID (direct reports)",
+            "org id/MANAGER_ID (full team)",
+            "chain id/EMPLOYEE_ID (reporting chain)",
             ClearCommand.COMMAND_WORD,
             COMMAND_WORD,
             ExitCommand.COMMAND_WORD);

@@ -1,0 +1,143 @@
+package seedu.address.logic.commands;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.List;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import seedu.address.logic.commands.EditCommand.EditEmployeeDescriptor;
+import seedu.address.logic.commands.exceptions.CommandException;
+import seedu.address.logic.parser.AddressBookParser;
+import seedu.address.model.AddressBook;
+import seedu.address.model.Model;
+import seedu.address.model.ModelManager;
+import seedu.address.model.UserPrefs;
+import seedu.address.model.employee.Employee;
+import seedu.address.model.employee.EmployeeId;
+import seedu.address.model.employee.Name;
+import seedu.address.testutil.EmployeeBuilder;
+
+/** End-to-end command tests with the real parser and model. */
+public class ReportingCommandTest {
+    private final Employee boss = new EmployeeBuilder().withId("BOSS").withName("Boss").build();
+    private final Employee lead = new EmployeeBuilder().withId("LEAD").withName("Lead").build();
+    private final Employee worker = new EmployeeBuilder().withId("WORKER").withName("Worker").build();
+    private final Employee outsider = new EmployeeBuilder().withId("OTHER").build();
+    private Model model;
+    private final AddressBookParser parser = new AddressBookParser();
+
+    @BeforeEach
+    public void setUp() throws Exception {
+        AddressBook data = new AddressBook();
+        data.setEmployees(List.of(boss, lead, worker, outsider));
+        model = new ModelManager(data, new UserPrefs());
+        run("manager id/LEAD m/BOSS");
+        run("manager id/WORKER m/LEAD");
+    }
+
+    @Test
+    public void execute_assignChangeAndUnassign_success() throws Exception {
+        model.updateFilteredEmployeeList(employee -> false);
+        run("manager id/worker m/boss");
+        assertEquals(boss.getId(), find(worker.getId()).getManagerId().orElseThrow());
+        run("unassign-manager id/WORKER");
+        assertTrue(find(worker.getId()).getManagerId().isEmpty());
+        run("unassign-manager id/WORKER");
+        assertTrue(find(worker.getId()).getManagerId().isEmpty());
+    }
+
+    @Test
+    public void execute_selfReportingRejectedWithoutChanges() {
+        assertRejected("manager id/BOSS m/boss");
+    }
+
+    @Test
+    public void execute_indirectCycleRejectedWithoutChanges() {
+        assertRejected("manager id/BOSS m/WORKER");
+    }
+
+    @Test
+    public void execute_directCycleRejectedWithoutChanges() {
+        assertRejected("manager id/LEAD m/WORKER");
+    }
+
+    @Test
+    public void execute_unknownManagerRejectedWithoutChanges() {
+        assertRejected("manager id/WORKER m/MISSING");
+    }
+
+    @Test
+    public void execute_unknownEmployeeRejectedWithoutChanges() {
+        for (String command : List.of("manager id/MISSING m/BOSS", "unassign-manager id/MISSING",
+                "team id/MISSING", "org id/MISSING", "chain id/MISSING")) {
+            assertRejected(command);
+        }
+    }
+
+    @Test
+    public void execute_queriesUseWholeRosterAndDoNotChangeData() throws Exception {
+        AddressBook original = new AddressBook(model.getAddressBook());
+        model.updateFilteredEmployeeList(employee -> false);
+        run("team id/BOSS");
+        assertEquals(List.of(find(lead.getId())), model.getFilteredEmployeeList());
+        run("org id/BOSS");
+        assertEquals(List.of(find(lead.getId()), find(worker.getId())), model.getFilteredEmployeeList());
+        String chain = run("chain id/WORKER").getFeedbackToUser();
+        assertTrue(chain.contains("Lead (LEAD) -> Boss (BOSS)"));
+        assertEquals(List.of(boss, find(lead.getId())), model.getFilteredEmployeeList());
+        assertEquals(original, model.getAddressBook());
+        run("list");
+        assertEquals(4, model.getFilteredEmployeeList().size());
+    }
+
+    @Test
+    public void execute_emptyTeamAndTopLevelChain_success() throws Exception {
+        assertTrue(run("team id/WORKER").getFeedbackToUser().contains("None."));
+        assertTrue(model.getFilteredEmployeeList().isEmpty());
+        assertTrue(run("org id/WORKER").getFeedbackToUser().contains("None."));
+        assertTrue(run("chain id/BOSS").getFeedbackToUser().contains("None."));
+    }
+
+    @Test
+    public void execute_editPreservesManager() throws Exception {
+        EditEmployeeDescriptor descriptor = new EditEmployeeDescriptor();
+        descriptor.setName(new Name("Updated Worker"));
+        new EditCommand(worker.getId(), descriptor).execute(model);
+        assertEquals(lead.getId(), find(worker.getId()).getManagerId().orElseThrow());
+    }
+
+    @Test
+    public void execute_deleteManagerUnassignsOnlyDirectReports() throws Exception {
+        run("delete id/LEAD");
+        assertTrue(find(worker.getId()).getManagerId().isEmpty());
+        assertEquals(3, model.getAddressBook().getEmployeeList().size());
+    }
+
+    @Test
+    public void execute_deleteRootPreservesLowerRelationships() throws Exception {
+        run("delete id/BOSS");
+        assertTrue(find(lead.getId()).getManagerId().isEmpty());
+        assertEquals(lead.getId(), find(worker.getId()).getManagerId().orElseThrow());
+    }
+
+    private CommandResult run(String command) throws Exception {
+        return parser.parseCommand(command).execute(model);
+    }
+
+    private Employee find(EmployeeId id) {
+        return model.getAddressBook().getEmployeeList().stream()
+                .filter(employee -> employee.getId().equals(id)).findFirst().orElseThrow();
+    }
+
+    private void assertRejected(String command) {
+        AddressBook original = new AddressBook(model.getAddressBook());
+        List<Employee> originalView = List.copyOf(model.getFilteredEmployeeList());
+        assertThrows(CommandException.class, () -> run(command));
+        assertEquals(original, model.getAddressBook());
+        assertEquals(originalView, model.getFilteredEmployeeList());
+    }
+}

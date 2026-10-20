@@ -25,20 +25,28 @@ class JsonAdaptedEmployee {
     private final String email;
     private final String department;
     private final String role;
+    private final String managerId;
 
     /**
      * Constructs a {@code JsonAdaptedEmployee} with the given employee details.
      */
+    public JsonAdaptedEmployee(String id, String name, String phone, String email, String department, String role) {
+        this(id, name, phone, email, department, role, null);
+    }
+
+    /** Creates an adapted employee including the optional manager ID. */
     @JsonCreator
     public JsonAdaptedEmployee(@JsonProperty("id") String id, @JsonProperty("name") String name,
             @JsonProperty("phone") String phone, @JsonProperty("email") String email,
-            @JsonProperty("department") String department, @JsonProperty("role") String role) {
+            @JsonProperty("department") String department, @JsonProperty("role") String role,
+            @JsonProperty("managerId") String managerId) {
         this.id = id;
         this.name = name;
         this.phone = phone;
         this.email = email;
         this.department = department;
         this.role = role;
+        this.managerId = managerId;
     }
 
     /**
@@ -51,6 +59,7 @@ class JsonAdaptedEmployee {
         email = source.getEmail().value;
         department = source.getDepartment().value;
         role = source.getRole().value;
+        managerId = source.getManagerId().map(employeeId -> employeeId.value).orElse(null);
     }
 
     /**
@@ -109,7 +118,11 @@ class JsonAdaptedEmployee {
         }
         final Role modelRole = new Role(role);
 
-        return new Employee(modelId, modelName, modelPhone, modelEmail, modelDepartment, modelRole);
+        if (managerId != null && !EmployeeId.isValidEmployeeId(managerId)) {
+            throw new IllegalValueException(EmployeeId.MESSAGE_CONSTRAINTS);
+        }
+        return new Employee(modelId, modelName, modelPhone, modelEmail, modelDepartment, modelRole,
+                managerId == null ? null : new EmployeeId(managerId));
     }
 
 }
