@@ -59,6 +59,27 @@ public class CsvUtilTest {
     }
 
     @Test
+    public void parseCsvLine_quoteInsideUnquotedValue_throwsIllegalValueException() {
+        assertThrows(IllegalValueException.class, CsvUtil.MESSAGE_MISPLACED_QUOTE, () ->
+                CsvUtil.parseCsvLine("E0001,A\"li\"ce"));
+        assertThrows(IllegalValueException.class, CsvUtil.MESSAGE_MISPLACED_QUOTE, () ->
+                CsvUtil.parseCsvLine("E0001, \"Alice\""));
+    }
+
+    @Test
+    public void parseCsvLine_textAfterClosingQuote_throwsIllegalValueException() {
+        assertThrows(IllegalValueException.class, CsvUtil.MESSAGE_MISPLACED_QUOTE, () ->
+                CsvUtil.parseCsvLine("E0001,\"Ali\"ce"));
+        assertThrows(IllegalValueException.class, CsvUtil.MESSAGE_MISPLACED_QUOTE, () ->
+                CsvUtil.parseCsvLine("\"E0001\" ,Alice"));
+    }
+
+    @Test
+    public void parseCsvLine_quotedEmptyValueAndTrailingComma_emptyValues() throws Exception {
+        assertEquals(List.of("", "Alice", ""), CsvUtil.parseCsvLine("\"\",Alice,"));
+    }
+
+    @Test
     public void parseCsvLine_outputOfToCsvLine_sameValues() throws Exception {
         List<String> values = List.of("E0001", "O'Brien, \"Jim\"", "R&D, Asia", "");
         assertEquals(values, CsvUtil.parseCsvLine(CsvUtil.toCsvLine(values)));
