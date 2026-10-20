@@ -1,5 +1,6 @@
 package seedu.address.model;
 
+import java.util.Comparator;
 import java.util.function.Predicate;
 
 import javafx.collections.ObservableList;
@@ -61,7 +62,7 @@ public interface Model {
      */
     void setEmployee(Employee target, Employee editedEmployee);
 
-    /** Returns an unmodifiable view of the filtered employee list */
+    /** Returns an unmodifiable view of the filtered employee list, in the current sort order */
     ObservableList<Employee> getFilteredEmployeeList();
 
     /**
@@ -69,4 +70,13 @@ public interface Model {
      * @throws NullPointerException if {@code predicate} is null.
      */
     void updateFilteredEmployeeList(Predicate<Employee> predicate);
+
+    /**
+     * Sorts the displayed employee list with the given {@code comparator}. The stored order is not changed.
+     * @throws NullPointerException if {@code comparator} is null.
+     */
+    void updateEmployeeSortOrder(Comparator<Employee> comparator);
+
+    /** Shows the displayed employee list in the order in which the employees are stored. */
+    void resetEmployeeSortOrder();
 }

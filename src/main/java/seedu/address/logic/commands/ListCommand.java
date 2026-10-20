@@ -23,6 +23,7 @@ public class ListCommand extends Command {
     public CommandResult execute(Model model) {
         requireNonNull(model);
         model.updateFilteredEmployeeList(PREDICATE_SHOW_ALL_EMPLOYEES);
+        model.resetEmployeeSortOrder();
         String feedbackToUser = model.getFilteredEmployeeList().isEmpty()
                 ? MESSAGE_EMPTY_LIST
                 : MESSAGE_SUCCESS;

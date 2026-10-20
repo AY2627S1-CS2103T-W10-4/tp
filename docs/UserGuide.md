@@ -33,6 +33,8 @@ HuntR is based on [AddressBook-Level3](https://github.com/se-edu/addressbook-lev
 
    * `list` : Lists all employees.
 
+   * `sort department` : Sorts the displayed employees by department, from A to Z.
+
    * `add id/E0123 n/John Tan p/91234567 e/johntan@example.com d/Engineering r/Software Engineer` : Adds an employee named `John Tan` to HuntR.
 
    * `edit id/E0123 p/92345678 r/Senior Software Engineer` : Updates the phone number and role of employee `E0123`.
@@ -103,7 +105,7 @@ Examples:
 ### Listing all employees: `list`
 
 Shows all employees stored in HuntR as a numbered list. Each entry includes the employee's name, employee ID,
-phone number, email, department, and role.
+phone number, email, department, and role. Employees are shown in the order in which they were added, so `list` also undoes any `sort`.
 
 Format: `list`
 
@@ -194,6 +196,31 @@ Example: delete id/EMP-0042
 
 A valid ID that does not exist produces `No employee with ID EMP-0042 was found.` (using the entered ID), without the usage block. No records are changed. This also applies to deleting an employee twice or deleting from an empty roster.
 
+### Sorting employees: `sort`
+
+Sorts the displayed employees in ascending order by one field.
+
+Format: `sort FIELD`
+
+* `FIELD` must be one of `id`, `name`, `department` or `role`. It is not case-sensitive, so `Department` also works.
+* Sorting is from A to Z and ignores letter case. Employees with the same value are ordered by employee ID. Text is compared character by character, so `E10` comes before `E2`.
+* Sorting only changes the order in which employees are shown. Your saved data is not changed.
+* The sorted order is kept when you use `find`, and when you add, edit or delete employees.
+* Use [`list`](#listing-all-employees-list) to show the employees in the order in which they were added again.
+
+Examples:
+* `sort name` shows the employees in alphabetical order of their names.
+* `sort department` groups the employees by department, from `Engineering` to `Sales`.
+* `sort role` sorts the employees by their role.
+
+The following input errors leave the displayed order unchanged. Each message is followed by the usage of the command.
+
+| Input | Error message |
+| --- | --- |
+| `sort` | `Invalid command format!` |
+| `sort salary` | `Unknown sort field: salary. The field must be one of: id, name, department, role.` |
+| `sort name asc` | `Unknown sort field: name asc. The field must be one of: id, name, department, role.` (give only one field) |
+
 ### Clearing all employees: `clear`
 
 Clears all employee records from HuntR.
@@ -257,4 +284,5 @@ Action     | Format, Examples
 **Find**   | `find KEYWORD [MORE_KEYWORDS]`<br> e.g., `find James Jake`
 **List**   | `list`
 **Help**   | `help`
+**Sort**   | `sort FIELD`<br> e.g., `sort department`
 **Exit**   | `exit`

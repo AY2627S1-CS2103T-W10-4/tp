@@ -5,6 +5,8 @@ import static seedu.address.logic.commands.CommandTestUtil.showEmployeeAtIndex;
 import static seedu.address.testutil.TypicalEmployees.getTypicalAddressBook;
 import static seedu.address.testutil.TypicalIndexes.INDEX_FIRST_EMPLOYEE;
 
+import java.util.Comparator;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -12,6 +14,7 @@ import seedu.address.model.AddressBook;
 import seedu.address.model.Model;
 import seedu.address.model.ModelManager;
 import seedu.address.model.UserPrefs;
+import seedu.address.model.employee.Employee;
 
 /**
  * Contains integration tests (interaction with the Model) and unit tests for ListCommand.
@@ -35,6 +38,13 @@ public class ListCommandTest {
     @Test
     public void execute_listIsFiltered_showsEverything() {
         showEmployeeAtIndex(model, INDEX_FIRST_EMPLOYEE);
+        assertCommandSuccess(new ListCommand(), model, ListCommand.MESSAGE_SUCCESS, expectedModel);
+    }
+
+    @Test
+    public void execute_listIsSorted_restoresSavedOrder() {
+        model.updateEmployeeSortOrder(Comparator.comparing((Employee employee) -> employee.getName().fullName)
+                .reversed());
         assertCommandSuccess(new ListCommand(), model, ListCommand.MESSAGE_SUCCESS, expectedModel);
     }
 

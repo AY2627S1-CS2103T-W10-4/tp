@@ -38,4 +38,9 @@ public class HelpCommandTest {
                 "edit id/EMPLOYEE_ID [n/NAME] [p/PHONE] [e/EMAIL] [d/DEPARTMENT] [r/ROLE]"));
         assertTrue(COMMAND_SUMMARY.contains("delete id/EMPLOYEE_ID"));
     }
+
+    @Test
+    public void commandSummary_listsSortCommandWithItsField() {
+        assertTrue(COMMAND_SUMMARY.contains("sort FIELD"));
+    }
 }

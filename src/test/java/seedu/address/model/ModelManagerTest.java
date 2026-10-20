@@ -7,12 +7,15 @@ import static seedu.address.model.Model.PREDICATE_SHOW_ALL_EMPLOYEES;
 import static seedu.address.testutil.Assert.assertThrows;
 import static seedu.address.testutil.TypicalEmployees.ALICE;
 import static seedu.address.testutil.TypicalEmployees.BENSON;
+import static seedu.address.testutil.TypicalEmployees.CARL;
 
+import java.util.Comparator;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
 import seedu.address.commons.core.GuiSettings;
+import seedu.address.model.employee.Employee;
 import seedu.address.model.employee.NameContainsKeywordsPredicate;
 import seedu.address.testutil.AddressBookBuilder;
 
@@ -74,6 +77,36 @@ public class ModelManagerTest {
     }
 
     @Test
+    public void updateEmployeeSortOrder_nullComparator_throwsNullPointerException() {
+        assertThrows(NullPointerException.class, () -> modelManager.updateEmployeeSortOrder(null));
+    }
+
+    @Test
+    public void updateEmployeeSortOrder_sortsDisplayedListButNotStoredList() {
+        // stored order: Benson, Carl, Alice
+        AddressBook addressBook = new AddressBookBuilder().withEmployee(BENSON).withEmployee(CARL)
+                .withEmployee(ALICE).build();
+        modelManager = new ModelManager(addressBook, new UserPrefs());
+
+        modelManager.updateEmployeeSortOrder(Comparator.comparing(employee -> employee.getName().fullName));
+        assertEquals(List.of(ALICE, BENSON, CARL), modelManager.getFilteredEmployeeList());
+        assertEquals(List.of(BENSON, CARL, ALICE), modelManager.getAddressBook().getEmployeeList());
+
+        modelManager.resetEmployeeSortOrder();
+        assertEquals(List.of(BENSON, CARL, ALICE), modelManager.getFilteredEmployeeList());
+    }
+
+    @Test
+    public void updateEmployeeSortOrder_newEmployeeIsShownInSortedPosition() {
+        modelManager = new ModelManager(new AddressBookBuilder().withEmployee(BENSON).withEmployee(CARL).build(),
+                new UserPrefs());
+        modelManager.updateEmployeeSortOrder(Comparator.comparing(employee -> employee.getName().fullName));
+
+        modelManager.addEmployee(ALICE);
+        assertEquals(List.of(ALICE, BENSON, CARL), modelManager.getFilteredEmployeeList());
+    }
+
+    @Test
     public void equals() {
         AddressBook addressBook = new AddressBookBuilder().withEmployee(ALICE).withEmployee(BENSON).build();
         AddressBook differentAddressBook = new AddressBook();
@@ -95,6 +128,12 @@ public class ModelManagerTest {
 
         // different addressBook -> returns false
         assertFalse(modelManager.equals(new ModelManager(differentAddressBook, userPrefs)));
+
+        // different sort order -> returns false
+        ModelManager sortedModelManager = new ModelManager(addressBook, userPrefs);
+        sortedModelManager.updateEmployeeSortOrder(
+                Comparator.comparing((Employee employee) -> employee.getName().fullName).reversed());
+        assertFalse(modelManager.equals(sortedModelManager));
 
         // different filteredList -> returns false
         String[] keywords = ALICE.getName().fullName.split("\\s+");
