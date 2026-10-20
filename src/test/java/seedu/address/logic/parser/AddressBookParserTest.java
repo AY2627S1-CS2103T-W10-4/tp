@@ -18,12 +18,14 @@ import seedu.address.logic.commands.DeleteCommand;
 import seedu.address.logic.commands.EditCommand;
 import seedu.address.logic.commands.EditCommand.EditEmployeeDescriptor;
 import seedu.address.logic.commands.ExitCommand;
+import seedu.address.logic.commands.FilterCommand;
 import seedu.address.logic.commands.FindCommand;
 import seedu.address.logic.commands.HelpCommand;
 import seedu.address.logic.commands.ListCommand;
 import seedu.address.logic.parser.exceptions.ParseException;
 import seedu.address.model.employee.Employee;
 import seedu.address.model.employee.EmployeeId;
+import seedu.address.model.employee.EmployeeMatchesCriteriaPredicate;
 import seedu.address.model.employee.NameContainsKeywordsPredicate;
 import seedu.address.testutil.EditEmployeeDescriptorBuilder;
 import seedu.address.testutil.EmployeeBuilder;
@@ -80,6 +82,14 @@ public class AddressBookParserTest {
                 parser.parseCommand(ExitCommand.COMMAND_WORD + " hello"));
         assertThrows(ParseException.class, expectedMessage, () ->
                 parser.parseCommand(ExitCommand.COMMAND_WORD + " 1"));
+    }
+
+    @Test
+    public void parseCommand_filter() throws Exception {
+        FilterCommand command = (FilterCommand) parser.parseCommand(
+                FilterCommand.COMMAND_WORD + " d/Engineering r/Manager");
+        assertEquals(new FilterCommand(
+                new EmployeeMatchesCriteriaPredicate(List.of("Engineering"), List.of("Manager"))), command);
     }
 
     @Test

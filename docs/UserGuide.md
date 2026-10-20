@@ -39,6 +39,8 @@ HuntR is based on [AddressBook-Level3](https://github.com/se-edu/addressbook-lev
 
    * `find Alex` : Finds employees whose names contain the word `Alex`.
 
+   * `filter d/Engineering r/Manager` : Shows only the employees in the Engineering department whose role contains `Manager`.
+
    * `delete id/E0123` : Deletes employee `E0123`, including when hidden by a search.
 
    * `clear` : Deletes all employees.
@@ -111,6 +113,8 @@ The command takes no parameters. Leading and trailing spaces are ignored, but ad
 
 If there are no employee records, HuntR displays an empty employee list and explains how to add an employee.
 
+Use `list` to show every employee again after a `find` or `filter`.
+
 ### Editing an employee: `edit`
 
 Edits an existing employee in HuntR using their employee ID.
@@ -152,6 +156,35 @@ Examples:
 * `find John` returns employees named `john` and `John Doe`
 * `find alex david` returns `Alex Yeoh`, `David Li`<br>
   ![result for 'find alex david'](images/findAlexDavidResult.png)
+
+### Filtering employees by department and role: `filter`
+
+Shows only the employees whose department and role match all the values you give.
+
+Format: `filter [d/DEPARTMENT] [r/ROLE]`
+
+* At least one of `d/` or `r/` must be given. If you give both, an employee must match **both** (an `AND` search), so the list is narrowed further.
+* Matching is case-insensitive and uses whole words, like `find`. For example, `d/engineering` matches `Engineering`, and `d/Resources` matches `Human Resources`, but `d/Engineer` does not match `Engineering`.
+* If a value has several words, every word must appear in that field, in any order. For example, `r/Software Engineer` matches `Software Engineer` but not `Software Manager`.
+* Only the department and the role can be filtered. To search by name, use [`find`](#finding-employees-by-name-find).
+* Filtering only changes what is shown. Your saved data is not changed. Use [`list`](#listing-all-employees-list) to show all employees again.
+* A filter with no matches is valid and shows an empty list with the message `0 employees listed!`.
+* Leading and trailing spaces are ignored, and the parameters can be in any order.
+
+Examples:
+* `filter d/Engineering` shows everyone in the Engineering department.
+* `filter r/Manager` shows employees whose role contains the word `Manager`, such as `Engineering Manager`.
+* `filter d/Engineering r/Manager` shows only the Engineering employees whose role contains `Manager`.
+
+The following input errors leave the displayed list unchanged. Each message is followed by the usage of the command.
+
+| Input | Error message |
+| --- | --- |
+| `filter` or `filter Engineering` | `Invalid command format!` |
+| `filter n/John` or `filter x/foo` | `Unknown parameter: n/` (or the parameter given) |
+| `filter d/` or `filter r/` | `Department should not be blank.` (or `Role should not be blank.`) |
+| `filter d/@@@` | The department constraints message |
+| `filter d/Sales d/Finance` | `Multiple values specified for the following single-valued field(s): d/` |
 
 ### Deleting an employee: `delete`
 
@@ -255,6 +288,7 @@ Action     | Format, Examples
 **Delete** | `delete id/EMPLOYEE_ID`<br> e.g., `delete id/EMP-0042`
 **Edit**   | `edit id/EMPLOYEE_ID [n/NAME] [p/PHONE] [e/EMAIL] [d/DEPARTMENT] [r/ROLE]`<br>e.g., `edit id/E0001 p/91234567 e/alex@example.com`
 **Find**   | `find KEYWORD [MORE_KEYWORDS]`<br> e.g., `find James Jake`
+**Filter** | `filter [d/DEPARTMENT] [r/ROLE]`<br> e.g., `filter d/Engineering r/Manager`
 **List**   | `list`
 **Help**   | `help`
 **Exit**   | `exit`
