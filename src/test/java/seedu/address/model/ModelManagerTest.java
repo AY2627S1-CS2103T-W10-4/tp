@@ -69,6 +69,14 @@ public class ModelManagerTest {
     }
 
     @Test
+    public void hasEmployee_employeeArchived_returnsTrue() {
+        modelManager.addEmployee(ALICE);
+        modelManager.archiveEmployee(ALICE);
+        assertTrue(modelManager.hasEmployee(ALICE));
+        assertTrue(modelManager.getFilteredEmployeeList().isEmpty());
+    }
+
+    @Test
     public void getFilteredEmployeeList_modifyList_throwsUnsupportedOperationException() {
         assertThrows(UnsupportedOperationException.class, () -> modelManager.getFilteredEmployeeList().remove(0));
     }

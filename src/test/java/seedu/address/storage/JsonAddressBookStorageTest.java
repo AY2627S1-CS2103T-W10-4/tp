@@ -9,6 +9,7 @@ import static seedu.address.testutil.TypicalEmployees.IDA;
 import static seedu.address.testutil.TypicalEmployees.getTypicalAddressBook;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -84,6 +85,28 @@ public class JsonAddressBookStorageTest {
         readBack = jsonAddressBookStorage.readAddressBook().get(); // file path not specified
         assertEquals(original, new AddressBook(readBack));
 
+    }
+
+    @Test
+    public void readAndSaveAddressBook_withArchivedEmployee_preservesStatus() throws Exception {
+        Path filePath = testFolder.resolve("ArchivedAddressBook.json");
+        AddressBook original = new AddressBook();
+        original.addEmployee(ALICE.withArchived(true));
+        JsonAddressBookStorage storage = new JsonAddressBookStorage(filePath);
+        storage.saveAddressBook(original);
+        assertEquals(original, new AddressBook(storage.readAddressBook().orElseThrow()));
+    }
+
+    @Test
+    public void readAddressBook_legacyEmployeeWithoutArchivedStatus_loadsAsActive() throws Exception {
+        Path filePath = testFolder.resolve("LegacyAddressBook.json");
+        Files.writeString(filePath, """
+                {"employees":[{"id":"E0001","name":"Alice Pauline",
+                "phone":"94351253","email":"alice@example.com","department":"Engineering",
+                "role":"Software Engineer"}]}
+                """);
+        JsonAddressBookStorage storage = new JsonAddressBookStorage(filePath);
+        assertFalse(storage.readAddressBook().orElseThrow().getEmployeeList().getFirst().isArchived());
     }
 
     @Test

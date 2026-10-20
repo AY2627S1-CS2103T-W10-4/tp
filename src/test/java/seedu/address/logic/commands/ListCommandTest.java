@@ -2,6 +2,7 @@ package seedu.address.logic.commands;
 
 import static seedu.address.logic.commands.CommandTestUtil.assertCommandSuccess;
 import static seedu.address.logic.commands.CommandTestUtil.showEmployeeAtIndex;
+import static seedu.address.testutil.TypicalEmployees.ALICE;
 import static seedu.address.testutil.TypicalEmployees.getTypicalAddressBook;
 import static seedu.address.testutil.TypicalIndexes.INDEX_FIRST_EMPLOYEE;
 
@@ -12,6 +13,7 @@ import seedu.address.model.AddressBook;
 import seedu.address.model.Model;
 import seedu.address.model.ModelManager;
 import seedu.address.model.UserPrefs;
+import seedu.address.model.employee.Employee;
 
 /**
  * Contains integration tests (interaction with the Model) and unit tests for ListCommand.
@@ -44,5 +46,17 @@ public class ListCommandTest {
         expectedModel = new ModelManager(model.getAddressBook(), new UserPrefs());
 
         assertCommandSuccess(new ListCommand(), model, ListCommand.MESSAGE_EMPTY_LIST, expectedModel);
+    }
+
+    @Test
+    public void execute_listAndListArchived_showOnlyRequestedStatus() throws Exception {
+        Employee archivedAlice = ALICE.withArchived(true);
+        model.setEmployee(ALICE, archivedAlice);
+
+        new ListCommand().execute(model);
+        org.junit.jupiter.api.Assertions.assertFalse(model.getFilteredEmployeeList().contains(archivedAlice));
+        new ListCommand(true).execute(model);
+        org.junit.jupiter.api.Assertions.assertEquals(java.util.List.of(archivedAlice),
+                model.getFilteredEmployeeList());
     }
 }

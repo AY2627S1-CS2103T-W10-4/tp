@@ -130,7 +130,22 @@ public class AddCommandTest {
         }
 
         @Override
+        public void clearEmployees() {
+            throw new AssertionError("This method should not be called.");
+        }
+
+        @Override
         public void setEmployee(Employee target, Employee editedEmployee) {
+            throw new AssertionError("This method should not be called.");
+        }
+
+        @Override
+        public void archiveEmployee(Employee employee) {
+            throw new AssertionError("This method should not be called.");
+        }
+
+        @Override
+        public void unarchiveEmployee(Employee employee) {
             throw new AssertionError("This method should not be called.");
         }
 
@@ -141,6 +156,11 @@ public class AddCommandTest {
 
         @Override
         public void updateFilteredEmployeeList(Predicate<Employee> predicate) {
+            throw new AssertionError("This method should not be called.");
+        }
+
+        @Override
+        public void showArchivedEmployees() {
             throw new AssertionError("This method should not be called.");
         }
     }

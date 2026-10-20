@@ -47,6 +47,9 @@ public interface Model {
      */
     void deleteEmployee(Employee target);
 
+    /** Removes all active employees while preserving archived employee records. */
+    void clearEmployees();
+
     /**
      * Adds the given employee.
      * {@code employee} must not already exist in the address book.
@@ -61,6 +64,12 @@ public interface Model {
      */
     void setEmployee(Employee target, Employee editedEmployee);
 
+    /** Replaces an employee with an archived copy. */
+    void archiveEmployee(Employee employee);
+
+    /** Replaces an employee with an active copy. */
+    void unarchiveEmployee(Employee employee);
+
     /** Returns an unmodifiable view of the filtered employee list */
     ObservableList<Employee> getFilteredEmployeeList();
 
@@ -69,4 +78,7 @@ public interface Model {
      * @throws NullPointerException if {@code predicate} is null.
      */
     void updateFilteredEmployeeList(Predicate<Employee> predicate);
+
+    /** Updates the filtered list to show archived employees only. */
+    void showArchivedEmployees();
 }

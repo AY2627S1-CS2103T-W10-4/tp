@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import seedu.address.logic.commands.AddCommand;
+import seedu.address.logic.commands.ArchiveCommand;
 import seedu.address.logic.commands.CommandResult;
 import seedu.address.logic.commands.ListCommand;
 import seedu.address.logic.commands.exceptions.CommandException;
@@ -86,6 +87,41 @@ public class LogicManagerTest {
     @Test
     public void getFilteredEmployeeList_modifyList_throwsUnsupportedOperationException() {
         assertThrows(UnsupportedOperationException.class, () -> logic.getFilteredEmployeeList().remove(0));
+    }
+
+    @Test
+    public void execute_archiveFindListArchivedUnarchive_switchesFilteredView() throws Exception {
+        logic.execute("add" + ID_DESC_AMY + NAME_DESC_AMY + PHONE_DESC_AMY + EMAIL_DESC_AMY
+                + DEPARTMENT_DESC_AMY + ROLE_DESC_AMY);
+        CommandResult archiveResult = logic.execute("archive id/E1001");
+        assertEquals(String.format(ArchiveCommand.MESSAGE_SUCCESS, Messages.format(AMY)),
+                archiveResult.getFeedbackToUser());
+        assertEquals(0, logic.getFilteredEmployeeList().size());
+
+        CommandResult findResult = logic.execute("find Amy");
+        assertEquals("0 employees listed!", findResult.getFeedbackToUser());
+        assertCommandException("add" + ID_DESC_AMY + NAME_DESC_AMY + PHONE_DESC_AMY + EMAIL_DESC_AMY
+                + DEPARTMENT_DESC_AMY + ROLE_DESC_AMY,
+                "An employee with Employee ID E1001 already exists.");
+        CommandResult archivesResult = logic.execute("list archived");
+        assertEquals(ListCommand.MESSAGE_ARCHIVED_SUCCESS, archivesResult.getFeedbackToUser());
+        assertEquals(AMY.withArchived(true), logic.getFilteredEmployeeList().getFirst());
+
+        logic.execute("unarchive id/e1001");
+        assertEquals(AMY, logic.getFilteredEmployeeList().getFirst());
+    }
+
+    @Test
+    public void execute_clear_persistedArchiveIsPreserved() throws Exception {
+        logic.execute("add" + ID_DESC_AMY + NAME_DESC_AMY + PHONE_DESC_AMY + EMAIL_DESC_AMY
+                + DEPARTMENT_DESC_AMY + ROLE_DESC_AMY);
+        logic.execute("archive id/E1001");
+        logic.execute("clear");
+
+        ReadOnlyAddressBook savedAddressBook = new JsonAddressBookStorage(
+                temporaryFolder.resolve("addressBook.json")).readAddressBook().orElseThrow();
+        assertEquals(1, savedAddressBook.getEmployeeList().size());
+        assertEquals(AMY.withArchived(true), savedAddressBook.getEmployeeList().getFirst());
     }
 
     /**

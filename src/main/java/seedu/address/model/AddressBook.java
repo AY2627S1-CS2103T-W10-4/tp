@@ -42,7 +42,6 @@ public class AddressBook implements ReadOnlyAddressBook {
      */
     public void resetData(ReadOnlyAddressBook newData) {
         requireNonNull(newData);
-
         setEmployees(newData.getEmployeeList());
     }
 
@@ -82,6 +81,12 @@ public class AddressBook implements ReadOnlyAddressBook {
      */
     public void removeEmployee(Employee key) {
         employees.remove(key);
+    }
+
+    /** Removes all active employees without modifying the archive. */
+    public void clearEmployees() {
+        employees.setEmployees(employees.asUnmodifiableObservableList().stream()
+                .filter(Employee::isArchived).toList());
     }
 
     //// util methods
