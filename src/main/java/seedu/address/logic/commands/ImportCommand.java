@@ -17,7 +17,6 @@ import java.util.logging.Logger;
 import seedu.address.commons.core.LogsCenter;
 import seedu.address.commons.exceptions.IllegalValueException;
 import seedu.address.commons.util.CsvUtil;
-import seedu.address.commons.util.ToStringBuilder;
 import seedu.address.logic.commands.exceptions.CommandException;
 import seedu.address.logic.parser.ParserUtil;
 import seedu.address.model.Model;
@@ -27,7 +26,7 @@ import seedu.address.model.employee.EmployeeId;
 /**
  * Adds every employee in a CSV file. If any row is invalid, no employee is added.
  */
-public class ImportCommand extends Command {
+public class ImportCommand extends CsvFileCommand {
 
     public static final String COMMAND_WORD = "import";
 
@@ -58,41 +57,48 @@ public class ImportCommand extends Command {
 
     private static final Logger logger = LogsCenter.getLogger(ImportCommand.class);
 
-    private final Path filePath;
-
     /**
-     * Creates an ImportCommand to add the employees in the CSV file at {@code filePath}.
+     * Creates an ImportCommand to add the employees in the CSV file at {@code filePath}, relative to the folder
+     * HuntR runs from.
      */
     public ImportCommand(Path filePath) {
-        requireNonNull(filePath);
-        this.filePath = filePath;
+        this(DEFAULT_APP_FOLDER, filePath);
+    }
+
+    /**
+     * Creates an ImportCommand to add the employees in the CSV file at {@code filePath}, relative to
+     * {@code appFolder}.
+     */
+    public ImportCommand(Path appFolder, Path filePath) {
+        super(appFolder, filePath);
     }
 
     @Override
     public CommandResult execute(Model model) throws CommandException {
         requireNonNull(model);
-        List<String> lines = readLines();
+        Path resolvedPath = resolveFilePath();
+        List<String> lines = readLines(resolvedPath);
         checkHeader(lines);
         List<Employee> employees = parseEmployees(lines.subList(1, lines.size()), model);
 
         employees.forEach(model::addEmployee);
         model.updateFilteredEmployeeList(Model.PREDICATE_SHOW_ALL_EMPLOYEES);
 
-        logger.info("Imported " + employees.size() + " employees from " + filePath);
-        return new CommandResult(String.format(MESSAGE_SUCCESS, employees.size(), filePath));
+        logger.info("Imported " + employees.size() + " employees from " + resolvedPath);
+        return new CommandResult(String.format(MESSAGE_SUCCESS, employees.size(), getFilePath()));
     }
 
-    private List<String> readLines() throws CommandException {
-        if (!Files.isRegularFile(filePath)) {
-            throw new CommandException(String.format(MESSAGE_FILE_NOT_FOUND, filePath));
+    private List<String> readLines(Path resolvedPath) throws CommandException {
+        if (!Files.isRegularFile(resolvedPath)) {
+            throw new CommandException(String.format(MESSAGE_FILE_NOT_FOUND, getFilePath()));
         }
         try {
-            return Files.readAllLines(filePath, StandardCharsets.UTF_8);
+            return Files.readAllLines(resolvedPath, StandardCharsets.UTF_8);
         } catch (CharacterCodingException cce) {
-            throw new CommandException(String.format(MESSAGE_NOT_UTF8, filePath), cce);
+            throw new CommandException(String.format(MESSAGE_NOT_UTF8, getFilePath()), cce);
         } catch (IOException ioe) {
-            logger.warning("Failed to read " + filePath + ": " + ioe);
-            throw new CommandException(String.format(MESSAGE_READ_FAILED, filePath), ioe);
+            logger.warning("Failed to read " + resolvedPath + ": " + ioe);
+            throw new CommandException(String.format(MESSAGE_READ_FAILED, getFilePath()), ioe);
         }
     }
 
@@ -103,7 +109,7 @@ public class ImportCommand extends Command {
     private void checkHeader(List<String> lines) throws CommandException {
         boolean isEmpty = lines.stream().allMatch(String::isBlank);
         if (isEmpty) {
-            throw new CommandException(String.format(MESSAGE_EMPTY_FILE, filePath));
+            throw new CommandException(String.format(MESSAGE_EMPTY_FILE, getFilePath()));
         }
 
         String headerLine = lines.get(0).replace(BYTE_ORDER_MARK, "");
@@ -113,10 +119,10 @@ public class ImportCommand extends Command {
                     .map(column -> column.trim().toLowerCase(Locale.ROOT))
                     .toList();
         } catch (IllegalValueException ive) {
-            throw new CommandException(String.format(MESSAGE_WRONG_HEADER, filePath), ive);
+            throw new CommandException(String.format(MESSAGE_WRONG_HEADER, getFilePath()), ive);
         }
         if (!columns.equals(ExportCommand.CSV_COLUMNS)) {
-            throw new CommandException(String.format(MESSAGE_WRONG_HEADER, filePath));
+            throw new CommandException(String.format(MESSAGE_WRONG_HEADER, getFilePath()));
         }
     }
 
@@ -141,7 +147,7 @@ public class ImportCommand extends Command {
         }
 
         if (employees.isEmpty()) {
-            throw new CommandException(String.format(MESSAGE_NO_EMPLOYEES, filePath));
+            throw new CommandException(String.format(MESSAGE_NO_EMPLOYEES, getFilePath()));
         }
         return employees;
     }
@@ -181,26 +187,5 @@ public class ImportCommand extends Command {
 
     private static CommandException createRowError(int rowNumber, String problem) {
         return new CommandException(String.format(MESSAGE_INVALID_ROW, rowNumber, problem));
-    }
-
-    @Override
-    public boolean equals(Object other) {
-        if (other == this) {
-            return true;
-        }
-
-        // instanceof handles nulls
-        if (!(other instanceof ImportCommand otherImportCommand)) {
-            return false;
-        }
-
-        return filePath.equals(otherImportCommand.filePath);
-    }
-
-    @Override
-    public String toString() {
-        return new ToStringBuilder(this)
-                .add("filePath", filePath)
-                .toString();
     }
 }

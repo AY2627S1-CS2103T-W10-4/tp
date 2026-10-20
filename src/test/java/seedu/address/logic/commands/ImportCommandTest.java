@@ -3,10 +3,12 @@ package seedu.address.logic.commands;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static seedu.address.logic.commands.CommandTestUtil.VALID_NAME_AMY;
 import static seedu.address.logic.commands.CommandTestUtil.VALID_PHONE_BOB;
 import static seedu.address.logic.commands.CommandTestUtil.assertCommandFailure;
 import static seedu.address.logic.commands.CommandTestUtil.assertCommandSuccess;
 import static seedu.address.testutil.Assert.assertThrows;
+import static seedu.address.testutil.TestUtil.createSymbolicLinkOrSkip;
 import static seedu.address.testutil.TypicalEmployees.ALICE;
 import static seedu.address.testutil.TypicalEmployees.AMY;
 import static seedu.address.testutil.TypicalEmployees.BOB;
@@ -19,6 +21,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -34,28 +37,39 @@ import seedu.address.testutil.EmployeeBuilder;
 
 public class ImportCommandTest {
 
+    private static final Path STAFF_CSV = Paths.get("staff.csv");
     private static final String AMY_ROW = ExportCommand.toCsvLine(AMY);
     private static final String BOB_ROW = ExportCommand.toCsvLine(BOB);
 
     @TempDir
     public Path testFolder;
 
+    private Path appFolder;
+    private Path outsideFolder;
+
     private final Model model = new ModelManager(getTypicalAddressBook(), new UserPrefs());
+
+    @BeforeEach
+    public void setUp() throws Exception {
+        appFolder = Files.createDirectory(testFolder.resolve("app"));
+        outsideFolder = Files.createDirectory(testFolder.resolve("outside"));
+    }
 
     @Test
     public void constructor_nullPath_throwsNullPointerException() {
         assertThrows(NullPointerException.class, () -> new ImportCommand(null));
+        assertThrows(NullPointerException.class, () -> new ImportCommand(null, STAFF_CSV));
     }
 
     @Test
     public void execute_validRows_employeesAdded() throws Exception {
-        Path filePath = writeCsv(ExportCommand.CSV_HEADER, AMY_ROW, BOB_ROW);
+        writeCsv(ExportCommand.CSV_HEADER, AMY_ROW, BOB_ROW);
         Model expectedModel = new ModelManager(getTypicalAddressBook(), new UserPrefs());
         expectedModel.addEmployee(AMY);
         expectedModel.addEmployee(BOB);
 
-        assertCommandSuccess(new ImportCommand(filePath), model,
-                String.format(ImportCommand.MESSAGE_SUCCESS, 2, filePath), expectedModel);
+        assertCommandSuccess(importStaffCsv(), model, String.format(ImportCommand.MESSAGE_SUCCESS, 2, STAFF_CSV),
+                expectedModel);
     }
 
     @Test
@@ -64,153 +78,178 @@ public class ImportCommandTest {
                 .withRole("Engineer (Backend), Senior").build();
         AddressBook original = getTypicalAddressBook();
         original.addEmployee(quotedEmployee);
-        Path filePath = testFolder.resolve("staff.csv");
-        new ExportCommand(filePath).execute(new ModelManager(original, new UserPrefs()));
+        new ExportCommand(appFolder, STAFF_CSV).execute(new ModelManager(original, new UserPrefs()));
 
         Model emptyModel = new ModelManager();
-        new ImportCommand(filePath).execute(emptyModel);
+        importStaffCsv().execute(emptyModel);
 
         assertEquals(original, emptyModel.getAddressBook());
     }
 
     @Test
     public void execute_filteredList_showsAllEmployeesAfterImport() throws Exception {
+        writeCsv(ExportCommand.CSV_HEADER, AMY_ROW);
         model.updateFilteredEmployeeList(employee -> false);
 
-        new ImportCommand(writeCsv(ExportCommand.CSV_HEADER, AMY_ROW)).execute(model);
+        importStaffCsv().execute(model);
 
         assertEquals(model.getAddressBook().getEmployeeList(), model.getFilteredEmployeeList());
     }
 
     @Test
     public void execute_byteOrderMarkBlankLinesAndHeaderCase_ignored() throws Exception {
-        Path filePath = writeCsv("﻿ID, Name ,Phone,Email,Department,ROLE", "", AMY_ROW, "  ");
+        writeCsv("﻿ID, Name ,Phone,Email,Department,ROLE", "", AMY_ROW, "  ");
         Model expectedModel = new ModelManager(getTypicalAddressBook(), new UserPrefs());
         expectedModel.addEmployee(AMY);
 
-        assertCommandSuccess(new ImportCommand(filePath), model,
-                String.format(ImportCommand.MESSAGE_SUCCESS, 1, filePath), expectedModel);
+        assertCommandSuccess(importStaffCsv(), model, String.format(ImportCommand.MESSAGE_SUCCESS, 1, STAFF_CSV),
+                expectedModel);
     }
 
     @Test
     public void execute_invalidValue_nothingAddedAndRowNamed() throws Exception {
-        String invalidPhoneRow = BOB_ROW.replace(VALID_PHONE_BOB, "911a");
-        Path filePath = writeCsv(ExportCommand.CSV_HEADER, AMY_ROW, "", invalidPhoneRow);
+        writeCsv(ExportCommand.CSV_HEADER, AMY_ROW, "", BOB_ROW.replace(VALID_PHONE_BOB, "911a"));
 
-        assertCommandFailure(new ImportCommand(filePath), model,
+        assertCommandFailure(importStaffCsv(), model,
                 String.format(ImportCommand.MESSAGE_INVALID_ROW, 4, Phone.MESSAGE_CONSTRAINTS));
     }
 
     @Test
     public void execute_blankId_nothingAddedAndRowNamed() throws Exception {
-        Path filePath = writeCsv(ExportCommand.CSV_HEADER, AMY_ROW.replace(AMY.getId().toString(), " "));
+        writeCsv(ExportCommand.CSV_HEADER, AMY_ROW.replace(AMY.getId().toString(), " "));
 
-        assertCommandFailure(new ImportCommand(filePath), model,
+        assertCommandFailure(importStaffCsv(), model,
                 String.format(ImportCommand.MESSAGE_INVALID_ROW, 2, ParserUtil.MESSAGE_BLANK_EMPLOYEE_ID));
     }
 
     @Test
     public void execute_wrongValueCount_nothingAddedAndRowNamed() throws Exception {
-        Path filePath = writeCsv(ExportCommand.CSV_HEADER, AMY_ROW + ",extra");
+        writeCsv(ExportCommand.CSV_HEADER, AMY_ROW + ",extra");
 
-        assertCommandFailure(new ImportCommand(filePath), model, String.format(ImportCommand.MESSAGE_INVALID_ROW, 2,
+        assertCommandFailure(importStaffCsv(), model, String.format(ImportCommand.MESSAGE_INVALID_ROW, 2,
                 String.format(ImportCommand.MESSAGE_WRONG_VALUE_COUNT, 7)));
     }
 
     @Test
     public void execute_unclosedQuote_nothingAddedAndRowNamed() throws Exception {
-        Path filePath = writeCsv(ExportCommand.CSV_HEADER, AMY_ROW, "E2000,\"Tan, Ah Kow");
+        writeCsv(ExportCommand.CSV_HEADER, AMY_ROW, "E2000,\"Tan, Ah Kow");
 
-        assertCommandFailure(new ImportCommand(filePath), model,
+        assertCommandFailure(importStaffCsv(), model,
                 String.format(ImportCommand.MESSAGE_INVALID_ROW, 3, CsvUtil.MESSAGE_UNCLOSED_QUOTE));
+    }
+
+    @Test
+    public void execute_misplacedQuotes_nothingAddedAndRowNamed() throws Exception {
+        // without the quotes, the name would be valid, so the row must not be read as "Amy Bee"
+        writeCsv(ExportCommand.CSV_HEADER, BOB_ROW, AMY_ROW.replace(VALID_NAME_AMY, "A\"my\" Bee"));
+
+        assertCommandFailure(importStaffCsv(), model,
+                String.format(ImportCommand.MESSAGE_INVALID_ROW, 3, CsvUtil.MESSAGE_MISPLACED_QUOTE));
     }
 
     @Test
     public void execute_duplicateIdInFile_nothingAddedAndBothRowsNamed() throws Exception {
         String sameIdRow = ExportCommand.toCsvLine(new EmployeeBuilder(BOB).withId("e1001").build());
-        Path filePath = writeCsv(ExportCommand.CSV_HEADER, AMY_ROW, sameIdRow);
+        writeCsv(ExportCommand.CSV_HEADER, AMY_ROW, sameIdRow);
 
-        assertCommandFailure(new ImportCommand(filePath), model, String.format(ImportCommand.MESSAGE_INVALID_ROW, 3,
+        assertCommandFailure(importStaffCsv(), model, String.format(ImportCommand.MESSAGE_INVALID_ROW, 3,
                 String.format(ImportCommand.MESSAGE_DUPLICATE_IN_FILE, "e1001", 2)));
     }
 
     @Test
     public void execute_idAlreadyInHuntr_nothingAddedAndRowNamed() throws Exception {
         String existingIdRow = ExportCommand.toCsvLine(new EmployeeBuilder(BOB).withId(ALICE.getId().value).build());
-        Path filePath = writeCsv(ExportCommand.CSV_HEADER, AMY_ROW, existingIdRow);
+        writeCsv(ExportCommand.CSV_HEADER, AMY_ROW, existingIdRow);
 
-        assertCommandFailure(new ImportCommand(filePath), model, String.format(ImportCommand.MESSAGE_INVALID_ROW, 3,
+        assertCommandFailure(importStaffCsv(), model, String.format(ImportCommand.MESSAGE_INVALID_ROW, 3,
                 String.format(AddCommand.MESSAGE_DUPLICATE_EMPLOYEE, ALICE.getId())));
     }
 
     @Test
     public void execute_missingFile_throwsCommandException() {
-        Path filePath = testFolder.resolve("missing.csv");
-
-        assertCommandFailure(new ImportCommand(filePath), model,
-                String.format(ImportCommand.MESSAGE_FILE_NOT_FOUND, filePath));
+        assertCommandFailure(importStaffCsv(), model, String.format(ImportCommand.MESSAGE_FILE_NOT_FOUND, STAFF_CSV));
     }
 
     @Test
     public void execute_emptyFile_throwsCommandException() throws Exception {
-        Path filePath = writeCsv("", " ");
+        writeCsv("", " ");
 
-        assertCommandFailure(new ImportCommand(filePath), model,
-                String.format(ImportCommand.MESSAGE_EMPTY_FILE, filePath));
+        assertCommandFailure(importStaffCsv(), model, String.format(ImportCommand.MESSAGE_EMPTY_FILE, STAFF_CSV));
     }
 
     @Test
     public void execute_wrongHeader_throwsCommandException() throws Exception {
-        String expectedMessage = String.format(ImportCommand.MESSAGE_WRONG_HEADER, testFolder.resolve("staff.csv"));
+        String expectedMessage = String.format(ImportCommand.MESSAGE_WRONG_HEADER, STAFF_CSV);
 
-        assertCommandFailure(new ImportCommand(writeCsv("id,name,phone,email,department", AMY_ROW)), model,
-                expectedMessage);
-        assertCommandFailure(new ImportCommand(writeCsv(AMY_ROW, BOB_ROW)), model, expectedMessage);
-        assertCommandFailure(new ImportCommand(writeCsv("\"id,name", AMY_ROW)), model, expectedMessage);
+        writeCsv("id,name,phone,email,department", AMY_ROW);
+        assertCommandFailure(importStaffCsv(), model, expectedMessage);
+        writeCsv(AMY_ROW, BOB_ROW);
+        assertCommandFailure(importStaffCsv(), model, expectedMessage);
+        writeCsv("\"id,name", AMY_ROW);
+        assertCommandFailure(importStaffCsv(), model, expectedMessage);
     }
 
     @Test
     public void execute_headerOnly_throwsCommandException() throws Exception {
-        Path filePath = writeCsv(ExportCommand.CSV_HEADER, "");
+        writeCsv(ExportCommand.CSV_HEADER, "");
 
-        assertCommandFailure(new ImportCommand(filePath), model,
-                String.format(ImportCommand.MESSAGE_NO_EMPLOYEES, filePath));
+        assertCommandFailure(importStaffCsv(), model, String.format(ImportCommand.MESSAGE_NO_EMPLOYEES, STAFF_CSV));
     }
 
     @Test
     public void execute_notUtf8_throwsCommandException() throws Exception {
-        Path filePath = testFolder.resolve("staff.csv");
-        Files.write(filePath, (ExportCommand.CSV_HEADER + "\nE2000,Zoë Tan,91234567,zoe@example.com,Sales,Rep")
-                .getBytes(StandardCharsets.ISO_8859_1));
+        Files.write(appFolder.resolve(STAFF_CSV), (ExportCommand.CSV_HEADER
+                + "\nE2000,Zoë Tan,91234567,zoe@example.com,Sales,Rep").getBytes(StandardCharsets.ISO_8859_1));
 
-        assertCommandFailure(new ImportCommand(filePath), model,
-                String.format(ImportCommand.MESSAGE_NOT_UTF8, filePath));
+        assertCommandFailure(importStaffCsv(), model, String.format(ImportCommand.MESSAGE_NOT_UTF8, STAFF_CSV));
+    }
+
+    @Test
+    public void execute_folderLinkedOutsideAppFolder_nothingAdded() throws Exception {
+        Files.write(outsideFolder.resolve(STAFF_CSV), List.of(ExportCommand.CSV_HEADER, AMY_ROW));
+        createSymbolicLinkOrSkip(appFolder.resolve("exports"), outsideFolder);
+
+        assertCommandFailure(new ImportCommand(appFolder, Paths.get("exports", "staff.csv")), model,
+                ParserUtil.MESSAGE_FILE_PATH_OUTSIDE_APP_FOLDER);
+    }
+
+    @Test
+    public void execute_fileLinkedOutsideAppFolder_nothingAdded() throws Exception {
+        Path outsideFile = Files.write(outsideFolder.resolve(STAFF_CSV), List.of(ExportCommand.CSV_HEADER, AMY_ROW));
+        createSymbolicLinkOrSkip(appFolder.resolve(STAFF_CSV), outsideFile);
+
+        assertCommandFailure(importStaffCsv(), model, ParserUtil.MESSAGE_FILE_PATH_OUTSIDE_APP_FOLDER);
     }
 
     @Test
     public void equals() {
-        ImportCommand importStaff = new ImportCommand(Paths.get("staff.csv"));
+        ImportCommand importStaff = new ImportCommand(STAFF_CSV);
         ImportCommand importOther = new ImportCommand(Paths.get("other.csv"));
 
         assertTrue(importStaff.equals(importStaff));
-        assertTrue(importStaff.equals(new ImportCommand(Paths.get("staff.csv"))));
+        assertTrue(importStaff.equals(new ImportCommand(STAFF_CSV)));
         assertFalse(importStaff.equals(null));
         assertFalse(importStaff.equals(1));
         assertFalse(importStaff.equals(importOther));
+        assertFalse(importStaff.equals(new ImportCommand(appFolder, STAFF_CSV)));
+        assertFalse(importStaff.equals(new ExportCommand(STAFF_CSV)));
     }
 
     @Test
     public void toStringMethod() {
-        Path filePath = Paths.get("staff.csv");
-        String expected = ImportCommand.class.getCanonicalName() + "{filePath=" + filePath + "}";
-        assertEquals(expected, new ImportCommand(filePath).toString());
+        String expected = ImportCommand.class.getCanonicalName() + "{filePath=" + STAFF_CSV + "}";
+        assertEquals(expected, new ImportCommand(STAFF_CSV).toString());
+    }
+
+    private ImportCommand importStaffCsv() {
+        return new ImportCommand(appFolder, STAFF_CSV);
     }
 
     /**
-     * Writes {@code lines} to staff.csv in the test folder and returns its path.
+     * Writes {@code lines} to staff.csv in the app folder, replacing any earlier content.
      */
-    private Path writeCsv(String... lines) throws IOException {
-        return Files.write(testFolder.resolve("staff.csv"), List.of(lines));
+    private void writeCsv(String... lines) throws IOException {
+        Files.write(appFolder.resolve(STAFF_CSV), List.of(lines));
     }
 
 }

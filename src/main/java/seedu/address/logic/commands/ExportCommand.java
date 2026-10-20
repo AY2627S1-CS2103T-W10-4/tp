@@ -12,7 +12,6 @@ import java.util.logging.Logger;
 import seedu.address.commons.core.LogsCenter;
 import seedu.address.commons.util.CsvUtil;
 import seedu.address.commons.util.FileUtil;
-import seedu.address.commons.util.ToStringBuilder;
 import seedu.address.logic.commands.exceptions.CommandException;
 import seedu.address.model.Model;
 import seedu.address.model.employee.Employee;
@@ -20,7 +19,7 @@ import seedu.address.model.employee.Employee;
 /**
  * Exports all employees to a CSV file.
  */
-public class ExportCommand extends Command {
+public class ExportCommand extends CsvFileCommand {
 
     public static final String COMMAND_WORD = "export";
 
@@ -39,33 +38,38 @@ public class ExportCommand extends Command {
 
     private static final Logger logger = LogsCenter.getLogger(ExportCommand.class);
 
-    private final Path filePath;
-
     /**
-     * Creates an ExportCommand to write all employees to {@code filePath}.
+     * Creates an ExportCommand to write all employees to {@code filePath}, relative to the folder HuntR runs from.
      */
     public ExportCommand(Path filePath) {
-        requireNonNull(filePath);
-        this.filePath = filePath;
+        this(DEFAULT_APP_FOLDER, filePath);
+    }
+
+    /**
+     * Creates an ExportCommand to write all employees to {@code filePath}, relative to {@code appFolder}.
+     */
+    public ExportCommand(Path appFolder, Path filePath) {
+        super(appFolder, filePath);
     }
 
     @Override
     public CommandResult execute(Model model) throws CommandException {
         requireNonNull(model);
         List<Employee> employees = model.getAddressBook().getEmployeeList();
+        Path resolvedPath = resolveFilePath();
 
         try {
-            writeCsvFile(employees);
+            writeCsvFile(resolvedPath, employees);
         } catch (IOException ioe) {
-            logger.warning("Failed to export employees to " + filePath + ": " + ioe);
-            throw new CommandException(String.format(MESSAGE_WRITE_FAILED, filePath), ioe);
+            logger.warning("Failed to export employees to " + resolvedPath + ": " + ioe);
+            throw new CommandException(String.format(MESSAGE_WRITE_FAILED, getFilePath()), ioe);
         }
 
-        logger.info("Exported " + employees.size() + " employees to " + filePath);
-        return new CommandResult(String.format(MESSAGE_SUCCESS, employees.size(), filePath));
+        logger.info("Exported " + employees.size() + " employees to " + resolvedPath);
+        return new CommandResult(String.format(MESSAGE_SUCCESS, employees.size(), getFilePath()));
     }
 
-    private void writeCsvFile(List<Employee> employees) throws IOException {
+    private static void writeCsvFile(Path filePath, List<Employee> employees) throws IOException {
         List<String> lines = new ArrayList<>();
         lines.add(CSV_HEADER);
         employees.forEach(employee -> lines.add(toCsvLine(employee)));
@@ -88,26 +92,5 @@ public class ExportCommand extends Command {
                 employee.getEmail().toString(),
                 employee.getDepartment().toString(),
                 employee.getRole().toString()));
-    }
-
-    @Override
-    public boolean equals(Object other) {
-        if (other == this) {
-            return true;
-        }
-
-        // instanceof handles nulls
-        if (!(other instanceof ExportCommand otherExportCommand)) {
-            return false;
-        }
-
-        return filePath.equals(otherExportCommand.filePath);
-    }
-
-    @Override
-    public String toString() {
-        return new ToStringBuilder(this)
-                .add("filePath", filePath)
-                .toString();
     }
 }
