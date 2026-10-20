@@ -194,6 +194,36 @@ Example: delete id/EMP-0042
 
 A valid ID that does not exist produces `No employee with ID EMP-0042 was found.` (using the entered ID), without the usage block. No records are changed. This also applies to deleting an employee twice or deleting from an empty roster.
 
+### Reporting relationships and team structure
+
+Each employee may have one direct manager, identified by employee ID. Manager IDs are case-insensitive,
+just like employee IDs. Assignments use the complete roster, including employees hidden by a search.
+The employee and manager must already exist. Self-reporting and direct or indirect reporting cycles are rejected
+without changing any data. An employee without a manager is treated as a top-level employee.
+
+* Assign or change a manager: `manager id/EMPLOYEE_ID m/MANAGER_ID`
+  Example: `manager id/E0123 m/E0001`.
+* Remove an assignment: `unassign-manager id/EMPLOYEE_ID`.
+  This also succeeds when the employee already has no manager.
+* View direct reports: `team id/MANAGER_ID`.
+* View the entire team (all direct and indirect reports): `org id/MANAGER_ID`.
+  The selected manager is excluded from both team queries.
+* Inspect the reporting chain: `chain id/EMPLOYEE_ID`.
+  The result message lists managers from the immediate manager to the top-level manager.
+
+`team`, `org` and `chain` display matching employees in the list without modifying stored data.
+An empty team or chain displays `None.`. Use `list` to restore the complete roster.
+Employee cards display the current manager ID, or `Unassigned`.
+
+For example, after `manager id/E0002 m/E0001` and `manager id/E0003 m/E0002`,
+`team id/E0001` displays E0002, `org id/E0001` displays E0002 and E0003,
+and `chain id/E0003` shows E0002 followed by E0001.
+
+Ordinary edits preserve reporting assignments. Deleting a manager automatically unassigns their direct reports;
+relationships further down the team remain intact. Reporting relationships are saved automatically.
+Existing data files without a `managerId` field continue to load with no managers assigned. Data files containing
+missing manager references or reporting cycles are rejected as invalid.
+
 ### Clearing all employees: `clear`
 
 Clears all employee records from HuntR.
