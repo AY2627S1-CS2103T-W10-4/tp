@@ -54,7 +54,7 @@ public class ImportCommand extends CsvFileCommand {
     public static final String MESSAGE_DUPLICATE_IN_FILE = "Employee ID %1$s is also used on row %2$d.";
 
     /** Excel adds this invisible character to the start of files saved as "CSV UTF-8". */
-    private static final String BYTE_ORDER_MARK = "﻿";
+    private static final String BYTE_ORDER_MARK = "\uFEFF";
     /** Row numbers count from 1 and include the header, as a spreadsheet program shows them. */
     private static final int FIRST_DATA_ROW_NUMBER = 2;
 

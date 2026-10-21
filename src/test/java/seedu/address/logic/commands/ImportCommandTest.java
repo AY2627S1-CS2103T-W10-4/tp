@@ -142,7 +142,7 @@ public class ImportCommandTest {
 
     @Test
     public void execute_byteOrderMarkBlankLinesAndHeaderCase_ignored() throws Exception {
-        writeCsv("﻿ID, Name ,Phone,Email,Department,ROLE, Archived", "", AMY_ROW, "  ");
+        writeCsv("\uFEFFID, Name ,Phone,Email,Department,ROLE, Archived", "", AMY_ROW, "  ");
         Model expectedModel = new ModelManager(getTypicalAddressBook(), new UserPrefs());
         expectedModel.addEmployee(AMY);
 
