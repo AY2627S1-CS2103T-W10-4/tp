@@ -37,6 +37,7 @@ public class HelpCommand extends Command {
             UnarchiveCommand.COMMAND_WORD + " " + PREFIX_ID + "EMPLOYEE_ID",
             ListCommand.COMMAND_WORD + " archived",
             ClearCommand.COMMAND_WORD,
+            BackupCommand.COMMAND_WORD,
             COMMAND_WORD,
             ExitCommand.COMMAND_WORD);
 
