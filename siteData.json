@@ -57,7 +57,7 @@
         "edit-an-employee-by-id": "Edit an employee by ID",
         "find-employees-by-name": "Find employees by name",
         "duplicate-employee-detection": "Duplicate employee detection",
-        "proposed-undo-redo-feature": "[Proposed] Undo/redo feature",
+        "employee-history-and-in-memory-rollback": "Employee history and in-memory rollback",
         "proposed-data-archiving": "[Proposed] Data archiving",
         "documentation-logging-testing-dev-ops": "Documentation, logging, testing, dev-ops",
         "appendix-requirements": "Appendix: Requirements",
@@ -90,6 +90,13 @@
       "title": "Logging guide",
       "headings": {
         "logging-guide": "Logging guide"
+      },
+      "headingKeywords": {}
+    },
+    {
+      "src": "README.md",
+      "headings": {
+        "huntr-documentation": "HuntR documentation"
       },
       "headingKeywords": {}
     },
@@ -130,6 +137,7 @@
         "listing-archived-employees-list-archived": "Listing archived employees: list archived",
         "deleting-an-employee-delete": "Deleting an employee: delete",
         "clearing-active-employees-clear": "Clearing active employees: clear",
+        "undoing-and-redoing-employee-changes-undo-redo": "Undoing and redoing employee changes: undo, redo",
         "exiting-the-program-exit": "Exiting the program: exit",
         "saving-the-data": "Saving the data",
         "editing-the-data-file": "Editing the data file",
