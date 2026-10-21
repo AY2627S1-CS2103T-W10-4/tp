@@ -3,13 +3,17 @@ package seedu.address.logic.parser;
 import static java.util.Objects.requireNonNull;
 import static seedu.address.logic.Messages.MESSAGE_INVALID_COMMAND_FORMAT;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_DEPARTMENT;
+import static seedu.address.logic.parser.CliSyntax.PREFIX_ID;
+import static seedu.address.logic.parser.CliSyntax.PREFIX_NAME;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_ROLE;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
+import seedu.address.commons.util.StringUtil;
 import seedu.address.logic.commands.FilterCommand;
 import seedu.address.logic.parser.exceptions.ParseException;
+import seedu.address.model.employee.EmployeeId;
 import seedu.address.model.employee.EmployeeMatchesCriteriaPredicate;
 
 /**
@@ -24,37 +28,62 @@ public class FilterCommandParser implements Parser<FilterCommand> {
      */
     public FilterCommand parse(String args) throws ParseException {
         requireNonNull(args);
-        ArgumentPreprocessor.rejectUnknownParameters(args, FilterCommand.MESSAGE_USAGE,
-                PREFIX_DEPARTMENT, PREFIX_ROLE);
+        String hiddenArgs = ArgumentPreprocessor.hideNameRelationWords(args);
+        ArgumentPreprocessor.rejectUnknownParameters(hiddenArgs, FilterCommand.MESSAGE_USAGE,
+                PREFIX_ID, PREFIX_NAME, PREFIX_DEPARTMENT, PREFIX_ROLE);
 
-        ArgumentMultimap argMultimap = ArgumentTokenizer.tokenize(args, PREFIX_DEPARTMENT, PREFIX_ROLE);
-        Optional<String> department = argMultimap.getValue(PREFIX_DEPARTMENT);
-        Optional<String> role = argMultimap.getValue(PREFIX_ROLE);
-
-        if (!argMultimap.getPreamble().isEmpty() || (department.isEmpty() && role.isEmpty())) {
+        ArgumentMultimap argMultimap = ArgumentTokenizer.tokenize(hiddenArgs,
+                PREFIX_ID, PREFIX_NAME, PREFIX_DEPARTMENT, PREFIX_ROLE);
+        boolean hasCriterion = !argMultimap.getAllValues(PREFIX_ID).isEmpty()
+                || !argMultimap.getAllValues(PREFIX_NAME).isEmpty()
+                || !argMultimap.getAllValues(PREFIX_DEPARTMENT).isEmpty()
+                || !argMultimap.getAllValues(PREFIX_ROLE).isEmpty();
+        if (!argMultimap.getPreamble().isEmpty() || !hasCriterion) {
             throw new ParseException(String.format(MESSAGE_INVALID_COMMAND_FORMAT, FilterCommand.MESSAGE_USAGE));
         }
-        argMultimap.verifyNoDuplicatePrefixesFor(PREFIX_DEPARTMENT, PREFIX_ROLE);
 
-        List<String> departmentWords = List.of();
-        List<String> roleWords = List.of();
-        try {
-            if (department.isPresent()) {
-                departmentWords = toWords(ParserUtil.parseDepartment(department.get()).value);
-            }
-            if (role.isPresent()) {
-                roleWords = toWords(ParserUtil.parseRole(role.get()).value);
-            }
-        } catch (ParseException pe) {
-            // the specific problem (blank, too long, invalid characters), followed by how to use the command
-            throw new ParseException(pe.getMessage() + "\n" + FilterCommand.MESSAGE_USAGE, pe);
-        }
-
-        return new FilterCommand(new EmployeeMatchesCriteriaPredicate(departmentWords, roleWords));
+        List<EmployeeId> ids = parseIds(argMultimap.getAllValues(PREFIX_ID));
+        List<String> names = parseSearchValues(PREFIX_NAME, argMultimap.getAllValues(PREFIX_NAME));
+        List<String> departments = parseSearchValues(PREFIX_DEPARTMENT, argMultimap.getAllValues(PREFIX_DEPARTMENT));
+        List<String> roles = parseSearchValues(PREFIX_ROLE, argMultimap.getAllValues(PREFIX_ROLE));
+        return new FilterCommand(new EmployeeMatchesCriteriaPredicate(ids, names, departments, roles));
     }
 
-    private static List<String> toWords(String value) {
-        return List.of(value.trim().split("\\s+"));
+    /**
+     * Parses each of the {@code values} as an employee ID. An ID must be a valid one, as for other commands.
+     */
+    private static List<EmployeeId> parseIds(List<String> values) throws ParseException {
+        List<EmployeeId> ids = new ArrayList<>();
+        for (String value : values) {
+            try {
+                ids.add(ParserUtil.parseEmployeeId(value));
+            } catch (ParseException pe) {
+                // the specific problem, followed by how to use the command
+                throw new ParseException(pe.getMessage() + "\n" + FilterCommand.MESSAGE_USAGE, pe);
+            }
+        }
+        return ids;
+    }
+
+    /**
+     * Returns the {@code values} given for {@code prefix}, with any hidden slashes restored.
+     * These are words to search for, not complete names, departments or roles. So they are not checked against
+     * the rules for those fields, and punctuation only separates words. For example, {@code (Backend)} can be
+     * searched for although a role cannot start with {@code (}.
+     *
+     * @throws ParseException if a value has no letter or digit to search for.
+     */
+    private static List<String> parseSearchValues(Prefix prefix, List<String> values) throws ParseException {
+        List<String> searchValues = new ArrayList<>();
+        for (String value : values) {
+            String restoredValue = ArgumentPreprocessor.restoreHiddenSlashes(value).trim();
+            if (StringUtil.getSearchWords(restoredValue).isEmpty()) {
+                throw new ParseException(String.format(FilterCommand.MESSAGE_NO_SEARCH_WORD, prefix)
+                        + "\n" + FilterCommand.MESSAGE_USAGE);
+            }
+            searchValues.add(restoredValue);
+        }
+        return searchValues;
     }
 
 }

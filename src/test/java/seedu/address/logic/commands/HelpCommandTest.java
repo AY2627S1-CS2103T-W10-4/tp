@@ -37,6 +37,6 @@ public class HelpCommandTest {
         assertTrue(COMMAND_SUMMARY.contains(
                 "edit id/EMPLOYEE_ID [n/NAME] [p/PHONE] [e/EMAIL] [d/DEPARTMENT] [r/ROLE]"));
         assertTrue(COMMAND_SUMMARY.contains("delete id/EMPLOYEE_ID"));
-        assertTrue(COMMAND_SUMMARY.contains("filter [d/DEPARTMENT] [r/ROLE]"));
+        assertTrue(COMMAND_SUMMARY.contains("filter [id/EMPLOYEE_ID] [n/NAME] [d/DEPARTMENT] [r/ROLE]"));
     }
 }

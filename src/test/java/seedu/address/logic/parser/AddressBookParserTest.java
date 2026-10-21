@@ -96,8 +96,8 @@ public class AddressBookParserTest {
     public void parseCommand_filter() throws Exception {
         FilterCommand command = (FilterCommand) parser.parseCommand(
                 FilterCommand.COMMAND_WORD + " d/Engineering r/Manager");
-        assertEquals(new FilterCommand(
-                new EmployeeMatchesCriteriaPredicate(List.of("Engineering"), List.of("Manager"))), command);
+        assertEquals(new FilterCommand(new EmployeeMatchesCriteriaPredicate(
+                List.of(), List.of(), List.of("Engineering"), List.of("Manager"))), command);
     }
 
     @Test

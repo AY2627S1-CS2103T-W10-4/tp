@@ -27,7 +27,8 @@ public class HelpCommand extends Command {
                     + "PHONE " + PREFIX_EMAIL + "EMAIL " + PREFIX_DEPARTMENT + "DEPARTMENT " + PREFIX_ROLE + "ROLE",
             ListCommand.COMMAND_WORD,
             FindCommand.COMMAND_WORD + " KEYWORD [MORE_KEYWORDS]",
-            FilterCommand.COMMAND_WORD + " [" + PREFIX_DEPARTMENT + "DEPARTMENT] [" + PREFIX_ROLE + "ROLE]",
+            FilterCommand.COMMAND_WORD + " [" + PREFIX_ID + "EMPLOYEE_ID] [" + PREFIX_NAME + "NAME] ["
+                    + PREFIX_DEPARTMENT + "DEPARTMENT] [" + PREFIX_ROLE + "ROLE]",
             EditCommand.COMMAND_WORD + " " + PREFIX_ID + "EMPLOYEE_ID [" + PREFIX_NAME + "NAME] [" + PREFIX_PHONE
                     + "PHONE] [" + PREFIX_EMAIL + "EMAIL] [" + PREFIX_DEPARTMENT + "DEPARTMENT] [" + PREFIX_ROLE
                     + "ROLE]",
