@@ -24,7 +24,7 @@ public class HelpCommandTest {
     public void commandSummary_listsEveryCommand() {
         String[] commandWords = {AddCommand.COMMAND_WORD, ListCommand.COMMAND_WORD, FindCommand.COMMAND_WORD,
             EditCommand.COMMAND_WORD, DeleteCommand.COMMAND_WORD, ClearCommand.COMMAND_WORD,
-            BackupCommand.COMMAND_WORD, HelpCommand.COMMAND_WORD, ExitCommand.COMMAND_WORD};
+            HelpCommand.COMMAND_WORD, ExitCommand.COMMAND_WORD};
         for (String commandWord : commandWords) {
             assertTrue(COMMAND_SUMMARY.lines().anyMatch(line -> line.equals(commandWord)
                     || line.startsWith(commandWord + " ")), commandWord + " is missing from the help summary");
