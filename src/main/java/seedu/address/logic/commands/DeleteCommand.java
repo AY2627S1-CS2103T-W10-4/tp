@@ -43,6 +43,11 @@ public class DeleteCommand extends Command {
     }
 
     @Override
+    public HistoryAction getHistoryAction() {
+        return HistoryAction.COMMIT;
+    }
+
+    @Override
     public CommandResult execute(Model model) throws CommandException {
         requireNonNull(model);
         Employee employeeToDelete = model.getAddressBook().getEmployeeList().stream()
