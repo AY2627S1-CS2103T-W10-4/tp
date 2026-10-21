@@ -67,7 +67,7 @@ public class BackupCommand extends Command {
         Path backupPath = backupFolder.resolve(String.format(FILE_NAME_FORMAT, timestamp));
 
         try {
-            new JsonAddressBookStorage(backupPath).saveAddressBook(addressBook);
+            createStorage(backupPath).saveAddressBook(addressBook);
         } catch (IOException ioe) {
             logger.warning("Failed to save backup to " + backupPath + ": " + ioe);
             throw new CommandException(String.format(MESSAGE_WRITE_FAILED, backupPath), ioe);
@@ -76,6 +76,10 @@ public class BackupCommand extends Command {
         int employeeCount = addressBook.getEmployeeList().size();
         logger.info("Backed up " + employeeCount + " employees to " + backupPath);
         return new CommandResult(String.format(MESSAGE_SUCCESS, employeeCount, backupPath));
+    }
+
+    JsonAddressBookStorage createStorage(Path backupPath) {
+        return new JsonAddressBookStorage(backupPath);
     }
 
     @Override
