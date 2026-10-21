@@ -65,7 +65,7 @@ HuntR is based on [AddressBook-Level3](https://github.com/se-edu/addressbook-lev
   For example, if the command specifies `n/NAME p/PHONE`, `p/PHONE n/NAME` is also acceptable.
 
 * Extraneous parameters for `help` and `clear` are ignored.<br>
-  For example, `help 123` is interpreted as `help`. The `list`, `backup` and `exit` commands also take no parameters but reject extra text, so `list 1`, `backup now` and `exit now` show an error.
+  For example, `help 123` is interpreted as `help`. The `backup` and `exit` commands also take no parameters but reject extra text, so `backup now` and `exit now` show an error. Likewise, `list` accepts only `archived` after it, so `list 1` shows an error.
 
 * If you are using a PDF version of this document, be careful when copying and pasting commands that span multiple lines as space characters surrounding line-breaks may be omitted when copied over to the application.
 </box>
