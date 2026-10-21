@@ -298,22 +298,6 @@ Format: `clear`
 saved immediately.
 </box>
 
-### Backing up the data: `backup`
-
-Saves a copy of all current employee data to a new file in the `data/backups` folder.
-
-Format: `backup`
-
-* The backup is named by the date and time it was made, as `huntr-YYYYMMDD-HHmmss.json`, for example `data/backups/huntr-20261022-153005.json`. The `data/backups` folder is created if needed.
-* The backup uses the same format as the data file `data/addressbook.json` and contains all employees, including employees hidden by `find`.
-* Each backup is a new file, so earlier backups are kept. Two backups made within the same second share a name, and the later one replaces the earlier one.
-* To restore a backup, exit HuntR, then replace `data/addressbook.json` with a copy of the backup file renamed to `addressbook.json`.
-* The command takes no parameters, and extra text such as `backup now` is rejected.
-
-On success, HuntR shows `Backed up N employee(s) to data/backups/huntr-YYYYMMDD-HHmmss.json`.
-
-If the backup cannot be saved, for example because HuntR is not allowed to write to the `data` folder, HuntR shows `Could not save the backup to FILE_PATH. Check that you are allowed to write to that folder.`
-
 ### Exiting the program: `exit`
 
 Closes HuntR. Your employee records are saved after every command, so nothing is lost when you exit.
@@ -336,7 +320,7 @@ Older valid files without the `archived` field continue to load, with those empl
 <box type="warning" seamless>
 
 **Caution:**
-If your changes make the data file invalid, HuntR rejects the whole file (it does not load only the valid employees) and starts with an empty employee list at the next run. The invalid file remains on disk until you run a command (HuntR saves after every command, which then overwrites it). Therefore, always back up the file (for example with `backup`) before editing it.<br>
+If your changes make the data file invalid, HuntR rejects the whole file (it does not load only the valid employees) and starts with an empty employee list at the next run. The invalid file remains on disk until you run a command (HuntR saves after every command, which then overwrites it). Therefore, always back up the file before editing it.<br>
 Furthermore, certain edits can cause HuntR to behave in unexpected ways (e.g., if a value entered is outside of the acceptable range). Therefore, edit the data file only if you are confident that you can update it correctly.
 </box>
 

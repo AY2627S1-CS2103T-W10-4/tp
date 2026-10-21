@@ -17,8 +17,10 @@ import seedu.address.logic.commands.Command;
 import seedu.address.logic.commands.DeleteCommand;
 import seedu.address.logic.commands.EditCommand;
 import seedu.address.logic.commands.ExitCommand;
+import seedu.address.logic.commands.ExportCommand;
 import seedu.address.logic.commands.FindCommand;
 import seedu.address.logic.commands.HelpCommand;
+import seedu.address.logic.commands.ImportCommand;
 import seedu.address.logic.commands.ListCommand;
 import seedu.address.logic.commands.StatsCommand;
 import seedu.address.logic.commands.UnarchiveCommand;
@@ -78,6 +80,8 @@ public class AddressBookParser {
                 }
                 yield new CheckCommand();
             }
+            case ImportCommand.COMMAND_WORD -> new ImportCommandParser().parse(arguments);
+            case ExportCommand.COMMAND_WORD -> new ExportCommandParser().parse(arguments);
             case ListCommand.COMMAND_WORD -> {
                 String trimmedArguments = arguments.trim();
                 if (!trimmedArguments.isEmpty() && !trimmedArguments.equals("archived")) {
