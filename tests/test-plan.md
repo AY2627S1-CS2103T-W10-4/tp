@@ -21,7 +21,8 @@ Run with Java 25 from the repository root:
 
 | Acceptance behavior | Automated coverage |
 | --- | --- |
-| Each of the seven modifying commands commits once; undo/redo traverse mixed sequences and both boundaries | `HistoryCommandTest.execute_allModifyingCommands_commitOnceAndTraverseEveryState` |
+| Logic commits once for each of the seven modifying commands; undo/redo traverse mixed sequences and both boundaries without committing | `HistoryCommandTest.execute_allModifyingCommands_commitOnceAndTraverseEveryState` |
+| One history-action declaration enables committing and rollback; failed centralized commits restore data, view and the entire redo tail before saving | `HistoryTransactionTest.execute_declaredModification_commitsWithoutCommandBookkeeping`; `HistoryTransactionTest.execute_commitFailure_restoresWorkingDataViewAndDiscardedRedoTail`; per-command save-failure tests |
 | Exact success/boundary output; surrounding spaces/tabs; arguments, aliases and capitalization; syntax checked before availability | `AddressBookParserTest` history tests; `HistoryCommandTest`; `HistoryTransactionTest.execute_historySyntaxCheckedBeforeAvailability` |
 | Entire multi-row import is one entry; redo after the source changes and disappears | `HistoryCommandTest.execute_allModifyingCommands_commitOnceAndTraverseEveryState` |
 | Archive status, hidden employees and stored order across clear/archive/unarchive/delete | `HistoryCommandTest`; `ModelHistoryTest.undoAndRedo_archivedView_preservesPredicateAndObservableLists` |
@@ -39,11 +40,14 @@ Run with Java 25 from the repository root:
 | Read-only commands still save and keep view changes on save failure; export/backup files survive undo and save failure | `HistoryTransactionTest` read-only tests |
 | Ordinary address book/model equality excludes history | `ModelHistoryTest.equals_differentHistoriesPreservesExistingEquality` and existing equality tests |
 | Existing JSON validation, legacy missing `archived`, ID uniqueness, seven-column CSV export and legacy six-column import | Existing storage, employee, import/export and parser suites (unchanged storage implementation) |
-| Help summary includes both commands | `HelpCommandTest.commandSummary_listsEveryCommand` |
+| Help summary lists all 15 supported command words, including import/export/backup and archive/unarchive, with file and employee-ID formats | `HelpCommandTest.commandSummary_listsEveryCommand`, `commandSummary_showsFileCommandFormats` and `commandSummary_showsEmployeeIdFormats` |
 
 `EmployeeDataAssertions` compares all seven stored values in order, including raw IDs, independently of employee
 or model equality. Predicate references, observable-list identities and every restored history state are asserted
 separately. Model stubs implement the new API; existing save-failure expectations now require rollback.
+History command sequences run through `LogicManager`, which owns commits as well as checkpointing and saving.
+Commands declare `COMMIT`, `NAVIGATE` or the default `NONE`; they do not maintain a separate rollback flag or call
+`commitAddressBook()` themselves. This replaces the initial per-command bookkeeping in response to PR #115 review.
 
 ## UI and performance acceptance
 
@@ -122,11 +126,11 @@ Run explicitly after editing the guides, documentation README and diagrams. The 
 not committed. Inspect the history transaction/model diagrams for render errors and check links to removed diagrams.
 Release-wide version labels stay unchanged.
 
-Recorded final validation on 21 October 2026:
+Recorded validation after the PR #115 review changes on 21 October 2026:
 
-- Java 25 `./gradlew check coverage`: **PASS**, **443 tests**, zero failures/errors/skips; both Checkstyle tasks pass.
+- Java 25 `./gradlew check coverage`: **PASS**, **446 tests**, zero failures/errors/skips; both Checkstyle tasks pass.
 - Explicit MarkBind build: **PASS**, 12 pages. All nine referenced diagrams generated nonempty PNGs; the updated
-  model and transaction diagrams were visually inspected. One pre-existing warning remains for the missing
+  transaction and edit sequence diagrams were visually inspected. One pre-existing warning remains for the missing
   `/team/sjyjoshua.html` link in `docs/AboutUs.md`.
 - `git diff --check`: **PASS**.
 
@@ -146,5 +150,6 @@ PATH="$PWD/build/docs-java:$PATH" npm run build --prefix docs
 ```
 
 Smetana is PlantUML's bundled Java layout engine. The normal documentation build remains `npm run build --prefix docs`
-on a machine with Java and Graphviz configured. No product behavior or specification deviations were necessary;
-these are local validation environment adjustments.
+on a machine with Java and Graphviz configured. These local validation environment adjustments do not change
+product behavior. The recorded performance timings above predate the review refactor; the integration acceptance
+run remains required after atomic saving is combined with this branch.
