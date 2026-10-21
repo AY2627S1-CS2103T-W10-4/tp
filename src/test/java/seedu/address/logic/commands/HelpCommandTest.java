@@ -41,6 +41,6 @@ public class HelpCommandTest {
 
     @Test
     public void commandSummary_listsSortCommandWithItsField() {
-        assertTrue(COMMAND_SUMMARY.contains("sort FIELD"));
+        assertTrue(COMMAND_SUMMARY.contains("sort FIELD [asc|desc]"));
     }
 }

@@ -230,28 +230,30 @@ A valid ID that does not exist produces `No employee with ID EMP-0042 was found.
 
 ### Sorting employees: `sort`
 
-Sorts the displayed employees in ascending order by one field.
+Sorts the displayed employees by one field, in ascending or descending order.
 
-Format: `sort FIELD`
+Format: `sort FIELD [asc|desc]`
 
 * `FIELD` must be one of `id`, `name`, `department` or `role`. It is not case-sensitive, so `Department` also works.
-* Sorting is from A to Z and ignores letter case. Employees with the same value are ordered by employee ID. Text is compared character by character, so `E10` comes before `E2`.
+* The order is `asc` (A to Z) or `desc` (Z to A). It is not case-sensitive. If you leave it out, the order is ascending.
+* Letter case and accents are ignored, so `Émile` is sorted with the names that start with `E`. Otherwise text is compared character by character, so `E10` comes before `E2`.
+* Employees with the same value are always ordered by employee ID from A to Z, also when the order is `desc`.
 * Sorting only changes the order in which employees are shown. Your saved data is not changed.
-* The sorted order is kept when you use `find`, and when you add, edit or delete employees.
+* The sorted order is kept when you use `find`, and when you add, edit or delete employees. An employee whose name, department or role is edited moves to the correct position.
 * Use [`list`](#listing-all-employees-list) to show the employees in the order in which they were added again.
 
 Examples:
 * `sort name` shows the employees in alphabetical order of their names.
-* `sort department` groups the employees by department, from `Engineering` to `Sales`.
-* `sort role` sorts the employees by their role.
+* `sort department desc` groups the employees by department, from `Sales` back to `Engineering`.
+* `sort role asc` sorts the employees by their role, from A to Z.
 
 The following input errors leave the displayed order unchanged. Each message is followed by the usage of the command.
 
 | Input | Error message |
 | --- | --- |
-| `sort` | `Invalid command format!` |
-| `sort salary` | `Unknown sort field: salary. The field must be one of: id, name, department, role.` |
-| `sort name asc` | `Unknown sort field: name asc. The field must be one of: id, name, department, role.` (give only one field) |
+| `sort` or `sort name asc desc` | `Invalid command format!` |
+| `sort salary` or `sort salary desc` | `Unknown sort field: salary. The field must be one of: id, name, department, role.` |
+| `sort name down` | `Unknown sort order: down. The order must be one of: asc, desc.` |
 
 ### Clearing active employees: `clear`
 
@@ -321,5 +323,5 @@ Action     | Format, Examples
 **List**   | `list` or `list archived`
 **Unarchive** | `unarchive id/EMPLOYEE_ID`
 **Help**   | `help`
-**Sort**   | `sort FIELD`<br> e.g., `sort department`
+**Sort**   | `sort FIELD [asc\|desc]`<br> e.g., `sort department desc`
 **Exit**   | `exit`

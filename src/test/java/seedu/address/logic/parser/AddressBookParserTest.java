@@ -143,5 +143,10 @@ public class AddressBookParserTest {
     public void parseCommand_sort() throws Exception {
         SortCommand command = (SortCommand) parser.parseCommand(SortCommand.COMMAND_WORD + " department");
         assertEquals(new SortCommand(SortCommand.SortField.DEPARTMENT), command);
+
+        SortCommand descendingCommand = (SortCommand) parser.parseCommand(
+                SortCommand.COMMAND_WORD + " department desc");
+        assertEquals(new SortCommand(SortCommand.SortField.DEPARTMENT, SortCommand.SortOrder.DESC),
+                descendingCommand);
     }
 }

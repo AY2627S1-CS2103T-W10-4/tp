@@ -5,6 +5,7 @@ import static seedu.address.logic.Messages.MESSAGE_INVALID_COMMAND_FORMAT;
 
 import seedu.address.logic.commands.SortCommand;
 import seedu.address.logic.commands.SortCommand.SortField;
+import seedu.address.logic.commands.SortCommand.SortOrder;
 import seedu.address.logic.parser.exceptions.ParseException;
 
 /**
@@ -20,14 +21,22 @@ public class SortCommandParser implements Parser<SortCommand> {
     public SortCommand parse(String args) throws ParseException {
         requireNonNull(args);
         String trimmedArgs = args.trim();
-        if (trimmedArgs.isEmpty()) {
+        String[] words = trimmedArgs.split("\\s+");
+        if (trimmedArgs.isEmpty() || words.length > 2) {
             throw new ParseException(String.format(MESSAGE_INVALID_COMMAND_FORMAT, SortCommand.MESSAGE_USAGE));
         }
 
-        SortField field = SortField.fromString(trimmedArgs).orElseThrow(() -> new ParseException(
-                String.format(SortCommand.MESSAGE_UNKNOWN_FIELD, trimmedArgs, SortField.names())
+        SortField field = SortField.fromString(words[0]).orElseThrow(() -> new ParseException(
+                String.format(SortCommand.MESSAGE_UNKNOWN_FIELD, words[0], SortField.names())
                         + "\n" + SortCommand.MESSAGE_USAGE));
-        return new SortCommand(field);
+        if (words.length == 1) {
+            return new SortCommand(field);
+        }
+
+        SortOrder order = SortOrder.fromString(words[1]).orElseThrow(() -> new ParseException(
+                String.format(SortCommand.MESSAGE_UNKNOWN_ORDER, words[1], SortOrder.keywords())
+                        + "\n" + SortCommand.MESSAGE_USAGE));
+        return new SortCommand(field, order);
     }
 
 }
