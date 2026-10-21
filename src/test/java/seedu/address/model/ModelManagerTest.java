@@ -69,6 +69,31 @@ public class ModelManagerTest {
     }
 
     @Test
+    public void hasEmployee_employeeArchived_returnsTrue() {
+        modelManager.addEmployee(ALICE);
+        modelManager.archiveEmployee(ALICE);
+        assertTrue(modelManager.hasEmployee(ALICE));
+        assertTrue(modelManager.getFilteredEmployeeList().isEmpty());
+    }
+
+    @Test
+    public void hasArchivedEmployee_activeAndArchivedEmployees_returnsCorrectResult() {
+        modelManager.addEmployee(ALICE);
+        modelManager.addEmployee(BENSON.withArchived(true));
+
+        assertFalse(modelManager.hasArchivedEmployee(ALICE));
+        assertTrue(modelManager.hasArchivedEmployee(BENSON));
+    }
+
+    @Test
+    public void getArchivedEmployeeCount_activeAndArchivedEmployees_returnsArchivedCount() {
+        modelManager.addEmployee(ALICE);
+        modelManager.addEmployee(BENSON.withArchived(true));
+
+        assertEquals(1, modelManager.getArchivedEmployeeCount());
+    }
+
+    @Test
     public void getFilteredEmployeeList_modifyList_throwsUnsupportedOperationException() {
         assertThrows(UnsupportedOperationException.class, () -> modelManager.getFilteredEmployeeList().remove(0));
     }

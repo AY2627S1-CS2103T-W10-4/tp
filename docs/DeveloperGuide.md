@@ -161,6 +161,22 @@ Classes used by multiple components are in the `seedu.address.commons` package.
 
 This section describes some noteworthy details on how certain features are implemented.
 
+### Employee archiving
+
+`Employee` has an immutable boolean archive status. Active and archived employees remain in the same
+`UniqueEmployeeList`, so case-insensitive ID uniqueness, editing and deletion naturally apply regardless of status.
+`archive id/EMPLOYEE_ID` and `unarchive id/EMPLOYEE_ID` replace the target with an otherwise identical employee whose
+status is changed. They reject unknown IDs and redundant status changes without modifying the model.
+
+`ModelManager#updateFilteredEmployeeList` combines normal predicates with an active-status check, so `list` and `find`
+never expose archived employees. `list archived` calls `Model#showArchivedEmployees` to select only archived employees
+in the same existing employee panel. `edit` preserves the target's archive status, while `delete` searches the complete
+stored list and can permanently remove either status.
+
+`JsonAdaptedEmployee` persists the status as `archived` in each employee object. A missing field deserializes as `false`,
+preserving compatibility with legacy data. `ClearCommand` calls `Model#clearEmployees`, which removes only active
+employees and preserves archived entries in the same list.
+
 ### Delete an employee by ID
 
 `DeleteCommandParser` accepts `delete id/EMPLOYEE_ID` with exactly one `id/` parameter. It distinguishes unknown parameters, a missing parameter, a blank ID, an invalid ID format and duplicate parameters. A preamble before `id/` is rejected as unexpected arguments. Parsing errors include the command usage; see the [User Guide](UserGuide.md#deleting-an-employee-delete) for messages and examples.
@@ -193,9 +209,15 @@ The sequence diagram below shows a successful `edit id/E0001 r/Manager`, adapted
 
 `Employee#isSameEmployee` compares employee IDs only, using case-insensitive `EmployeeId` equality. Employees with IDs `E0001` and `e0001` are duplicates even if their other details differ. Matching names or contact details with different IDs do not make employees duplicates; `Employee#equals` separately compares all fields.
 
-`UniqueEmployeeList` enforces this identity rule when adding employees, replacing an employee or replacing the whole list. An operation that would introduce duplicate IDs throws `DuplicateEmployeeException`. `AddCommand` first calls `model.hasEmployee(toAdd)`, which checks the full address book through `UniqueEmployeeList`. A duplicate produces `An employee with Employee ID X already exists.`, where `X` is the supplied ID, without adding the employee. Otherwise, it calls `model.addEmployee`; a same or similar name only adds a warning to the success message.
+`UniqueEmployeeList` enforces this identity rule for all employees regardless of archive status. An operation that would
+introduce duplicate IDs throws `DuplicateEmployeeException`. `AddCommand` first calls `model.hasEmployee(toAdd)`, which
+therefore includes archived employees. A duplicate produces `An employee with Employee ID X already exists.`, where `X` is
+the supplied ID, without adding the employee. Otherwise, it calls `model.addEmployee`; a same or similar name only adds a
+warning to the success message.
 
-When loading JSON, `JsonSerializableAddressBook#toModelType` converts and validates each stored employee, then checks `addressBook.hasEmployee` before adding it. Duplicate IDs, including IDs differing only in case, cause an `IllegalValueException` with `Employees list contains duplicate employee(s).`, rejecting the data file rather than returning a partially loaded address book.
+When loading JSON, `JsonSerializableAddressBook#toModelType` converts and validates every employee. Duplicate IDs,
+including IDs differing only in case, cause an `IllegalValueException`, rejecting the file rather than returning
+partially loaded data.
 
 ### \[Proposed\] Undo/redo feature
 
@@ -638,7 +660,7 @@ testers are expected to do more *exploratory* testing.
 2. Enter `list`.<br>
    Expected: HuntR displays `Listed all employees.` and restores the complete employee roster.
 3. Enter `clear`, followed by `list`.<br>
-   Expected: After `clear`, all employee records are removed. `list` displays an empty list and a message beginning with `You don’t have any employees yet.`, followed by the `add` command format.
+   Expected: After `clear`, all active employee records are removed. `list` displays an empty active roster and a message beginning with `You don’t have any employees yet.`, followed by the `add` command format. Any archived records remain available through `list archived`.
 
 ### Finding employees
 

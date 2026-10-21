@@ -32,7 +32,7 @@ public class ModelManager implements Model {
 
         this.addressBook = new AddressBook(addressBook);
         this.userPrefs = new UserPrefs(userPrefs);
-        filteredEmployees = new FilteredList<>(this.addressBook.getEmployeeList());
+        filteredEmployees = new FilteredList<>(this.addressBook.getEmployeeList(), employee -> !employee.isArchived());
     }
 
     public ModelManager() {
@@ -76,8 +76,21 @@ public class ModelManager implements Model {
     }
 
     @Override
+    public boolean hasArchivedEmployee(Employee employee) {
+        requireNonNull(employee);
+        return addressBook.getEmployeeList().stream()
+                .anyMatch(candidate -> candidate.isArchived() && candidate.isSameEmployee(employee));
+    }
+
+    @Override
     public void deleteEmployee(Employee target) {
         addressBook.removeEmployee(target);
+    }
+
+    @Override
+    public void clearEmployees() {
+        addressBook.clearEmployees();
+        updateFilteredEmployeeList(PREDICATE_SHOW_ALL_EMPLOYEES);
     }
 
     @Override
@@ -93,6 +106,18 @@ public class ModelManager implements Model {
         addressBook.setEmployee(target, editedEmployee);
     }
 
+    @Override
+    public void archiveEmployee(Employee employee) {
+        addressBook.setEmployee(employee, employee.withArchived(true));
+        updateFilteredEmployeeList(PREDICATE_SHOW_ALL_EMPLOYEES);
+    }
+
+    @Override
+    public void unarchiveEmployee(Employee employee) {
+        addressBook.setEmployee(employee, employee.withArchived(false));
+        updateFilteredEmployeeList(PREDICATE_SHOW_ALL_EMPLOYEES);
+    }
+
     //=========== Filtered Employee List Accessors =============================================================
 
     /**
@@ -105,9 +130,19 @@ public class ModelManager implements Model {
     }
 
     @Override
+    public int getArchivedEmployeeCount() {
+        return (int) addressBook.getEmployeeList().stream().filter(Employee::isArchived).count();
+    }
+
+    @Override
     public void updateFilteredEmployeeList(Predicate<Employee> predicate) {
         requireNonNull(predicate);
-        filteredEmployees.setPredicate(predicate);
+        filteredEmployees.setPredicate(employee -> !employee.isArchived() && predicate.test(employee));
+    }
+
+    @Override
+    public void showArchivedEmployees() {
+        filteredEmployees.setPredicate(Employee::isArchived);
     }
 
     @Override

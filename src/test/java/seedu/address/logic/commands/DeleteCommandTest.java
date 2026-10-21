@@ -133,6 +133,13 @@ public class DeleteCommandTest {
     }
 
     @Test
+    public void execute_archivedEmployee_deletesEmployee() throws Exception {
+        model.archiveEmployee(ALICE);
+        new DeleteCommand(ALICE.getId()).execute(model);
+        assertFalse(model.hasEmployee(ALICE));
+    }
+
+    @Test
     public void execute_unknownId_throwsCommandExceptionWithoutChangingModel() {
         DeleteCommand deleteCommand = new DeleteCommand(new EmployeeId("emp-missing"));
         assertCommandFailure(deleteCommand, model, "No employee with ID emp-missing was found.");

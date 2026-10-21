@@ -154,6 +154,20 @@ public class EditCommandTest {
     }
 
     @Test
+    public void execute_archivedEmployee_successAndPreservesStatus() {
+        Employee archivedAlice = ALICE.withArchived(true);
+        model.setEmployee(ALICE, archivedAlice);
+        EditCommand command = new EditCommand(ALICE.getId(),
+                new EditEmployeeDescriptorBuilder().withName(VALID_NAME_BOB).build());
+
+        org.junit.jupiter.api.Assertions.assertDoesNotThrow(() -> command.execute(model));
+        Employee edited = model.getAddressBook().getEmployeeList().stream()
+                .filter(employee -> employee.getId().equals(ALICE.getId())).findFirst().orElseThrow();
+        assertEquals(VALID_NAME_BOB, edited.getName().fullName);
+        assertTrue(edited.isArchived());
+    }
+
+    @Test
     public void equals() {
         final EditCommand standardCommand = new EditCommand(ALICE.getId(), DESC_AMY);
 
