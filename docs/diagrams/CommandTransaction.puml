@@ -1,0 +1,49 @@
+@startuml
+!include style.puml
+participant CommandBox as UI UI_COLOR
+participant LogicManager as Logic LOGIC_COLOR
+participant AddressBookParser as Parser LOGIC_COLOR
+participant Command as Command LOGIC_COLOR
+participant ModelManager as Model MODEL_COLOR
+participant VersionedAddressBook as History MODEL_COLOR
+participant Storage as Storage STORAGE_COLOR
+
+UI -> Logic : execute(text)
+Logic -> Parser : parseCommand(text)
+Parser --> Logic : command
+note over Logic, Parser
+ParseException stops execution before checkpoint or save.
+end note
+Logic -> Command : isDataChanging()
+Command --> Logic : true
+Logic -> Model : createCheckpoint()
+Model -> History : copy working list and history container
+History --> Model : data, immutable snapshot references, pointer
+Model --> Logic : checkpoint (including effective predicate)
+Logic -> Command : execute(model)
+Command -> Model : mutate then commitAddressBook()\nor undoAddressBook() / redoAddressBook()
+Model -> History : commit() / undo() / redo()
+break execution fails (CommandException / RuntimeException)
+    Command --> Logic : exception
+    Logic -> Model : restoreCheckpoint(checkpoint)
+    Model -> History : restore working data, history, pointer
+    Model -> Model : restore effective predicate directly
+    Logic --> UI : rethrow original exception
+end
+Command --> Logic : tentative result
+Logic -> Storage : saveAddressBook(current data)
+alt save succeeds
+    Storage --> Logic : return
+    Logic --> UI : result
+    UI -> UI : clear command text
+else serialization or save fails before success
+    Logic -> Model : restoreCheckpoint(checkpoint)
+    Model -> History : restore working data, history, pointer
+    Model -> Model : restore effective predicate directly
+    Logic --> UI : rethrow CommandException or RuntimeException\n(convert I/O errors to existing CommandException)
+end
+note over Logic, Storage
+Read-only commands skip checkpoint/rollback,
+but still save after successful execution.
+end note
+@enduml

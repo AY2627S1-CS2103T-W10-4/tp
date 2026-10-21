@@ -50,11 +50,7 @@ The bulk of the app's work is done by the following four components:
 
 **How the architecture components interact with each other**
 
-The architecture and logic sequence diagrams below retain AB3's former index-based delete examples. HuntR's current syntax and lookup behavior are described in [Delete an employee by ID](#delete-an-employee-by-id).
-
-The *Sequence Diagram* below shows how the components interact with each other for the scenario where the user issues the command `delete 1`.
-
-<puml src="diagrams/ArchitectureSequenceDiagram.puml" width="574" />
+Employee-data command execution and saving are shown in the [transaction diagram](#checkpoints-and-transaction-boundary).
 
 Each of the four main components (also shown in the diagram above),
 
@@ -73,7 +69,7 @@ The **API** of this component is specified in [`Ui.java`](https://github.com/se-
 
 <puml src="diagrams/UiClassDiagram.puml" alt="Structure of the UI Component"/>
 
-The UI consists of a `MainWindow` and its parts, such as `CommandBox`, `ResultDisplay`, `PersonListPanel`, and `StatusBarFooter`. All of these, including `MainWindow`, inherit from the abstract `UiPart` class, which captures common behavior among classes that represent visible GUI parts.
+The UI consists of a `MainWindow` and its parts, such as `CommandBox`, `ResultDisplay`, `EmployeeListPanel`, and `StatusBarFooter`. All of these, including `MainWindow`, inherit from the abstract `UiPart` class, which captures common behavior among classes that represent visible GUI parts.
 
 The `UI` component uses the JavaFX UI framework. The layouts of these UI parts are defined in matching `.fxml` files in `src/main/resources/view`. For example, [`MainWindow.fxml`](https://github.com/se-edu/addressbook-level3/tree/master/src/main/resources/view/MainWindow.fxml) specifies the layout of [`MainWindow`](https://github.com/se-edu/addressbook-level3/tree/master/src/main/java/seedu/address/ui/MainWindow.java).
 
@@ -82,7 +78,7 @@ The `UI` component,
 * executes user commands using the `Logic` component.
 * listens for changes to `Model` data so that the UI can be updated with the modified data.
 * keeps a reference to the `Logic` component, because the `UI` relies on the `Logic` to execute commands.
-* depends on some classes in the `Model` component because it displays `Person` objects from the model.
+* depends on some classes in the `Model` component because it displays `Employee` objects from the model.
 
 ### Logic component
 
@@ -92,23 +88,13 @@ Here's a (partial) class diagram of the `Logic` component:
 
 <puml src="diagrams/LogicClassDiagram.puml" width="550"/>
 
-The sequence diagram below illustrates the interactions within the `Logic` component, taking `execute("delete 1")` API call as an example.
-
-<puml src="diagrams/DeleteSequenceDiagram.puml" alt="Interactions Inside the Logic Component for the `delete 1` Command" />
-
-<box type="info" seamless>
-
-**Note:** The lifeline for `DeleteCommandParser` should end at the destroy marker (X), but due to a limitation of PlantUML, the lifeline continues till the end of diagram.
-</box>
-
-
 How the `Logic` component works:
 
 1. When `Logic` is called upon to execute a command, the command is passed to an `AddressBookParser` object, which in turn creates a parser that matches the command (e.g., `DeleteCommandParser`) and uses it to parse the command.
 1. This results in a `Command` object (more precisely, an object of one of its subclasses e.g., `DeleteCommand`) which is executed by the `LogicManager`.
-1. The command can communicate with the `Model` when it is executed (e.g. to delete a person).<br>
+1. The command can communicate with the `Model` when it is executed (e.g. to delete an employee).<br>
    Note that although this is shown as a single step in the diagram above for simplicity, the code can require several interactions between the command object and the `Model` to complete the operation.
-1. The result of the command execution is encapsulated as a `CommandResult` object which is returned from `Logic`.
+1. Logic saves the employee state and returns the `CommandResult` only after saving succeeds. Data-changing commands use the checkpoint and rollback boundary described below.
 
 Here are the other classes in `Logic` (omitted from the class diagram above) that are used for parsing a user command:
 
@@ -126,18 +112,10 @@ How the parsing works:
 
 The `Model` component,
 
-* stores the address book data i.e., all `Person` objects (which are contained in a `UniquePersonList` object).
-* stores the `Person` objects selected by the current filter, such as search results, in a separate _filtered_ list. It exposes this list as an unmodifiable `ObservableList<Person>` that the UI can observe and bind to, so the UI updates when the list changes.
+* stores working data in a `VersionedAddressBook` and its `UniqueEmployeeList`, with immutable history snapshots and a current-state pointer.
+* stores the `Employee` objects selected by the current filter, such as search results, in a separate _filtered_ list. It exposes this list as an unmodifiable `ObservableList<Employee>` that the UI can observe and bind to, so the UI updates when the list changes.
 * stores a `UserPrefs` object that represents the user’s preferences (currently, just the GUI settings). This is exposed to the outside as a `ReadOnlyUserPrefs` object.
 * does not depend on any of the other three components (as the `Model` represents data entities of the domain, they should make sense on their own without depending on other components)
-
-
-<box type="info" seamless>
-
-**Note:** The alternative, arguably more object-oriented, design below keeps a unique list of tags in `AddressBook`, and each `Person` references tags from that list. This lets `AddressBook` maintain one `Tag` object per unique tag instead of each `Person` holding its own `Tag` objects.<br>
-
-<puml src="diagrams/BetterModelClassDiagram.puml" width="450" />
-</box>
 
 
 ### Storage component
@@ -171,7 +149,7 @@ status is changed. They reject unknown IDs and redundant status changes without 
 `ModelManager#updateFilteredEmployeeList` combines normal predicates with an active-status check, so `list` and `find`
 never expose archived employees. `list archived` calls `Model#showArchivedEmployees` to select only archived employees
 in the same existing employee panel. `edit` preserves the target's archive status, while `delete` searches the complete
-stored list and can permanently remove either status.
+stored list and can remove either status; session history can restore the removed record.
 
 `JsonAdaptedEmployee` persists the status as `archived` in each employee object. A missing field deserializes as `false`,
 preserving compatibility with legacy data. `ClearCommand` calls `Model#clearEmployees`, which removes only active
@@ -219,94 +197,102 @@ When loading JSON, `JsonSerializableAddressBook#toModelType` converts and valida
 including IDs differing only in case, cause an `IllegalValueException`, rejecting the file rather than returning
 partially loaded data.
 
-### \[Proposed\] Undo/redo feature
+### Employee history and in-memory rollback
 
-#### Proposed Implementation
+`ModelManager` owns a `VersionedAddressBook`, which extends `AddressBook` and inherits its ordinary equality and
+hash-code behavior. `ModelManager` equality also remains unchanged: history is not compared.
+Construction copies the supplied data and records exactly one initial snapshot with pointer zero.
+History has no explicit capacity limit and lasts only for the session.
 
-The proposed undo/redo mechanism is facilitated by `VersionedAddressBook`. It extends `AddressBook` with an undo/redo history, stored internally as an `addressBookStateList` and `currentStatePointer`. Additionally, it implements the following operations:
+`addressBookStateList` contains complete immutable `List<Employee>` snapshots. Containers cannot be changed;
+immutable employee objects are shared. Every stored field, raw ID spelling, archive status and employee order is
+retained, including hidden records. `commit()` compares ordered employee values and raw ID strings against the
+current snapshot **before** removing redo states. Employee equality alone ignores ID case and is insufficient.
+A changed state discards the redo tail and appends one snapshot; an identical state leaves history untouched.
 
-* `VersionedAddressBook#commit()` -- Saves the current address book state in its history.
-* `VersionedAddressBook#undo()` -- Restores the previous address book state from its history.
-* `VersionedAddressBook#redo()` -- Restores a previously undone address book state from its history.
+The model exposes `commitAddressBook()`, `canUndoAddressBook()`, `canRedoAddressBook()`, `undoAddressBook()` and
+`redoAddressBook()`. Each of `add`, `edit`, `delete`, `clear`, `import`, `archive` and `unarchive` commits once after
+its mutations. Import commits only after all rows have been added. Low-level mutations do not commit.
+`setAddressBook()` replaces working data without committing, resetting history or changing the predicate.
 
-These operations are exposed in the `Model` interface as `Model#commitAddressBook()`, `Model#undoAddressBook()` and `Model#redoAddressBook()` respectively.
+`UndoCommand` and `RedoCommand` check availability and move one step without committing. Snapshot data is restored
+directly; redo never executes a command again or reads a CSV. Both commands preserve the current effective view.
+Identical edits and clears with no active employees still reset to the active view and return their usual success
+messages. They create no entry and retain redo. Read-only and failed commands also retain redo.
 
-Given below is an example usage scenario and how the undo/redo mechanism behaves at each step.
+#### Checkpoints and transaction boundary
 
-Step 1. The user launches the application for the first time. The `VersionedAddressBook` will be initialized with the initial address book state, and the `currentStatePointer` pointing to that single address book state.
+`Command#isDataChanging()` means “this command may change employee data or navigate employee history.” Its default
+is false. The seven modifying commands and both history commands return true even for no-ops. `LogicManager` parses
+first, captures a `ModelCheckpoint` for those commands, executes, then saves through the existing storage API.
+Only a successful storage return permits the result to be returned. No fallible work is added after that return.
 
-<puml src="diagrams/UndoRedoState0.puml" alt="UndoRedoState0" />
+<puml src="diagrams/CommandTransaction.puml" alt="Employee command execution, saving and rollback" />
 
-Step 2. The user executes `delete 5` command to delete the 5th person in the address book. The `delete` command calls `Model#commitAddressBook()`, causing the modified state of the address book after the `delete 5` command executes to be saved in the `addressBookStateList`, and the `currentStatePointer` is shifted to the newly inserted address book state.
+A checkpoint copies the current employee-list container and the history container, retaining references to
+immutable snapshots, the pointer and the effective predicate. Capture takes O(n + h) work for n current employees
+and h snapshots; it does not reconstruct historical address books or revalidate employee pairs. Checkpoints remain
+usable after later changes, after redo-tail removal and after repeated restoration. Restoration copies back into
+the working containers and never changes a shared snapshot.
 
-<puml src="diagrams/UndoRedoState1.puml" alt="UndoRedoState1" />
+`CommandException`, `AccessDeniedException`, other `IOException` and unexpected `RuntimeException` during execution,
+tentative commits, serialization or saving cause restoration for data-changing commands. Command exceptions and
+runtime exceptions are rethrown; I/O failures retain their existing command-error conversion and use
+`e.getMessage()` in these exact templates:
 
-Step 3. The user executes `add n/David …​` to add a new person. The `add` command also calls `Model#commitAddressBook()`, causing another modified address book state to be saved into the `addressBookStateList`.
+```text
+Could not save data due to the following error: <exception-message>
+```
 
-<puml src="diagrams/UndoRedoState2.puml" alt="UndoRedoState2" />
+```text
+Could not save data to file <exception-message> due to insufficient permissions to write to the file or the folder.
+```
 
-<box type="info" seamless>
+The permission substitution is not necessarily just the configured path. `CommandBox` retains text and styles
+`CommandException` and `ParseException` as errors; it clears text on success. It does not catch arbitrary runtime
+exceptions. Parse failures occur before checkpoint capture and before any save. Syntax validation for undo/redo
+rejects arguments before checking availability. See the User Guide for exact usage and boundary errors.
 
-**Note:** If a command fails its execution, it will not call `Model#commitAddressBook()`, so the address book state will not be saved into the `addressBookStateList`.
-</box>
+#### View and observable-list lifetime
 
-Step 4. The user now decides that adding the person was a mistake, and decides to undo that action by executing the `undo` command. The `undo` command will call `Model#undoAddressBook()`, which will shift the `currentStatePointer` once to the left, pointing it to the previous address book state, and restores the address book to that state.
+The existing stored observable list and `FilteredList` instances are preserved. Checkpoints retain the installed
+predicate reference, treating installed predicates as stable. Restore applies it directly with
+`filteredEmployees.setPredicate(...)`; routing through `updateFilteredEmployeeList()` would add an active-only
+condition and corrupt archived-only views. A zero-match search retains its predicate and can reveal a matching
+employee restored by undo. Historical searches are not part of snapshots. Selection, scroll position and
+suppression of intermediate list notifications are outside scope.
 
-<puml src="diagrams/UndoRedoState3.puml" alt="UndoRedoState3" />
+#### Persistence and branch integration
 
+All successfully executed commands still save, including read-only commands and no-ops. Read-only save failures
+retain existing behavior and are not checkpointed. Export/backup side effects are outside the transaction.
+Only the current employee state is serialized in the existing `employees` JSON schema; there are no history,
+checkpoint, command or predicate fields. Missing `archived` fields in older valid JSON still load as active;
+validation, case-insensitive ID uniqueness, invalid-file handling, paths and preferences are unchanged. CSV export
+retains seven columns; import also accepts legacy six-column CSV and rejects header-only files.
 
-<box type="info" seamless>
+This implementation starts at recorded local `master` commit `1d8b4b5eaeae6b1a102f92dd81a7befb18221ecb`.
+`codex/104-safe-data-saving` must start at the same commit. This branch does not incorporate it or modify disk-write
+behavior. In-memory rollback does not guarantee unchanged disk contents on an unsuccessful write with the existing
+API. The safe-saving branch owns atomic replacement and must ensure no fallible post-replacement work reports a
+failure after disk replacement succeeds. After integration, this branch's owner updates the combined user-facing
+explanation and repeats the acceptance run. Restart loads the last successfully saved state as a new initial
+snapshot. External JSON editing while closed remains supported; live reload and concurrent writers are out of scope.
 
-**Note:** If the `currentStatePointer` is at index 0, pointing to the initial AddressBook state, then there are no previous AddressBook states to restore. The `undo` command uses `Model#canUndoAddressBook()` to check if this is the case. If so, it will return an error to the user rather
-than attempting to perform the undo.
-</box>
+#### Validation and performance
 
-The following sequence diagram shows how an undo operation goes through the `Logic` component:
+`ModelHistoryTest`, `HistoryCommandTest` and `HistoryTransactionTest` cover history traversal, no-ops, raw IDs,
+checkpoints, view/list identity, import grouping, execution failures and save failures. Assertions compare ordered
+stored values separately from model equality. Existing parser, storage, CSV and command tests cover compatibility.
+The detailed matrix and recorded acceptance environment are in the repository's `tests/test-plan.md`.
 
-<puml src="diagrams/UndoSequenceDiagram-Logic.puml" alt="UndoSequenceDiagram-Logic" />
-
-<box type="info" seamless>
-
-**Note:** The lifeline for `UndoCommand` should end at the destroy marker (X), but due to a limitation of PlantUML, it continues to the end of the diagram.
-</box>
-
-Similarly, how an undo operation goes through the `Model` component is shown below:
-
-<puml src="diagrams/UndoSequenceDiagram-Model.puml" alt="UndoSequenceDiagram-Model" />
-
-The `redo` command does the opposite — it calls `Model#redoAddressBook()`, which shifts the `currentStatePointer` once to the right, pointing to the previously undone state, and restores the address book to that state.
-
-<box type="info" seamless>
-
-**Note:** If the `currentStatePointer` is at index `addressBookStateList.size() - 1`, pointing to the latest address book state, then there are no undone AddressBook states to restore. The `redo` command uses `Model#canRedoAddressBook()` to check if this is the case. If so, it will return an error to the user rather than attempting to perform the redo.
-</box>
-
-Step 5. The user then decides to execute the command `list`. Commands that do not modify the address book, such as `list`, will usually not call `Model#commitAddressBook()`, `Model#undoAddressBook()` or `Model#redoAddressBook()`. Thus, the `addressBookStateList` remains unchanged.
-
-<puml src="diagrams/UndoRedoState4.puml" alt="UndoRedoState4" />
-
-Step 6. The user executes `clear`, which calls `Model#commitAddressBook()`. Since the `currentStatePointer` is not pointing at the end of the `addressBookStateList`, all address book states after the `currentStatePointer` will be purged. Reason: It no longer makes sense to redo the `add n/David …` command. This is the behavior that most modern desktop applications follow.
-
-<puml src="diagrams/UndoRedoState5.puml" alt="UndoRedoState5" />
-
-The following activity diagram summarizes what happens when a user executes a new command:
-
-<puml src="diagrams/CommitActivityDiagram.puml" width="250" />
-
-#### Design considerations:
-
-**Aspect: How undo & redo execute:**
-
-* **Alternative 1 (current choice):** Saves the entire address book.
-  * Pros: Easy to implement.
-  * Cons: May have performance issues in terms of memory usage.
-
-* **Alternative 2:** Individual command knows how to undo/redo by
-  itself.
-  * Pros: Will use less memory (e.g. for `delete`, just save the person being deleted).
-  * Cons: We must ensure that the implementation of each individual command is correct.
-
-_{more aspects and alternatives to be added}_
+For history performance, use the hardware conditions in [Non-functional requirements](#non-functional-requirements).
+Start each of three measured sessions from the same 1,000-employee fixture. Perform 100 genuine edits while retaining
+exactly 1,000 employees, then time all 100 undos and all 100 redos: 600 measured history operations in total. Measure
+from command dispatch through saving to the first rendered UI frame showing the completed result and list update.
+Every operation must complete within two seconds. Record the maximum and environment; keep thresholds out of CI
+unit tests. Run the standalone UI acceptance harness described in `tests/test-plan.md` and repeat after integrating
+atomic saving.
 
 ### \[Proposed\] Data archiving
 

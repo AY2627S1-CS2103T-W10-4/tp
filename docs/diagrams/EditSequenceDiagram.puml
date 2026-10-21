@@ -50,6 +50,11 @@ destroy EditCommandParser
 AddressBookParser --> LogicManager : e
 deactivate AddressBookParser
 
+LogicManager -> EditCommand : isDataChanging()
+EditCommand --> LogicManager : true
+LogicManager -> Model : createCheckpoint()
+Model --> LogicManager : checkpoint
+
 LogicManager -> EditCommand : execute(m)
 activate EditCommand
 
@@ -86,6 +91,9 @@ activate Model
 Model --> EditCommand
 deactivate Model
 
+EditCommand -> Model : commitAddressBook()
+Model --> EditCommand
+
 create CommandResult
 EditCommand -> CommandResult : new CommandResult(\nsuccessMessage)
 activate CommandResult
@@ -96,8 +104,9 @@ EditCommand --> LogicManager : r
 deactivate EditCommand
 
 note over LogicManager
-Save the address book via Storage
-(interactions omitted).
+Save via Storage before returning success.
+On execution or save failure, restore the checkpoint.
+See CommandTransaction for the transaction boundary.
 end note
 
 [<-- LogicManager : r
