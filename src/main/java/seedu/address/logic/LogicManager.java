@@ -35,9 +35,13 @@ public class LogicManager implements Logic {
      * Constructs a {@code LogicManager} with the given {@code Model} and {@code Storage}.
      */
     public LogicManager(Model model, Storage storage) {
+        this(model, storage, new AddressBookParser());
+    }
+
+    LogicManager(Model model, Storage storage, AddressBookParser addressBookParser) {
         this.model = model;
         this.storage = storage;
-        addressBookParser = new AddressBookParser();
+        this.addressBookParser = addressBookParser;
     }
 
     @Override
