@@ -56,13 +56,23 @@ HuntR allows HR administrators to find employees whose names contain any of the 
 
 Example: `find John`
 
+### Undo and redo
+
+Use `undo` to reverse one employee-data change and `redo` to reapply it, including an entire import.
+The current active, archived or search view is preserved. Identical edits and empty active-roster clears create
+no history entry. A successful actual change after undo discards redo; failed and read-only commands preserve it.
+History lasts for the current session only.
+
 ### Automatic data persistence
 
-HuntR automatically saves your workforce records to disk after every change, and reloads them the next time the application is launched — no manual save or load required.
+HuntR saves the current employee state after every successfully executed command and reloads it at the next launch.
+If a data-changing command or its save fails, employee data, history and the view are restored in memory.
+Employee files are replaced atomically: handled save failures preserve the last stored file. History is not saved.
+See the [User Guide](docs/UserGuide.md#saving-the-data) for save errors and supported local-file protections.
 
 ### Exit
 
-HuntR allows HR administrators to close the application using the `exit` command, ensuring all workforce records are safely saved before the session ends.
+HuntR allows HR administrators to close the application using the `exit` command, saving the current employee state before the session ends.
 
 Example: `exit`
 

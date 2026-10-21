@@ -1,0 +1,23 @@
+// Opt-in rendered-UI acceptance runner. It is deliberately outside ordinary CI tests.
+allprojects {
+    afterEvaluate { project ->
+        def acceptanceClasses = layout.buildDirectory.dir('history-performance/classes')
+        tasks.register('compileHistoryPerformance', JavaCompile) {
+            dependsOn tasks.named('classes')
+            source = fileTree('tests/performance') { include '**/*.java' }
+            classpath = sourceSets.main.runtimeClasspath
+            destinationDirectory = acceptanceClasses
+            sourceCompatibility = '25'
+            targetCompatibility = '25'
+        }
+        tasks.register('historyPerformance', JavaExec) {
+            dependsOn tasks.named('compileHistoryPerformance')
+            classpath = files(acceptanceClasses) + sourceSets.main.runtimeClasspath
+            mainClass = 'seedu.address.ui.HistoryPerformance'
+            workingDir = layout.buildDirectory.dir('history-performance').get().asFile
+            args = [workingDir.absolutePath]
+            jvmArgs '--enable-native-access=ALL-UNNAMED'
+            doFirst { workingDir.mkdirs() }
+        }
+    }
+}

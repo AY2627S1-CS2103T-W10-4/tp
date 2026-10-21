@@ -77,6 +77,11 @@ public class ImportCommand extends CsvFileCommand {
     }
 
     @Override
+    public HistoryAction getHistoryAction() {
+        return HistoryAction.COMMIT;
+    }
+
+    @Override
     public CommandResult execute(Model model) throws CommandException {
         requireNonNull(model);
         Path resolvedPath = resolveFilePath();

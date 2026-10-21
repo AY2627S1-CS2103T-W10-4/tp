@@ -14,6 +14,11 @@ public class ClearCommand extends Command {
 
 
     @Override
+    public HistoryAction getHistoryAction() {
+        return HistoryAction.COMMIT;
+    }
+
+    @Override
     public CommandResult execute(Model model) {
         requireNonNull(model);
         model.clearEmployees();

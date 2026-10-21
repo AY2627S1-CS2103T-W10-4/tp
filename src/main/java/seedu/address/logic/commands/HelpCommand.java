@@ -38,6 +38,11 @@ public class HelpCommand extends Command {
             ListCommand.COMMAND_WORD + " archived",
             ClearCommand.COMMAND_WORD,
             BackupCommand.COMMAND_WORD,
+            ImportCommand.COMMAND_WORD + " FILE_PATH",
+            ExportCommand.COMMAND_WORD + " FILE_PATH",
+            BackupCommand.COMMAND_WORD,
+            UndoCommand.COMMAND_WORD,
+            RedoCommand.COMMAND_WORD,
             COMMAND_WORD,
             ExitCommand.COMMAND_WORD);
 

@@ -2,6 +2,7 @@ package seedu.address.logic.commands;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.logic.commands.CommandTestUtil.assertCommandFailure;
 import static seedu.address.logic.commands.CommandTestUtil.assertCommandSuccess;
@@ -10,19 +11,25 @@ import static seedu.address.testutil.Assert.assertThrows;
 import static seedu.address.testutil.TypicalEmployees.getTypicalAddressBook;
 import static seedu.address.testutil.TypicalIndexes.INDEX_FIRST_EMPLOYEE;
 
+import java.io.IOException;
+import java.nio.file.AccessDeniedException;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import seedu.address.logic.commands.exceptions.CommandException;
 import seedu.address.model.AddressBook;
 import seedu.address.model.Model;
 import seedu.address.model.ModelManager;
+import seedu.address.model.ReadOnlyAddressBook;
 import seedu.address.model.UserPrefs;
 import seedu.address.storage.JsonAddressBookStorage;
 
@@ -48,7 +55,7 @@ public class BackupCommandTest {
         Path backupFolder = testFolder.resolve("data").resolve("backups");
         Path backupPath = backupFolder.resolve(EXPECTED_FILE_NAME);
         int employeeCount = model.getAddressBook().getEmployeeList().size();
-        String expectedMessage = String.format(BackupCommand.MESSAGE_SUCCESS, employeeCount, backupPath);
+        String expectedMessage = "Backed up " + employeeCount + " employee(s) to " + backupPath;
 
         assertCommandSuccess(new BackupCommand(backupFolder, FIXED_CLOCK), model, expectedMessage, expectedModel);
 
@@ -87,6 +94,36 @@ public class BackupCommandTest {
 
         assertCommandFailure(new BackupCommand(notAFolder, FIXED_CLOCK), model,
                 String.format(BackupCommand.MESSAGE_WRITE_FAILED, notAFolder.resolve(EXPECTED_FILE_NAME)));
+    }
+
+    @Test
+    public void execute_storageIoFailures_keepBackupSpecificMessageAndOriginalCause() {
+        Path backupPath = testFolder.resolve(EXPECTED_FILE_NAME);
+        List<IOException> failures = List.of(new IOException("write failed"),
+                new AccessDeniedException("temporary", "target", "permission diagnostic"),
+                new IOException("Atomic replacement is not supported for this data file.",
+                        new AtomicMoveNotSupportedException("temporary", "target", "unsupported")),
+                new IOException("Cannot preserve the required file access protections."));
+        for (IOException failure : failures) {
+            BackupCommand command = new BackupCommand(testFolder, FIXED_CLOCK) {
+                @Override
+                JsonAddressBookStorage createStorage(Path path) {
+                    assertEquals(backupPath, path);
+                    return new JsonAddressBookStorage(path) {
+                        @Override
+                        public void saveAddressBook(ReadOnlyAddressBook addressBook) throws IOException {
+                            throw failure;
+                        }
+                    };
+                }
+            };
+            CommandException thrown = org.junit.jupiter.api.Assertions.assertThrows(CommandException.class, () ->
+                    command.execute(model));
+            assertEquals("Could not save the backup to " + backupPath
+                    + ". Check that you are allowed to write to that folder.", thrown.getMessage());
+            assertSame(failure, thrown.getCause());
+            assertFalse(Files.exists(backupPath));
+        }
     }
 
     @Test
