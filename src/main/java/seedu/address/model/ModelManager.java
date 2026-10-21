@@ -18,7 +18,7 @@ import seedu.address.model.employee.Employee;
 public class ModelManager implements Model {
     private static final Logger logger = LogsCenter.getLogger(ModelManager.class);
 
-    private final AddressBook addressBook;
+    private final VersionedAddressBook addressBook;
     private final UserPrefs userPrefs;
     private final FilteredList<Employee> filteredEmployees;
 
@@ -30,7 +30,7 @@ public class ModelManager implements Model {
 
         logger.fine("Initializing with address book: " + addressBook + " and user prefs " + userPrefs);
 
-        this.addressBook = new AddressBook(addressBook);
+        this.addressBook = new VersionedAddressBook(addressBook);
         this.userPrefs = new UserPrefs(userPrefs);
         filteredEmployees = new FilteredList<>(this.addressBook.getEmployeeList(), employee -> !employee.isArchived());
     }
@@ -67,6 +67,44 @@ public class ModelManager implements Model {
     @Override
     public ReadOnlyAddressBook getAddressBook() {
         return addressBook;
+    }
+
+    @Override
+    public void commitAddressBook() {
+        addressBook.commit();
+    }
+
+    @Override
+    public boolean canUndoAddressBook() {
+        return addressBook.canUndo();
+    }
+
+    @Override
+    public boolean canRedoAddressBook() {
+        return addressBook.canRedo();
+    }
+
+    @Override
+    public void undoAddressBook() {
+        addressBook.undo();
+    }
+
+    @Override
+    public void redoAddressBook() {
+        addressBook.redo();
+    }
+
+    @Override
+    public ModelCheckpoint createCheckpoint() {
+        return addressBook.createCheckpoint(filteredEmployees.getPredicate());
+    }
+
+    @Override
+    public void restoreCheckpoint(ModelCheckpoint checkpoint) {
+        requireNonNull(checkpoint);
+        addressBook.restoreCheckpoint(checkpoint);
+        // Installing the effective predicate directly also preserves archived-only views.
+        filteredEmployees.setPredicate(checkpoint.getPredicate());
     }
 
     @Override

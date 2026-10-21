@@ -8,6 +8,11 @@ import seedu.address.model.Model;
  */
 public abstract class Command {
 
+    /** Returns whether this command may change employee data or navigate employee history. */
+    public boolean isDataChanging() {
+        return false;
+    }
+
     /**
      * Executes the command and returns the result message.
      *

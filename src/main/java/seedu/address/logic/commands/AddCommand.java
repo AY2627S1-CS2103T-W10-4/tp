@@ -57,6 +57,11 @@ public class AddCommand extends Command {
     }
 
     @Override
+    public boolean isDataChanging() {
+        return true;
+    }
+
+    @Override
     public CommandResult execute(Model model) throws CommandException {
         requireNonNull(model);
 
@@ -74,6 +79,7 @@ public class AddCommand extends Command {
                 .collect(Collectors.joining(", "));
 
         model.addEmployee(toAdd);
+        model.commitAddressBook();
 
         String message = String.format(MESSAGE_SUCCESS, Messages.format(toAdd));
         if (!similarEmployeeIds.isEmpty()) {

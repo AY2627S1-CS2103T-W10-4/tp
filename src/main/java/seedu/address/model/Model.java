@@ -29,9 +29,30 @@ public interface Model {
     void setGuiSettings(GuiSettings guiSettings);
 
     /**
-     * Replaces address book data with the data in {@code addressBook}.
+     * Replaces working data without committing, resetting history or changing the view.
      */
     void setAddressBook(ReadOnlyAddressBook addressBook);
+
+    /** Commits an actual change to the working employee data as one history entry. */
+    void commitAddressBook();
+
+    /** Returns whether there is a preceding snapshot. */
+    boolean canUndoAddressBook();
+
+    /** Returns whether there is a subsequent snapshot. */
+    boolean canRedoAddressBook();
+
+    /** Restores the preceding snapshot, preserving the current view. */
+    void undoAddressBook();
+
+    /** Restores the subsequent snapshot, preserving the current view. */
+    void redoAddressBook();
+
+    /** Captures working data, complete history and the effective view for rollback. */
+    ModelCheckpoint createCheckpoint();
+
+    /** Restores working data, complete history and the saved effective view. */
+    void restoreCheckpoint(ModelCheckpoint checkpoint);
 
     /** Returns the AddressBook */
     ReadOnlyAddressBook getAddressBook();
