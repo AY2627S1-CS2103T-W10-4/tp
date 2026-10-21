@@ -66,6 +66,7 @@ HuntR is based on [AddressBook-Level3](https://github.com/se-edu/addressbook-lev
 
 * Extraneous parameters for `help` and `clear` are ignored.<br>
   For example, `help 123` is interpreted as `help`. The `backup` and `exit` commands also take no parameters but reject extra text, so `backup now` and `exit now` show an error. Likewise, `list` accepts only `archived` after it, so `list 1` shows an error.
+  The `stats` and `check` commands take no parameters and reject extra text too.
 
 * If you are using a PDF version of this document, be careful when copying and pasting commands that span multiple lines as space characters surrounding line-breaks may be omitted when copied over to the application.
 </box>
@@ -152,6 +153,64 @@ Examples:
 * `find John` returns employees named `john` and `John Doe`
 * `find alex david` returns `Alex Yeoh`, `David Li`<br>
   ![result for 'find alex david'](images/findAlexDavidResult.png)
+
+### Viewing workforce statistics: `stats`
+
+Shows the total number of active employees and the employee counts for each department and role in the result box.
+
+Format: `stats`
+
+* Counts cover all active employees, including employees hidden by a search. Archived employees are excluded,
+  even when `list archived` is currently displayed.
+* Each breakdown is sorted by count, largest first. Ties are sorted by the stored department or role name
+  in case-sensitive alphabetical order (uppercase letters before lowercase letters).
+* Department and role names are grouped exactly as stored: `Ops` and `ops` are separate groups.
+* The employee records and current employee list view are unchanged.
+* If there are no active employees, the total is `0` and both breakdowns display `(none)`.
+
+Example: `stats`, with two active employees in Ops and one in Sales, displays:
+
+```text
+Total active employees: 3
+By department:
+Ops: 2
+Sales: 1
+By role:
+Engineer: 2
+Manager: 1
+```
+
+The command accepts leading and trailing spaces but no arguments. For example, `stats d/Ops` and `stats 1`
+are rejected with `Invalid command format.` followed by `Usage: stats`. No records or list filters change.
+
+### Checking data quality: `check`
+
+Lists active employees who share a phone number or email with another active employee in the result box.
+Shared contact details may indicate a data-entry error; HuntR flags them for review without editing or deleting them.
+
+Format: `check`
+
+* Checks cover all active employees regardless of the current search or archive view. Archived employees neither
+  appear in the report nor cause an active employee to be flagged.
+* Contact values are compared exactly as stored, consistent with HuntR's phone and email equality rules.
+  For example, `91234567` and `9123 4567` are different, as are `Alice@example.com` and `alice@example.com`.
+* Every affected employee is counted and listed once, even if both their phone and email are shared or more
+  than two employees share a value. Each entry includes their ID, name and shared contact details.
+* Entries are sorted by employee ID, ignoring letter case. The current employee list view and records are unchanged.
+* An empty active roster or a roster without shared contacts produces `No data-quality issues found.`
+
+Example: if active employees E0001 (Alice) and E0002 (Bob) both have phone number `91234567`, `check` displays:
+
+```text
+Found 2 active employee(s) with data-quality issues:
+E0001 (Alice): shared phone 91234567
+E0002 (Bob): shared phone 91234567
+```
+
+Use `edit id/EMPLOYEE_ID ...` to correct a record after reviewing it, then run `check` again.
+
+The command accepts leading and trailing spaces but no arguments. For example, `check id/E0001` and `check all`
+are rejected with `Invalid command format.` followed by `Usage: check`. No records or list filters change.
 
 ### Archiving employees: `archive`
 
@@ -304,11 +363,13 @@ Action     | Format, Examples
 **Add**    | `add id/EMPLOYEE_ID n/NAME p/PHONE e/EMAIL d/DEPARTMENT r/ROLE`<br>e.g., `add id/E0123 n/John Tan p/91234567 e/johntan@example.com d/Engineering r/Software Engineer`
 **Archive** | `archive id/EMPLOYEE_ID`<br>e.g., `archive id/E0123`
 **Backup** | `backup`
+**Check**  | `check`
 **Clear**  | `clear`
 **Delete** | `delete id/EMPLOYEE_ID`<br> e.g., `delete id/EMP-0042`
 **Edit**   | `edit id/EMPLOYEE_ID [n/NAME] [p/PHONE] [e/EMAIL] [d/DEPARTMENT] [r/ROLE]`<br>e.g., `edit id/E0001 p/91234567 e/alex@example.com`
 **Find**   | `find KEYWORD [MORE_KEYWORDS]`<br> e.g., `find James Jake`
 **List**   | `list` or `list archived`
+**Stats**  | `stats`
 **Unarchive** | `unarchive id/EMPLOYEE_ID`
 **Help**   | `help`
 **Exit**   | `exit`

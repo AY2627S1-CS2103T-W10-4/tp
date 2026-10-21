@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import seedu.address.logic.commands.AddCommand;
 import seedu.address.logic.commands.ArchiveCommand;
 import seedu.address.logic.commands.BackupCommand;
+import seedu.address.logic.commands.CheckCommand;
 import seedu.address.logic.commands.ClearCommand;
 import seedu.address.logic.commands.DeleteCommand;
 import seedu.address.logic.commands.EditCommand;
@@ -23,6 +24,7 @@ import seedu.address.logic.commands.ExitCommand;
 import seedu.address.logic.commands.FindCommand;
 import seedu.address.logic.commands.HelpCommand;
 import seedu.address.logic.commands.ListCommand;
+import seedu.address.logic.commands.StatsCommand;
 import seedu.address.logic.commands.UnarchiveCommand;
 import seedu.address.logic.parser.exceptions.ParseException;
 import seedu.address.model.employee.Employee;
@@ -116,6 +118,26 @@ public class AddressBookParserTest {
         assertThrows(ParseException.class,
                 String.format(MESSAGE_INVALID_COMMAND_FORMAT, BackupCommand.MESSAGE_USAGE), () ->
                 parser.parseCommand(BackupCommand.COMMAND_WORD + " now"));
+    }
+
+    @Test
+    public void parseCommand_statsAndCheck_acceptSurroundingWhitespace() throws Exception {
+        assertTrue(parser.parseCommand("stats") instanceof StatsCommand);
+        assertTrue(parser.parseCommand(" \tstats \t ") instanceof StatsCommand);
+        assertTrue(parser.parseCommand("check") instanceof CheckCommand);
+        assertTrue(parser.parseCommand(" \tcheck \t ") instanceof CheckCommand);
+    }
+
+    @Test
+    public void parseCommand_statsAndCheckWithArguments_throwsParseException() {
+        for (String arguments : List.of(" now", " d/Ops", " 1", " archived")) {
+            assertThrows(ParseException.class,
+                    String.format(MESSAGE_INVALID_COMMAND_FORMAT, StatsCommand.MESSAGE_USAGE), () ->
+                    parser.parseCommand("stats" + arguments));
+            assertThrows(ParseException.class,
+                    String.format(MESSAGE_INVALID_COMMAND_FORMAT, CheckCommand.MESSAGE_USAGE), () ->
+                    parser.parseCommand("check" + arguments));
+        }
     }
 
     @Test
