@@ -13,6 +13,7 @@ import seedu.address.logic.commands.exceptions.CommandException;
 import seedu.address.logic.parser.AddressBookParser;
 import seedu.address.logic.parser.exceptions.ParseException;
 import seedu.address.model.Model;
+import seedu.address.model.ModelCheckpoint;
 import seedu.address.model.employee.Employee;
 import seedu.address.storage.Storage;
 
@@ -35,28 +36,38 @@ public class LogicManager implements Logic {
      * Constructs a {@code LogicManager} with the given {@code Model} and {@code Storage}.
      */
     public LogicManager(Model model, Storage storage) {
+        this(model, storage, new AddressBookParser());
+    }
+
+    /** Creates logic with the supplied parser for component-level execution tests. */
+    LogicManager(Model model, Storage storage, AddressBookParser addressBookParser) {
         this.model = model;
         this.storage = storage;
-        addressBookParser = new AddressBookParser();
+        this.addressBookParser = addressBookParser;
     }
 
     @Override
     public CommandResult execute(String commandText) throws CommandException, ParseException {
         logger.info("----------------[USER COMMAND][" + commandText + "]");
 
-        CommandResult commandResult;
         Command command = addressBookParser.parseCommand(commandText);
-        commandResult = command.execute(model);
-
+        ModelCheckpoint checkpoint = command.isDataChanging() ? model.createCheckpoint() : null;
         try {
-            storage.saveAddressBook(model.getAddressBook());
-        } catch (AccessDeniedException e) {
-            throw new CommandException(String.format(FILE_OPS_PERMISSION_ERROR_FORMAT, e.getMessage()), e);
-        } catch (IOException ioe) {
-            throw new CommandException(String.format(FILE_OPS_ERROR_FORMAT, ioe.getMessage()), ioe);
+            CommandResult commandResult = command.execute(model);
+            try {
+                storage.saveAddressBook(model.getAddressBook());
+            } catch (AccessDeniedException e) {
+                throw new CommandException(String.format(FILE_OPS_PERMISSION_ERROR_FORMAT, e.getMessage()), e);
+            } catch (IOException e) {
+                throw new CommandException(String.format(FILE_OPS_ERROR_FORMAT, e.getMessage()), e);
+            }
+            return commandResult;
+        } catch (CommandException | RuntimeException e) {
+            if (checkpoint != null) {
+                model.restoreCheckpoint(checkpoint);
+            }
+            throw e;
         }
-
-        return commandResult;
     }
 
     @Override
