@@ -59,7 +59,20 @@ Only capability-specific tests use explicit assumptions: native POSIX or Windows
 to create symbolic links. Portable Windows policy tests run on all platforms.
 
 Local macOS validation does not count as Linux or Windows evidence. Both platform runs remain required before
-merge; no Linux/Windows run has been performed from this local checkout.
+merge. The initial [PR #116 workflow run](https://github.com/AY2627S1-CS2103T-W10-4/tp/actions/runs/39570758915)
+passed on Linux, failed on Windows and cancelled macOS through matrix fail-fast. Repeat the platform checks on
+the corrected commit before merge.
+
+### Windows line-ending regression
+
+The JSON payload test initially hard-coded LF line endings in its pretty-print prefix assertion. Jackson's
+existing pretty printer uses the platform line separator, which is CRLF on Windows. Use `System.lineSeparator()`
+in the assertion to preserve the production format and check the same structure on every platform.
+
+Local reproduction with the test JVM's `line.separator` set to CRLF failed at that assertion before the fix.
+After the fix, all 20 `JsonAddressBookStorageTest` tests pass with CRLF, and the normal Java 25
+`./gradlew check coverage` run passes with the same 454-test total and two Windows-only skips described below.
+The CRLF run checks formatting portability; native Windows replacement and ACL checks still require Windows CI.
 
 ## Recorded validation — 21 October 2026
 

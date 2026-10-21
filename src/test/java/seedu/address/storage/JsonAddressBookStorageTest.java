@@ -198,7 +198,8 @@ public class JsonAddressBookStorageTest {
                 assertEquals(destination, path);
                 assertFalse(Files.exists(path.getParent()));
                 String json = new String(contents, StandardCharsets.UTF_8);
-                assertTrue(json.startsWith("{\n  \"employees\" : [ {\n"));
+                String lineSeparator = System.lineSeparator();
+                assertTrue(json.startsWith("{" + lineSeparator + "  \"employees\" : [ {" + lineSeparator));
                 assertTrue(json.contains("李  Mei"));
                 assertArrayEquals(json.getBytes(StandardCharsets.UTF_8), contents);
                 assertEquals(rawValues(book), rawValues(assertDoesNotThrow(() ->
