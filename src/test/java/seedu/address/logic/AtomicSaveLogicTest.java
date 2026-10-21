@@ -6,6 +6,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static seedu.address.testutil.EmployeeDataAssertions.assertStoredEmployees;
+import static seedu.address.testutil.TypicalEmployees.ALICE;
+import static seedu.address.testutil.TypicalEmployees.BENSON;
 import static seedu.address.testutil.TypicalEmployees.getTypicalAddressBook;
 
 import java.io.IOException;
@@ -24,6 +27,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import javafx.collections.transformation.FilteredList;
 import seedu.address.logic.commands.BackupCommand;
 import seedu.address.logic.commands.Command;
 import seedu.address.logic.commands.ExportCommand;
@@ -36,16 +40,18 @@ import seedu.address.model.Model;
 import seedu.address.model.ModelManager;
 import seedu.address.model.ReadOnlyAddressBook;
 import seedu.address.model.UserPrefs;
+import seedu.address.model.employee.Employee;
 import seedu.address.storage.JsonAddressBookStorage;
 import seedu.address.storage.JsonUserPrefsStorage;
 import seedu.address.storage.StorageManager;
+import seedu.address.testutil.AddressBookBuilder;
 
 public class AtomicSaveLogicTest {
     @TempDir
     public Path folder;
 
     @Test
-    public void execute_automaticSaveFailures_keepExactMessagesAndCausesWithoutMemoryRollback() {
+    public void execute_automaticSaveFailures_keepExactMessagesAndCausesWithMemoryRollback() {
         List<IOException> failures = List.of(new IOException("disk full"),
                 new IOException("Atomic replacement is not supported for this data file.",
                         new AtomicMoveNotSupportedException("temporary", "target", "unsupported")),
@@ -61,7 +67,9 @@ public class AtomicSaveLogicTest {
                     : "Could not save data due to the following error: " + failure.getMessage();
             assertEquals(expected, thrown.getMessage());
             assertSame(failure, thrown.getCause());
-            assertTrue(model.getAddressBook().getEmployeeList().isEmpty());
+            assertStoredEmployees(getTypicalAddressBook().getEmployeeList(), model.getAddressBook().getEmployeeList());
+            assertFalse(model.canUndoAddressBook());
+            assertFalse(model.canRedoAddressBook());
         }
     }
 
@@ -92,7 +100,7 @@ public class AtomicSaveLogicTest {
     }
 
     @Test
-    public void execute_realReadOnlySaveFailure_preservesFileButLeavesMemoryMutation() throws Exception {
+    public void execute_realReadOnlySaveFailure_preservesFileAndMemory() throws Exception {
         Path destination = folder.resolve("employees.json");
         JsonAddressBookStorage storage = new JsonAddressBookStorage(destination);
         Model model = new ModelManager(getTypicalAddressBook(), new UserPrefs());
@@ -110,7 +118,9 @@ public class AtomicSaveLogicTest {
             CommandException failure = assertThrows(CommandException.class, () -> logic.execute("clear"));
             assertTrue(failure.getCause() instanceof AccessDeniedException);
             assertArrayEquals(original, Files.readAllBytes(destination));
-            assertTrue(model.getAddressBook().getEmployeeList().isEmpty());
+            assertStoredEmployees(getTypicalAddressBook().getEmployeeList(), model.getAddressBook().getEmployeeList());
+            assertFalse(model.canUndoAddressBook());
+            assertFalse(model.canRedoAddressBook());
         } finally {
             if (posix != null) {
                 posix.setPermissions(PosixFilePermissions.fromString("rw-------"));
@@ -121,15 +131,15 @@ public class AtomicSaveLogicTest {
     }
 
     @Test
-    public void execute_existingCommandMessagesAndUnknownUndo_remainUnchanged() throws Exception {
+    public void execute_existingCommandMessages_remainUnchangedAlongsideUndo() throws Exception {
         Model model = new ModelManager(getTypicalAddressBook(), new UserPrefs());
         LogicManager logic = new LogicManager(model,
                 storageManager(new JsonAddressBookStorage(folder.resolve("employees.json"))));
         assertEquals("Active employee records have been cleared!", logic.execute("clear").getFeedbackToUser());
         assertEquals("No employee with ID MISSING was found.",
                 assertThrows(CommandException.class, () -> logic.execute("delete id/MISSING")).getMessage());
-        assertEquals("Unknown command: undo\nType help to see the available commands.",
-                assertThrows(ParseException.class, () -> logic.execute("undo")).getMessage());
+        assertEquals("Undo successful.", logic.execute("undo").getFeedbackToUser());
+        assertStoredEmployees(getTypicalAddressBook().getEmployeeList(), model.getAddressBook().getEmployeeList());
         Path csv = Path.of("exports", "staff.csv");
         Files.createDirectories(folder.resolve(csv).getParent());
         Files.writeString(folder.resolve(csv), ExportCommand.CSV_HEADER + "\n");
@@ -146,6 +156,88 @@ public class AtomicSaveLogicTest {
             logic.execute(command);
         }
         assertEquals(5, storage.saves);
+    }
+
+    @Test
+    public void execute_changeUndoAndRedoWithReadOnlyFile_preservesDiskViewAndEntireHistory() throws Exception {
+        for (String command : List.of("edit id/" + ALICE.getId() + " r/Failed change", "undo", "redo")) {
+            Model model = new ModelManager(new AddressBookBuilder().withEmployee(ALICE)
+                    .withEmployee(BENSON.withArchived(true)).build(), new UserPrefs());
+            JsonAddressBookStorage storage = new JsonAddressBookStorage(folder.resolve("employees.json"));
+            LogicManager logic = new LogicManager(model, storageManager(storage));
+            List<Employee> initial = List.copyOf(model.getAddressBook().getEmployeeList());
+            logic.execute("edit id/" + ALICE.getId() + " r/First edit");
+            List<Employee> first = List.copyOf(model.getAddressBook().getEmployeeList());
+            logic.execute("edit id/" + ALICE.getId() + " r/Second edit");
+            List<Employee> second = List.copyOf(model.getAddressBook().getEmployeeList());
+            logic.execute("undo");
+            model.showArchivedEmployees();
+
+            assertFailedAtomicSave(logic, model, storage, command, List.of(initial, first, second), 1);
+        }
+    }
+
+    @Test
+    public void execute_noOpAfterUndoWithReadOnlyFile_preservesDiskViewAndRedoSequence() throws Exception {
+        for (String command : List.of("edit id/" + ALICE.getId() + " r/" + ALICE.getRole(), "clear")) {
+            Model model = new ModelManager(new AddressBookBuilder().withEmployee(ALICE.withArchived(true)).build(),
+                    new UserPrefs());
+            JsonAddressBookStorage storage = new JsonAddressBookStorage(folder.resolve("employees.json"));
+            LogicManager logic = new LogicManager(model, storageManager(storage));
+            List<Employee> initial = List.copyOf(model.getAddressBook().getEmployeeList());
+            logic.execute("edit id/" + ALICE.getId() + " r/First edit");
+            List<Employee> first = List.copyOf(model.getAddressBook().getEmployeeList());
+            logic.execute("edit id/" + ALICE.getId() + " r/Second edit");
+            List<Employee> second = List.copyOf(model.getAddressBook().getEmployeeList());
+            logic.execute("undo");
+            logic.execute("undo");
+            model.showArchivedEmployees();
+
+            assertFailedAtomicSave(logic, model, storage, command, List.of(initial, first, second), 0);
+        }
+    }
+
+    private void assertFailedAtomicSave(LogicManager logic, Model model, JsonAddressBookStorage storage,
+            String command, List<List<Employee>> history, int pointer) throws Exception {
+        Path destination = storage.getAddressBookFilePath();
+        byte[] original = Files.readAllBytes(destination);
+        Object predicate = ((FilteredList<Employee>) model.getFilteredEmployeeList()).getPredicate();
+        List<Employee> visible = List.copyOf(model.getFilteredEmployeeList());
+        PosixFileAttributeView posix = Files.getFileAttributeView(destination, PosixFileAttributeView.class);
+        DosFileAttributeView dos = Files.getFileAttributeView(destination, DosFileAttributeView.class);
+        if (posix != null) {
+            posix.setPermissions(PosixFilePermissions.fromString("r--------"));
+        } else {
+            dos.setReadOnly(true);
+        }
+        try {
+            CommandException failure = assertThrows(CommandException.class, () -> logic.execute(command), command);
+            assertTrue(failure.getCause() instanceof AccessDeniedException);
+            assertArrayEquals(original, Files.readAllBytes(destination));
+            assertSame(predicate, ((FilteredList<Employee>) model.getFilteredEmployeeList()).getPredicate());
+            assertStoredEmployees(visible, model.getFilteredEmployeeList());
+            assertStoredEmployees(history.get(pointer), model.getAddressBook().getEmployeeList());
+            Model reloaded = new ModelManager(storage.readAddressBook().orElseThrow(), new UserPrefs());
+            assertStoredEmployees(history.get(pointer), reloaded.getAddressBook().getEmployeeList());
+            assertFalse(reloaded.canUndoAddressBook());
+            assertFalse(reloaded.canRedoAddressBook());
+            for (int i = pointer - 1; i >= 0; i--) {
+                model.undoAddressBook();
+                assertStoredEmployees(history.get(i), model.getAddressBook().getEmployeeList());
+            }
+            assertFalse(model.canUndoAddressBook());
+            for (int i = 1; i < history.size(); i++) {
+                model.redoAddressBook();
+                assertStoredEmployees(history.get(i), model.getAddressBook().getEmployeeList());
+            }
+            assertFalse(model.canRedoAddressBook());
+        } finally {
+            if (posix != null) {
+                posix.setPermissions(PosixFilePermissions.fromString("rw-------"));
+            } else {
+                dos.setReadOnly(false);
+            }
+        }
     }
 
     private StorageManager storageThatFails(IOException failure) {
