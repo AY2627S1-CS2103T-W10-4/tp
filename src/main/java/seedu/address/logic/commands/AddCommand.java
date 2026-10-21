@@ -15,6 +15,7 @@ import seedu.address.logic.Messages;
 import seedu.address.logic.commands.exceptions.CommandException;
 import seedu.address.model.Model;
 import seedu.address.model.employee.Employee;
+import seedu.address.model.employee.ReportingStructure;
 
 /**
  * Adds an employee.
@@ -30,7 +31,7 @@ public class AddCommand extends Command {
             + PREFIX_PHONE + "PHONE "
             + PREFIX_EMAIL + "EMAIL "
             + PREFIX_DEPARTMENT + "DEPARTMENT "
-            + PREFIX_ROLE + "ROLE\n"
+            + PREFIX_ROLE + "ROLE [m/MANAGER_ID]\n"
             + "Example: " + COMMAND_WORD + " "
             + PREFIX_ID + "E0123 "
             + PREFIX_NAME + "John Tan "
@@ -73,9 +74,15 @@ public class AddCommand extends Command {
                 .map(employee -> employee.getId().toString())
                 .collect(Collectors.joining(", "));
 
-        model.addEmployee(toAdd);
+        Employee employeeToAdd;
+        try {
+            employeeToAdd = ReportingStructure.withCanonicalManager(model.getAddressBook().getEmployeeList(), toAdd);
+            model.addEmployee(employeeToAdd);
+        } catch (IllegalArgumentException e) {
+            throw new CommandException(e.getMessage());
+        }
 
-        String message = String.format(MESSAGE_SUCCESS, Messages.format(toAdd));
+        String message = String.format(MESSAGE_SUCCESS, Messages.format(employeeToAdd));
         if (!similarEmployeeIds.isEmpty()) {
             message += "\n" + String.format(MESSAGE_SIMILAR_NAME_WARNING, similarEmployeeIds);
         }

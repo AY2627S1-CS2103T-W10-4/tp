@@ -15,6 +15,20 @@ public final class ReportingStructure {
 
     private ReportingStructure() {}
 
+    /** Resolves a manager reference to the exact ID stored in the roster. */
+    public static Employee withCanonicalManager(List<Employee> roster, Employee employee) {
+        if (employee.getManagerId().isEmpty()) {
+            return employee;
+        }
+        EmployeeId id = employee.getManagerId().orElseThrow();
+        if (employee.getId().equals(id)) {
+            throw new IllegalArgumentException(MESSAGE_SELF_REPORTING);
+        }
+        Employee manager = roster.stream().filter(candidate -> candidate.getId().equals(id)).findFirst()
+                .orElseThrow(() -> new IllegalArgumentException(String.format(MESSAGE_MISSING_MANAGER, id)));
+        return employee.withManager(manager.getId());
+    }
+
     /** Rejects missing managers, self-reporting and cycles before data is changed. */
     public static void validate(List<Employee> employees) {
         Map<EmployeeId, Employee> byId = new HashMap<>();

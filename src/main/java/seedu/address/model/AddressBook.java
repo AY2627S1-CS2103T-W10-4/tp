@@ -37,7 +37,8 @@ public class AddressBook implements ReadOnlyAddressBook {
      */
     public void setEmployees(List<Employee> employees) {
         ReportingStructure.validate(employees);
-        this.employees.setEmployees(employees);
+        this.employees.setEmployees(employees.stream()
+                .map(employee -> ReportingStructure.withCanonicalManager(employees, employee)).toList());
     }
 
     /**
@@ -66,7 +67,7 @@ public class AddressBook implements ReadOnlyAddressBook {
         List<Employee> updated = new ArrayList<>(getEmployeeList());
         updated.add(p);
         ReportingStructure.validate(updated);
-        employees.add(p);
+        employees.add(ReportingStructure.withCanonicalManager(updated, p));
     }
 
     /**
@@ -84,7 +85,7 @@ public class AddressBook implements ReadOnlyAddressBook {
             updated.set(targetIndex, editedEmployee);
             ReportingStructure.validate(updated);
         }
-        employees.setEmployee(target, editedEmployee);
+        employees.setEmployee(target, ReportingStructure.withCanonicalManager(updated, editedEmployee));
     }
 
     /**
@@ -101,10 +102,12 @@ public class AddressBook implements ReadOnlyAddressBook {
         }
     }
 
-    /** Removes all active employees without modifying the archive. */
+    /** Removes active employees and clears references to their IDs from archived employees. */
     public void clearEmployees() {
-        employees.setEmployees(employees.asUnmodifiableObservableList().stream()
-                .filter(Employee::isArchived).toList());
+        List<Employee> archived = getEmployeeList().stream().filter(Employee::isArchived).toList();
+        setEmployees(archived.stream().map(employee -> employee.getManagerId().isPresent()
+                && archived.stream().noneMatch(manager -> manager.getId().equals(employee.getManagerId().orElseThrow()))
+                ? employee.withManager(null) : employee).toList());
     }
 
     //// util methods

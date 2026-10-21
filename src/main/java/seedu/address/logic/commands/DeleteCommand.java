@@ -49,8 +49,15 @@ public class DeleteCommand extends Command {
                 .filter(employee -> employee.getId().equals(targetId))
                 .findFirst()
                 .orElseThrow(() -> new CommandException(String.format(Messages.MESSAGE_EMPLOYEE_NOT_FOUND, targetId)));
+        long reports = model.getAddressBook().getEmployeeList().stream()
+                .filter(employee -> employee.getManagerId().filter(employeeToDelete.getId()::equals).isPresent())
+                .count();
         model.deleteEmployee(employeeToDelete);
-        return new CommandResult(String.format(MESSAGE_DELETE_EMPLOYEE_SUCCESS, Messages.format(employeeToDelete)));
+        String message = String.format(MESSAGE_DELETE_EMPLOYEE_SUCCESS, Messages.format(employeeToDelete));
+        if (reports > 0) {
+            message += "\n" + reports + " direct report(s) now have no manager.";
+        }
+        return new CommandResult(message);
     }
 
     @Override

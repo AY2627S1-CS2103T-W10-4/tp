@@ -83,7 +83,7 @@ public class ReportingCommandTest {
         AddressBook original = new AddressBook(model.getAddressBook());
         model.updateFilteredEmployeeList(employee -> false);
         run("team id/BOSS");
-        assertEquals(List.of(find(lead.getId())), model.getFilteredEmployeeList());
+        assertEquals(List.of(boss, find(lead.getId())), model.getFilteredEmployeeList());
         run("org id/BOSS");
         assertEquals(List.of(find(lead.getId()), find(worker.getId())), model.getFilteredEmployeeList());
         String chain = run("chain id/WORKER").getFeedbackToUser();
@@ -96,8 +96,8 @@ public class ReportingCommandTest {
 
     @Test
     public void execute_emptyTeamAndTopLevelChain_success() throws Exception {
-        assertTrue(run("team id/WORKER").getFeedbackToUser().contains("None."));
-        assertTrue(model.getFilteredEmployeeList().isEmpty());
+        assertTrue(run("team id/WORKER").getFeedbackToUser().contains("Direct reports: 0"));
+        assertEquals(List.of(find(lead.getId()), find(worker.getId())), model.getFilteredEmployeeList());
         assertTrue(run("org id/WORKER").getFeedbackToUser().contains("None."));
         assertTrue(run("chain id/BOSS").getFeedbackToUser().contains("None."));
     }
@@ -112,7 +112,7 @@ public class ReportingCommandTest {
 
     @Test
     public void execute_deleteManagerUnassignsOnlyDirectReports() throws Exception {
-        run("delete id/LEAD");
+        assertTrue(run("delete id/LEAD").getFeedbackToUser().contains("1 direct report(s) now have no manager."));
         assertTrue(find(worker.getId()).getManagerId().isEmpty());
         assertEquals(3, model.getAddressBook().getEmployeeList().size());
     }
@@ -122,6 +122,65 @@ public class ReportingCommandTest {
         run("delete id/BOSS");
         assertTrue(find(lead.getId()).getManagerId().isEmpty());
         assertEquals(lead.getId(), find(worker.getId()).getManagerId().orElseThrow());
+    }
+
+    @Test
+    public void execute_teamIncludesEmployeeManagerAndReports() throws Exception {
+        String message = run("team id/lead").getFeedbackToUser();
+        assertEquals(List.of(boss, find(lead.getId()), find(worker.getId())), model.getFilteredEmployeeList());
+        assertTrue(message.contains("Manager: Boss (BOSS)"));
+        assertTrue(message.contains("Direct reports: 1"));
+        assertTrue(run("team id/OTHER").getFeedbackToUser().contains("Manager: None; Direct reports: 0"));
+        assertEquals(List.of(outsider), model.getFilteredEmployeeList());
+    }
+
+    @Test
+    public void execute_lowerCaseAssignmentUsesStoredIds() throws Exception {
+        assertEquals("Manager of WORKER set to BOSS.", run("manager id/worker m/boss").getFeedbackToUser());
+        assertEquals("BOSS", find(worker.getId()).getManagerId().orElseThrow().value);
+        assertEquals("Manager of WORKER unassigned.", run("unassign-manager id/worker").getFeedbackToUser());
+    }
+
+    @Test
+    public void execute_addAndEditManager_success() throws Exception {
+        run("add id/NEW n/New Person p/91234567 e/new@example.com d/Engineering r/Engineer m/boss");
+        assertEquals("BOSS", find(new EmployeeId("NEW")).getManagerId().orElseThrow().value);
+        run("edit id/new m/lead");
+        assertEquals("LEAD", find(new EmployeeId("NEW")).getManagerId().orElseThrow().value);
+        run("edit id/new m/");
+        assertTrue(find(new EmployeeId("NEW")).getManagerId().isEmpty());
+    }
+
+    @Test
+    public void execute_invalidAddAndEditLeaveRosterAndViewUnchanged() {
+        assertRejected("edit id/BOSS m/WORKER");
+        assertRejected("edit id/WORKER m/worker");
+        assertRejected("edit id/WORKER m/MISSING");
+        assertRejected("add id/NEW n/New Person p/91234567 e/new@example.com d/Engineering r/Engineer m/MISSING");
+        assertRejected("add id/NEW n/New Person p/91234567 e/new@example.com d/Engineering r/Engineer m/NEW");
+    }
+
+    @Test
+    public void execute_managerAndArchiveChangesPreserveEachOther() throws Exception {
+        Employee assigned = find(worker.getId());
+        assertEquals(assigned.withArchived(true), assigned.withArchived(true).withManager(lead.getId()));
+        run("archive id/WORKER");
+        run("manager id/WORKER m/BOSS");
+        Employee archived = find(worker.getId());
+        assertEquals(assigned.withManager(boss.getId()).withArchived(true), archived);
+        run("edit id/WORKER m/LEAD");
+        assertTrue(find(worker.getId()).isArchived());
+        run("unarchive id/WORKER");
+        assertEquals(assigned, find(worker.getId()));
+    }
+
+    @Test
+    public void execute_clearUnassignsArchivedReportsOfRemovedManagers() throws Exception {
+        run("archive id/WORKER");
+        run("clear");
+        assertEquals(List.of(worker.withArchived(true)), model.getAddressBook().getEmployeeList());
+        run("unarchive id/WORKER");
+        assertEquals(List.of(worker), model.getFilteredEmployeeList());
     }
 
     private CommandResult run(String command) throws Exception {

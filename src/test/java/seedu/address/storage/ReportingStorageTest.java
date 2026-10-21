@@ -27,7 +27,7 @@ public class ReportingStorageTest {
     @Test
     public void saveAndRead_relationshipsSurviveWithManagerLaterInFile() throws Exception {
         AddressBook data = new AddressBook();
-        data.setEmployees(List.of(worker.withManager(boss.getId()), boss));
+        data.setEmployees(List.of(worker.withManager(boss.getId()).withArchived(true), boss));
         JsonAddressBookStorage storage = new JsonAddressBookStorage(tempDir.resolve("employees.json"));
         storage.saveAddressBook(data);
         assertEquals(data, new AddressBook(storage.readAddressBook().orElseThrow()));
@@ -71,6 +71,13 @@ public class ReportingStorageTest {
         assertFalse(worker.equals(assigned));
         assertEquals(assigned, worker.withManager(boss.getId()));
         assertEquals(assigned.hashCode(), worker.withManager(boss.getId()).hashCode());
+    }
+
+    @Test
+    public void setEmployees_normalizesManagerIdToRosterSpelling() {
+        AddressBook data = new AddressBook();
+        data.setEmployees(List.of(worker.withManager(new EmployeeId("boss")), boss));
+        assertEquals("BOSS", data.getEmployeeList().getFirst().getManagerId().orElseThrow().value);
     }
 
     private void assertInvalid(List<Employee> employees) {

@@ -1,14 +1,19 @@
 package seedu.address.logic.parser;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
-import seedu.address.logic.commands.ReportingCommand;
-import seedu.address.logic.commands.ReportingCommand.Operation;
+import seedu.address.logic.commands.ChainCommand;
+import seedu.address.logic.commands.ManagerCommand;
+import seedu.address.logic.commands.OrgCommand;
+import seedu.address.logic.commands.TeamCommand;
+import seedu.address.logic.commands.UnassignManagerCommand;
 import seedu.address.logic.parser.exceptions.ParseException;
 import seedu.address.model.employee.EmployeeId;
 
@@ -17,16 +22,45 @@ public class ReportingCommandParserTest {
 
     @Test
     public void parse_validCommands_success() throws Exception {
-        assertEquals(new ReportingCommand(Operation.MANAGER, new EmployeeId("E1"), new EmployeeId("E2")),
+        assertEquals(new ManagerCommand(new EmployeeId("E1"), new EmployeeId("E2")),
                 parser.parseCommand("manager m/E2 id/E1"));
-        assertEquals(new ReportingCommand(Operation.UNASSIGN, new EmployeeId("E1"), null),
+        assertEquals(new UnassignManagerCommand(new EmployeeId("E1")),
                 parser.parseCommand("unassign-manager id/E1"));
-        assertEquals(new ReportingCommand(Operation.TEAM, new EmployeeId("E1"), null),
+        assertEquals(new TeamCommand(new EmployeeId("E1")),
                 parser.parseCommand("team id/E1"));
-        assertEquals(new ReportingCommand(Operation.ORG, new EmployeeId("E1"), null),
+        assertEquals(new OrgCommand(new EmployeeId("E1")),
                 parser.parseCommand("org id/E1"));
-        assertEquals(new ReportingCommand(Operation.CHAIN, new EmployeeId("E1"), null),
+        assertEquals(new ChainCommand(new EmployeeId("E1")),
                 parser.parseCommand("chain id/E1"));
+    }
+
+    @Test
+    public void parse_errorsIncludeOnlyRelevantUsage() {
+        for (String input : List.of("team", "team id/E1 x/foo", "team id/@@@", "team id/E1 id/E2")) {
+            ParseException error = assertThrows(ParseException.class, () -> parser.parseCommand(input));
+            assertTrue(error.getMessage().contains(TeamCommand.MESSAGE_USAGE));
+            assertFalse(error.getMessage().contains(ManagerCommand.MESSAGE_USAGE));
+        }
+        ParseException error = assertThrows(ParseException.class, () ->
+                parser.parseCommand("manager id/E1 m/@@@"));
+        assertTrue(error.getMessage().contains(ManagerCommand.MESSAGE_USAGE));
+    }
+
+    @Test
+    public void parse_whitespaceAccepted() throws Exception {
+        assertEquals(new ManagerCommand(new EmployeeId("E1"), new EmployeeId("E2")),
+                parser.parseCommand("manager \t m/E2   id/E1  "));
+    }
+
+    @Test
+    public void parse_invalidManagerOnAddOrEdit_throwsParseException() {
+        String add = "add id/NEW n/New Person p/91234567 e/new@example.com d/Engineering r/Engineer ";
+        for (String suffix : List.of("m/", "m/@@@", "m/BOSS m/LEAD")) {
+            assertThrows(ParseException.class, () -> parser.parseCommand(add + suffix));
+        }
+        for (String suffix : List.of("m/@@@", "m/BOSS m/LEAD", "m/ m/")) {
+            assertThrows(ParseException.class, () -> parser.parseCommand("edit id/NEW " + suffix));
+        }
     }
 
     @Test
