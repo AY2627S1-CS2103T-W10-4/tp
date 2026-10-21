@@ -21,11 +21,18 @@ public class Employee {
     private final Email email;
     private final Department department;
     private final Role role;
+    private final boolean archived;
 
     /**
      * Every field must be present and not null.
      */
     public Employee(EmployeeId id, Name name, Phone phone, Email email, Department department, Role role) {
+        this(id, name, phone, email, department, role, false);
+    }
+
+    /** Creates an employee with an explicit archive status. */
+    public Employee(EmployeeId id, Name name, Phone phone, Email email, Department department, Role role,
+            boolean archived) {
         requireAllNonNull(id, name, phone, email, department, role);
         this.id = id;
         this.name = name;
@@ -33,6 +40,7 @@ public class Employee {
         this.email = email;
         this.department = department;
         this.role = role;
+        this.archived = archived;
     }
 
     public EmployeeId getId() {
@@ -57,6 +65,15 @@ public class Employee {
 
     public Role getRole() {
         return role;
+    }
+
+    public boolean isArchived() {
+        return archived;
+    }
+
+    /** Returns an otherwise identical employee with the requested archive status. */
+    public Employee withArchived(boolean archived) {
+        return new Employee(id, name, phone, email, department, role, archived);
     }
 
     /**
@@ -92,13 +109,14 @@ public class Employee {
                 && phone.equals(otherEmployee.phone)
                 && email.equals(otherEmployee.email)
                 && department.equals(otherEmployee.department)
-                && role.equals(otherEmployee.role);
+                && role.equals(otherEmployee.role)
+                && archived == otherEmployee.archived;
     }
 
     @Override
     public int hashCode() {
         // use this method for custom fields hashing instead of implementing your own
-        return Objects.hash(id, name, phone, email, department, role);
+        return Objects.hash(id, name, phone, email, department, role, archived);
     }
 
     @Override
@@ -110,6 +128,7 @@ public class Employee {
                 .add("email", email)
                 .add("department", department)
                 .add("role", role)
+                .add("archived", archived)
                 .toString();
     }
 

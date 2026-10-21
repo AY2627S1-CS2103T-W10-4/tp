@@ -31,6 +31,9 @@ public class HelpCommand extends Command {
                     + "PHONE] [" + PREFIX_EMAIL + "EMAIL] [" + PREFIX_DEPARTMENT + "DEPARTMENT] [" + PREFIX_ROLE
                     + "ROLE]",
             DeleteCommand.COMMAND_WORD + " " + PREFIX_ID + "EMPLOYEE_ID",
+            ArchiveCommand.COMMAND_WORD + " " + PREFIX_ID + "EMPLOYEE_ID",
+            UnarchiveCommand.COMMAND_WORD + " " + PREFIX_ID + "EMPLOYEE_ID",
+            ListCommand.COMMAND_WORD + " archived",
             ClearCommand.COMMAND_WORD,
             ImportCommand.COMMAND_WORD + " FILE_PATH",
             ExportCommand.COMMAND_WORD + " FILE_PATH",
