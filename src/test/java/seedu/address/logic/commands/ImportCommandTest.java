@@ -87,6 +87,50 @@ public class ImportCommandTest {
     }
 
     @Test
+    public void execute_exportedArchivedEmployee_importsBackArchived() throws Exception {
+        AddressBook original = new AddressBook();
+        original.addEmployee(AMY.withArchived(true));
+        original.addEmployee(BOB);
+        new ExportCommand(appFolder, STAFF_CSV).execute(new ModelManager(original, new UserPrefs()));
+
+        Model emptyModel = new ModelManager();
+        importStaffCsv().execute(emptyModel);
+
+        assertEquals(original, emptyModel.getAddressBook());
+    }
+
+    @Test
+    public void execute_noArchivedColumn_employeesImportedAsActive() throws Exception {
+        String header = CsvUtil.toCsvLine(ExportCommand.REQUIRED_CSV_COLUMNS);
+        writeCsv(header, AMY_ROW.substring(0, AMY_ROW.lastIndexOf(',')));
+        Model expectedModel = new ModelManager(getTypicalAddressBook(), new UserPrefs());
+        expectedModel.addEmployee(AMY);
+
+        assertCommandSuccess(importStaffCsv(), model, String.format(ImportCommand.MESSAGE_SUCCESS, 1, STAFF_CSV),
+                expectedModel);
+    }
+
+    @Test
+    public void execute_archivedValueBlankOrMixedCase_parsed() throws Exception {
+        String amyRowBlank = AMY_ROW.substring(0, AMY_ROW.lastIndexOf(',') + 1);
+        String bobRowTrue = BOB_ROW.substring(0, BOB_ROW.lastIndexOf(',') + 1) + " TRUE ";
+        writeCsv(ExportCommand.CSV_HEADER, amyRowBlank, bobRowTrue);
+        Model emptyModel = new ModelManager();
+
+        importStaffCsv().execute(emptyModel);
+
+        assertEquals(List.of(AMY, BOB.withArchived(true)), emptyModel.getAddressBook().getEmployeeList());
+    }
+
+    @Test
+    public void execute_invalidArchivedValue_nothingAddedAndRowNamed() throws Exception {
+        writeCsv(ExportCommand.CSV_HEADER, AMY_ROW.substring(0, AMY_ROW.lastIndexOf(',') + 1) + "yes");
+
+        assertCommandFailure(importStaffCsv(), model,
+                String.format(ImportCommand.MESSAGE_INVALID_ROW, 2, ImportCommand.MESSAGE_INVALID_ARCHIVED));
+    }
+
+    @Test
     public void execute_filteredList_showsAllEmployeesAfterImport() throws Exception {
         writeCsv(ExportCommand.CSV_HEADER, AMY_ROW);
         model.updateFilteredEmployeeList(employee -> false);
@@ -98,7 +142,7 @@ public class ImportCommandTest {
 
     @Test
     public void execute_byteOrderMarkBlankLinesAndHeaderCase_ignored() throws Exception {
-        writeCsv("﻿ID, Name ,Phone,Email,Department,ROLE", "", AMY_ROW, "  ");
+        writeCsv("﻿ID, Name ,Phone,Email,Department,ROLE, Archived", "", AMY_ROW, "  ");
         Model expectedModel = new ModelManager(getTypicalAddressBook(), new UserPrefs());
         expectedModel.addEmployee(AMY);
 
@@ -127,7 +171,7 @@ public class ImportCommandTest {
         writeCsv(ExportCommand.CSV_HEADER, AMY_ROW + ",extra");
 
         assertCommandFailure(importStaffCsv(), model, String.format(ImportCommand.MESSAGE_INVALID_ROW, 2,
-                String.format(ImportCommand.MESSAGE_WRONG_VALUE_COUNT, 7)));
+                String.format(ImportCommand.MESSAGE_WRONG_VALUE_COUNT, 7, ExportCommand.CSV_HEADER, 8)));
     }
 
     @Test

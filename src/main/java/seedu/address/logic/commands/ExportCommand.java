@@ -8,6 +8,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
+import java.util.stream.Stream;
 
 import seedu.address.commons.core.LogsCenter;
 import seedu.address.commons.util.CsvUtil;
@@ -23,8 +24,13 @@ public class ExportCommand extends CsvFileCommand {
 
     public static final String COMMAND_WORD = "export";
 
-    /** Column names of the CSV files written by {@code export} and read by {@code import}, in order. */
-    public static final List<String> CSV_COLUMNS = List.of("id", "name", "phone", "email", "department", "role");
+    /** Column names that every CSV file read by {@code import} must have, in order. */
+    public static final List<String> REQUIRED_CSV_COLUMNS =
+            List.of("id", "name", "phone", "email", "department", "role");
+    public static final String ARCHIVED_COLUMN = "archived";
+    /** Column names of the CSV files written by {@code export}, in order. */
+    public static final List<String> CSV_COLUMNS = Stream.concat(REQUIRED_CSV_COLUMNS.stream(),
+            Stream.of(ARCHIVED_COLUMN)).toList();
     public static final String CSV_HEADER = CsvUtil.toCsvLine(CSV_COLUMNS);
 
     public static final String MESSAGE_USAGE = COMMAND_WORD + ": Exports all employees to a CSV file, "
@@ -91,6 +97,7 @@ public class ExportCommand extends CsvFileCommand {
                 employee.getPhone().toString(),
                 employee.getEmail().toString(),
                 employee.getDepartment().toString(),
-                employee.getRole().toString()));
+                employee.getRole().toString(),
+                String.valueOf(employee.isArchived())));
     }
 }

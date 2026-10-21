@@ -247,8 +247,8 @@ Format: `export FILE_PATH`
 
 * `FILE_PATH` is relative to the folder HuntR runs from (the folder that contains the `data` folder), and must end in `.csv` (any letter case). It must stay inside that folder: absolute paths such as `C:\staff.csv` or `/Users/me/staff.csv`, and paths that lead out with `..`, are rejected. So are paths through a shortcut (symbolic link) to a file or folder outside it.
 * Missing folders in `FILE_PATH` are created. **An existing file at `FILE_PATH` is replaced without confirmation.**
-* All employees are exported, including employees hidden by `find`, in the order they are stored.
-* The first line is the header `id,name,phone,email,department,role`, followed by one line per employee. A value that contains a comma, such as `Tan, Ah Kow`, is wrapped in double quotes so that it imports back unchanged.
+* All employees are exported, including employees hidden by `find` and archived employees, in the order they are stored.
+* The first line is the header `id,name,phone,email,department,role,archived`, followed by one line per employee. The `archived` value is `true` for archived employees and `false` for active ones. A value that contains a comma, such as `Tan, Ah Kow`, is wrapped in double quotes so that it imports back unchanged.
 * With no employees, the file contains only the header.
 
 Examples:
@@ -273,7 +273,8 @@ Adds every employee in a CSV file, such as one created by `export` or saved from
 Format: `import FILE_PATH`
 
 * `FILE_PATH` follows the same rules as for `export`.
-* The first line must be the header `id,name,phone,email,department,role`. Letter case and spaces around each column name are ignored.
+* The first line must be the header `id,name,phone,email,department,role,archived`. The `archived` column may be left out, in which case every employee is imported as active. Letter case and spaces around each column name are ignored.
+* An `archived` value must be `true` or `false` (any letter case), or blank for `false`. Archived employees are imported into the archive, so they appear under `list archived`.
 * Each following line is one employee, with values in the header's order. Each value must follow the same rules as in the `add` command. Wrap a value that contains a comma in double quotes, for example `"Tan, Ah Kow"`. A double quote may only appear at the start and end of such a wrapped value, or doubled (`""`) inside it, so a row such as `E0001,A"li"ce,...` is rejected rather than read as `Alice`. Blank lines are skipped.
 * Imported employees are added to the existing ones. Afterwards the full employee list is shown.
 * The file must be saved as UTF-8 text. In Excel, choose **Save As** → **CSV UTF-8 (Comma delimited)**.
@@ -295,10 +296,11 @@ On success, HuntR shows `Imported N employee(s) from FILE_PATH`.
 | `import staff.txt`, `import ../staff.csv`, or a path through a shortcut | Same as for `export` |
 | The file does not exist | `File not found: FILE_PATH` |
 | The file is empty | `FILE_PATH is empty.` |
-| The first line is not the header | `FILE_PATH should start with the header id,name,phone,email,department,role` |
+| The first line is not the header | `FILE_PATH should start with the header id,name,phone,email,department,role,archived (the archived column may be left out)` |
 | The file has a header but no employees | `FILE_PATH has no employee rows to import.` |
 | The file is not UTF-8 | `Could not read FILE_PATH because it is not saved as UTF-8 text. In Excel, save it as "CSV UTF-8".` |
-| Row 3 has 5 values | `Nothing was imported. Row 3: Expected 6 values (id,name,phone,email,department,role) but found 5.` |
+| Row 3 has 5 values, in a file with the `archived` column | `Nothing was imported. Row 3: Expected 7 values (id,name,phone,email,department,role,archived) but found 5.` |
+| Row 3 has `yes` as its `archived` value | `Nothing was imported. Row 3: The archived value should be true or false, or left blank for false.` |
 | Row 3 has a double quote in the wrong place, such as `A"li"ce` | `Nothing was imported. Row 3: A double quote (") may only start or end a value, or appear doubled ("") inside a value that is wrapped in double quotes.` |
 | Row 3 opens a double quote but never closes it | `Nothing was imported. Row 3: A quoted value is missing its closing double quote (").` |
 | Row 4 has an invalid phone (or any other invalid value) | `Nothing was imported. Row 4:` followed by the same message `add` shows for that value |
