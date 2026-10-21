@@ -44,11 +44,17 @@ opt history action is COMMIT
     end
 end
 Logic -> Storage : saveAddressBook(current data)
+note right of Storage
+Serialize complete JSON, write and force protected sibling,
+then atomically replace the employee file.
+Replacement is the commit point; no fallible work follows.
+Handled failures before replacement preserve file bytes.
+end note
 alt save succeeds
     Storage --> Logic : return
     Logic --> UI : result
     UI -> UI : clear command text
-else serialization or save fails before success
+else serialization or save fails before replacement
     Logic -> Model : restoreCheckpoint(checkpoint)
     Model -> History : restore working data, history, pointer
     Model -> Model : restore effective predicate directly
