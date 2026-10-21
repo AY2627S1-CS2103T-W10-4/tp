@@ -41,7 +41,7 @@ HuntR is based on [AddressBook-Level3](https://github.com/se-edu/addressbook-lev
 
    * `delete id/E0123` : Deletes employee `E0123`, including when hidden by a search.
 
-   * `clear` : Deletes all employees.
+   * `clear` : Deletes all active employees while preserving archived records.
 
    * `exit` : Exits the app.
 
@@ -65,7 +65,7 @@ HuntR is based on [AddressBook-Level3](https://github.com/se-edu/addressbook-lev
   For example, if the command specifies `n/NAME p/PHONE`, `p/PHONE n/NAME` is also acceptable.
 
 * Extraneous parameters for `help` and `clear` are ignored.<br>
-  For example, `help 123` is interpreted as `help`. The `list` and `exit` commands also take no parameters but reject extra text, so `list 1` and `exit now` show an error.
+  For example, `help 123` is interpreted as `help`. The `backup` and `exit` commands also take no parameters but reject extra text, so `backup now` and `exit now` show an error. Likewise, `list` accepts only `archived` after it, so `list 1` shows an error.
 
 * If you are using a PDF version of this document, be careful when copying and pasting commands that span multiple lines as space characters surrounding line-breaks may be omitted when copied over to the application.
 </box>
@@ -86,14 +86,17 @@ Format: `help`
 
 Adds an employee to HuntR.
 
-Format: `add id/EMPLOYEE_ID n/NAME p/PHONE e/EMAIL d/DEPARTMENT r/ROLE`
+Format: `add id/EMPLOYEE_ID n/NAME p/PHONE e/EMAIL d/DEPARTMENT r/ROLE [m/MANAGER_ID]`
 
 All six fields are required. The employee ID must be 1 to 20 characters long and contain only letters, digits,
 hyphens and underscores. Employee IDs are compared case-insensitively, so `E0123` and `e0123` identify the
 same employee. For example, if `E0123` is already in use, HuntR displays
 `An employee with Employee ID E0123 already exists.` and does not add the employee.
 
-Parameters can be supplied in any order.
+Parameters can be supplied in any order. Optional `m/MANAGER_ID` assigns an existing employee as the manager.
+Manager IDs are matched case-insensitively and saved using the spelling of the existing employee's ID.
+An empty `m/`, unknown manager or self-assignment is rejected without changing the roster.
+For example, append `m/E0001` to an add command to assign employee `E0001` as the new employee's manager.
 
 Examples:
 * `add id/E0123 n/John Tan p/91234567 e/johntan@example.com d/Engineering r/Software Engineer`
@@ -115,10 +118,14 @@ If there are no employee records, HuntR displays an empty employee list and expl
 
 Edits an existing employee in HuntR using their employee ID.
 
-Format: `edit id/EMPLOYEE_ID [n/NAME] [p/PHONE] [e/EMAIL] [d/DEPARTMENT] [r/ROLE]`
+Format: `edit id/EMPLOYEE_ID [n/NAME] [p/PHONE] [e/EMAIL] [d/DEPARTMENT] [r/ROLE] [m/MANAGER_ID]`
 
 * At least one of the optional fields must be provided.
 * Existing values will be updated to the input values.
+* Use `m/MANAGER_ID` to change the manager, or an empty `m/` to remove the manager. Omitting `m/` preserves it.
+* For example, `edit id/E0002 m/E0001` assigns manager `E0001`, and `edit id/E0002 m/` removes that assignment.
+* The manager must exist in the complete roster. Self-reporting and reporting cycles are rejected without changes.
+* Editing an archived employee preserves their archived status.
 * The `id/` parameter identifies the employee to edit. The employee ID itself cannot be changed.
 * Employee ID matching is case-insensitive: `edit id/e0001 ...` identifies employee `E0001`.
 * HuntR searches the complete employee roster, so an employee hidden by the current `find` result can still be edited.
@@ -128,6 +135,116 @@ Format: `edit id/EMPLOYEE_ID [n/NAME] [p/PHONE] [e/EMAIL] [d/DEPARTMENT] [r/ROLE
 Examples:
 * `edit id/E0001 p/91234567 e/alex@example.com` updates the phone number and email address of employee `E0001`.
 * `edit id/e0002 r/HR Manager` updates the role of employee `E0002`, using case-insensitive ID matching.
+
+### Assigning a manager: `manager`
+
+Assigns or changes an employee's direct manager using the complete roster, including employees hidden by a search.
+Each employee can have at most one direct manager. Assigning a manager preserves all other employee details,
+including archived status. The employee card shows the manager's ID, or `Unassigned` when no manager is set.
+
+Format: `manager id/EMPLOYEE_ID m/MANAGER_ID`
+
+Example: `manager id/E0002 m/E0001` makes employee `E0002` report to `E0001`.
+
+Both IDs must exist. Matching ignores case and saved manager IDs and success messages use the roster's ID spelling.
+On success, HuntR displays `Manager of E0002 set to E0001.` for the example above.
+
+The following errors leave all records unchanged. These messages do not include a usage block. Assume `E0001`,
+`E0002` and `E0003` exist, and `E9999` does not exist. The cycle example additionally assumes that `E0002` reports
+to `E0001`, and `E0003` reports to `E0002`.
+
+| Input | Error message |
+| --- | --- |
+| `manager id/E0001 m/E0001` (self-reporting) | `An employee cannot report to themselves.` |
+| `manager id/E0001 m/E9999` (unknown manager) | `Manager does not exist: E9999` |
+| `manager id/E9999 m/E0001` (unknown employee) | `No employee with ID E9999 was found.` |
+| `manager id/E0001 m/E0003` (reporting cycle) | `Reporting relationships cannot contain a cycle.` |
+
+These manager validation messages also apply to `add` and `edit` when assigning a manager. See
+[Reporting command input rules](#reporting-command-input-rules) for malformed arguments.
+
+### Removing a manager: `unassign-manager`
+
+Removes an employee's direct manager. The employee and their own reports remain in the roster.
+
+Format: `unassign-manager id/EMPLOYEE_ID`
+
+Example: `unassign-manager id/E0002`. Equivalently, use `edit id/E0002 m/`.
+
+On success, HuntR displays `Manager of E0002 unassigned.`. An employee who already has no manager remains unchanged,
+and the command still succeeds. `unassign-manager id/E9999` produces `No employee with ID E9999 was found.` if
+`E9999` does not exist; no records change.
+
+### Viewing an employee's team: `team`
+
+Shows the employee, their direct manager (if assigned), and their direct reports. The result message gives the
+manager's name and ID (or `None`) and the number of direct reports. Indirect reports are excluded.
+
+Format: `team id/EMPLOYEE_ID`
+
+Example: `team id/E0002`. After `manager id/E0002 m/E0001` and `manager id/E0003 m/E0002`,
+this shows `E0001`, `E0002` and `E0003`, and reports one direct report for `E0002`.
+An employee with no manager and no reports is shown on their own with a direct-report count of zero.
+
+### Viewing all reports: `org`
+
+Shows all direct and indirect reports under the specified employee. The employee themselves is excluded.
+The result message lists descendants in breadth-first order; employee cards retain roster order.
+
+Format: `org id/EMPLOYEE_ID`
+
+Example: `org id/E0001`. With `E0002` reporting to `E0001` and `E0003` reporting to `E0002`,
+the result includes `E0002` and `E0003`. With no reports, the list is empty and the message says `None.`
+
+### Viewing the reporting chain: `chain`
+
+Shows the specified employee's managers, from their immediate manager to the top of the hierarchy.
+The employee themselves is excluded. The result message shows chain order using `->`; employee cards retain roster order.
+
+Format: `chain id/EMPLOYEE_ID`
+
+Example: `chain id/E0003`. With `E0003` reporting to `E0002` and `E0002` reporting to `E0001`,
+the message lists `E0002 -> E0001` (with their names). With no manager, the list is empty and the message says `None.`
+
+### Reporting command input rules
+
+For `manager`, `unassign-manager`, `team`, `org` and `chain`, IDs must contain 1 to 20 letters, digits, hyphens or
+underscores. Supply exactly one `id/` parameter. Only `manager` also accepts (and requires) one `m/` parameter.
+Parameters can be in either order, with surrounding whitespace ignored. A blank manager is rejected by `manager`;
+use `unassign-manager` or `edit id/EMPLOYEE_ID m/` to remove an assignment.
+
+The following table gives the error text before the command-specific usage block. Each error leaves records and
+the current list unchanged. These examples use `team`; the equivalent malformed arguments on the other reporting
+commands append those commands' own usage instead.
+
+| Input | Error message before usage |
+| --- | --- |
+| `team` (missing ID) | `Invalid command format.` |
+| `team id/` (blank ID) | `Employee ID should not be blank.` |
+| `team id/@@@` or `team id/E0001 extra` | `Employee ID should be 1 to 20 characters long and contain only letters, digits, hyphens and underscores.` |
+| `team id/ABCDEFGHIJKLMNOPQRSTU` (21 characters) | `Employee ID should be at most 20 characters long.` |
+| `team id/E0001 id/E0002` | `Multiple values specified for the following single-valued field(s): id/` |
+| `team extra id/E0001` | `Invalid command format.` |
+| `team id/E0001 x/foo` | `Invalid command format.` followed by `Unknown parameter: x/` |
+| `manager id/E0001` (missing manager) | `Invalid command format.` |
+| `manager id/E0001 m/` (blank manager) | `Employee ID should not be blank.` |
+
+For example, entering `team` displays:
+
+```text
+Invalid command format.
+team: Shows an employee, their manager and direct reports.
+Parameters: id/EMPLOYEE_ID
+Example: team id/E0002
+```
+
+A valid but unknown target ID produces `No employee with ID E9999 was found.` for `id/E9999`, without usage.
+This applies to `team`, `org`, `chain` and `unassign-manager` as well as `manager`. It leaves records and the current
+list unchanged.
+
+Reporting queries replace the current search filter and leave records unchanged. They query relationships across
+the complete stored roster, so counts and messages include archived employees. As with normal employee listings,
+archived employees are hidden from the cards; use `list archived` to view them. Use `list` to return to all active employees.
 
 ### Finding employees by name: `find`
 
@@ -153,6 +270,38 @@ Examples:
 * `find alex david` returns `Alex Yeoh`, `David Li`<br>
   ![result for 'find alex david'](images/findAlexDavidResult.png)
 
+### Archiving employees: `archive`
+
+Marks an employee as archived. Archived employees remain stored but are hidden from normal `list` and `find` results.
+After a successful archive, HuntR displays the full active employee list.
+
+Format: `archive id/EMPLOYEE_ID`
+
+Example: `archive id/E0123`
+
+The ID is matched case-insensitively. An unknown ID produces `No employee with ID E0123 was found.` Archiving an
+already archived employee produces `Employee with ID E0123 is already archived.` No data changes on either error.
+
+### Unarchiving employees: `unarchive`
+
+Restores an archived employee to the active roster.
+After a successful unarchive, HuntR displays the full active employee list, including the restored employee.
+
+Format: `unarchive id/EMPLOYEE_ID`
+
+Example: `unarchive id/E0123`
+
+An unknown ID produces the usual employee-not-found error. Attempting to unarchive an active employee produces
+`Employee with ID E0123 is already active.`
+
+### Listing archived employees: `list archived`
+
+Shows only archived employees. Normal `list` continues to show only active employees.
+
+Format: `list archived`
+
+Archived employees retain their IDs, can be edited with `edit`, and can be permanently deleted with `delete`.
+
 ### Deleting an employee: `delete`
 
 Permanently deletes one employee from the complete roster using their employee ID.
@@ -162,8 +311,9 @@ Format: `delete id/EMPLOYEE_ID`
 * Employee IDs contain 1 to 20 letters, digits, hyphens or underscores, with no spaces. For example, `E0001`, `EMP-0042`, `2024-017`, `abc` and `e0123` are valid.
 * ID matching ignores letter case: `e0123` identifies the same employee as `E0123`. The success message shows the ID as stored.
 * Supply exactly one `id/` parameter. Surrounding spaces and tabs are accepted; spaces within an ID, repeated `id/` parameters and other parameters are rejected.
-* The command searches all employee records, including employees hidden by `find`. Employees may share a name; deletion uses only the ID.
+* The command searches all employee records, including archived employees and employees hidden by `find`.
 * The current search filter and the order of remaining employees are preserved.
+* Deleting a manager removes the manager assignment from their direct reports, including archived reports. The success message gives the number affected. Other reporting relationships are preserved.
 * Deletion is immediate, with no confirmation or undo. The final employee can be deleted, and a deleted ID can be reused.
 
 Examples, assuming the target employee exists:
@@ -194,46 +344,34 @@ Example: delete id/EMP-0042
 
 A valid ID that does not exist produces `No employee with ID EMP-0042 was found.` (using the entered ID), without the usage block. No records are changed. This also applies to deleting an employee twice or deleting from an empty roster.
 
-### Reporting relationships and team structure
+### Clearing active employees: `clear`
 
-Each employee may have one direct manager, identified by employee ID. Manager IDs are case-insensitive,
-just like employee IDs. Assignments use the complete roster, including employees hidden by a search.
-The employee and manager must already exist. Self-reporting and direct or indirect reporting cycles are rejected
-without changing any data. An employee without a manager is treated as a top-level employee.
-
-* Assign or change a manager: `manager id/EMPLOYEE_ID m/MANAGER_ID`
-  Example: `manager id/E0123 m/E0001`.
-* Remove an assignment: `unassign-manager id/EMPLOYEE_ID`.
-  This also succeeds when the employee already has no manager.
-* View direct reports: `team id/MANAGER_ID`.
-* View the entire team (all direct and indirect reports): `org id/MANAGER_ID`.
-  The selected manager is excluded from both team queries.
-* Inspect the reporting chain: `chain id/EMPLOYEE_ID`.
-  The result message lists managers from the immediate manager to the top-level manager.
-
-`team`, `org` and `chain` display matching employees in the list without modifying stored data.
-An empty team or chain displays `None.`. Use `list` to restore the complete roster.
-Employee cards display the current manager ID, or `Unassigned`.
-
-For example, after `manager id/E0002 m/E0001` and `manager id/E0003 m/E0002`,
-`team id/E0001` displays E0002, `org id/E0001` displays E0002 and E0003,
-and `chain id/E0003` shows E0002 followed by E0001.
-
-Ordinary edits preserve reporting assignments. Deleting a manager automatically unassigns their direct reports;
-relationships further down the team remain intact. Reporting relationships are saved automatically.
-Existing data files without a `managerId` field continue to load with no managers assigned. Data files containing
-missing manager references or reporting cycles are rejected as invalid.
-
-### Clearing all employees: `clear`
-
-Clears all employee records from HuntR.
+Clears the active employee roster from HuntR. Archived employee records are preserved and can still be removed with
+`delete`. Manager assignments on archived employees are cleared if their manager is removed by `clear`.
 
 Format: `clear`
 
 <box type="warning" seamless>
 
-**Caution:** There is no confirmation and no undo. After `clear`, the empty list is saved immediately.
+**Caution:** There is no confirmation and no undo. After `clear`, the empty active roster and retained archived records are
+saved immediately.
 </box>
+
+### Backing up the data: `backup`
+
+Saves a copy of all current employee data to a new file in the `data/backups` folder.
+
+Format: `backup`
+
+* The backup is named by the date and time it was made, as `huntr-YYYYMMDD-HHmmss.json`, for example `data/backups/huntr-20261022-153005.json`. The `data/backups` folder is created if needed.
+* The backup uses the same format as the data file `data/addressbook.json` and contains all employees, including employees hidden by `find`.
+* Each backup is a new file, so earlier backups are kept. Two backups made within the same second share a name, and the later one replaces the earlier one.
+* To restore a backup, exit HuntR, then replace `data/addressbook.json` with a copy of the backup file renamed to `addressbook.json`.
+* The command takes no parameters, and extra text such as `backup now` is rejected.
+
+On success, HuntR shows `Backed up N employee(s) to data/backups/huntr-YYYYMMDD-HHmmss.json`.
+
+If the backup cannot be saved, for example because HuntR is not allowed to write to the `data` folder, HuntR shows `Could not save the backup to FILE_PATH. Check that you are allowed to write to that folder.`
 
 ### Exiting the program: `exit`
 
@@ -251,12 +389,16 @@ HuntR automatically saves data after every command. You do not need to save manu
 
 HuntR data is saved automatically as a JSON file `[JAR file location]/data/addressbook.json`. Advanced users are welcome to update data directly by editing that data file.
 
-Every employee in the file must follow the same rules as the `add` command, and no two employees may have the same employee ID (ignoring letter case).
+Each employee in the `employees` array has an `archived` status. Employee IDs remain unique regardless of status.
+Older valid files without the `archived` field continue to load, with those employees treated as active.
+The optional `managerId` field stores the direct manager's ID. Missing or null `managerId` means no manager.
+Manager IDs must refer to an existing employee, with no self-reporting or cycles. Invalid relationships cause the
+whole file to be rejected.
 
 <box type="warning" seamless>
 
 **Caution:**
-If your changes make the data file invalid, HuntR rejects the whole file (it does not load only the valid employees) and starts with an empty employee list at the next run. The invalid file remains on disk until you run a command (HuntR saves after every command, which then overwrites it). Therefore, always back up the file before editing it.<br>
+If your changes make the data file invalid, HuntR rejects the whole file (it does not load only the valid employees) and starts with an empty employee list at the next run. The invalid file remains on disk until you run a command (HuntR saves after every command, which then overwrites it). Therefore, always back up the file (for example with `backup`) before editing it.<br>
 Furthermore, certain edits can cause HuntR to behave in unexpected ways (e.g., if a value entered is outside of the acceptable range). Therefore, edit the data file only if you are confident that you can update it correctly.
 </box>
 
@@ -280,11 +422,19 @@ Furthermore, certain edits can cause HuntR to behave in unexpected ways (e.g., i
 
 Action     | Format, Examples
 -----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------
-**Add**    | `add id/EMPLOYEE_ID n/NAME p/PHONE e/EMAIL d/DEPARTMENT r/ROLE`<br>e.g., `add id/E0123 n/John Tan p/91234567 e/johntan@example.com d/Engineering r/Software Engineer`
+**Add**    | `add id/EMPLOYEE_ID n/NAME p/PHONE e/EMAIL d/DEPARTMENT r/ROLE [m/MANAGER_ID]`<br>e.g., `add id/E0123 n/John Tan p/91234567 e/johntan@example.com d/Engineering r/Software Engineer`
+**Archive** | `archive id/EMPLOYEE_ID`<br>e.g., `archive id/E0123`
+**Backup** | `backup`
 **Clear**  | `clear`
 **Delete** | `delete id/EMPLOYEE_ID`<br> e.g., `delete id/EMP-0042`
-**Edit**   | `edit id/EMPLOYEE_ID [n/NAME] [p/PHONE] [e/EMAIL] [d/DEPARTMENT] [r/ROLE]`<br>e.g., `edit id/E0001 p/91234567 e/alex@example.com`
+**Edit**   | `edit id/EMPLOYEE_ID [n/NAME] [p/PHONE] [e/EMAIL] [d/DEPARTMENT] [r/ROLE] [m/MANAGER_ID]`<br>e.g., `edit id/E0001 p/91234567 e/alex@example.com`
 **Find**   | `find KEYWORD [MORE_KEYWORDS]`<br> e.g., `find James Jake`
-**List**   | `list`
+**List**   | `list` or `list archived`
+**Manager** | `manager id/EMPLOYEE_ID m/MANAGER_ID`
+**Unassign manager** | `unassign-manager id/EMPLOYEE_ID`
+**Team** | `team id/EMPLOYEE_ID`
+**Org** | `org id/EMPLOYEE_ID`
+**Chain** | `chain id/EMPLOYEE_ID`
+**Unarchive** | `unarchive id/EMPLOYEE_ID`
 **Help**   | `help`
 **Exit**   | `exit`
