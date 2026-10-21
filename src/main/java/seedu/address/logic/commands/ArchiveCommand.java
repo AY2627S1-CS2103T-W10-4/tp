@@ -25,6 +25,11 @@ public class ArchiveCommand extends Command {
     }
 
     @Override
+    public boolean isDataChanging() {
+        return true;
+    }
+
+    @Override
     public CommandResult execute(Model model) throws CommandException {
         requireNonNull(model);
         Employee employee = model.getAddressBook().getEmployeeList().stream()
@@ -34,6 +39,7 @@ public class ArchiveCommand extends Command {
             throw new CommandException(String.format(MESSAGE_ALREADY_ARCHIVED, targetId));
         }
         model.archiveEmployee(employee);
+        model.commitAddressBook();
         return new CommandResult(String.format(MESSAGE_SUCCESS, Messages.format(employee)));
     }
 
