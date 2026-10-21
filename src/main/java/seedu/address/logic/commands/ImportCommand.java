@@ -77,6 +77,11 @@ public class ImportCommand extends CsvFileCommand {
     }
 
     @Override
+    public boolean isDataChanging() {
+        return true;
+    }
+
+    @Override
     public CommandResult execute(Model model) throws CommandException {
         requireNonNull(model);
         Path resolvedPath = resolveFilePath();
@@ -86,6 +91,7 @@ public class ImportCommand extends CsvFileCommand {
 
         employees.forEach(model::addEmployee);
         model.updateFilteredEmployeeList(Model.PREDICATE_SHOW_ALL_EMPLOYEES);
+        model.commitAddressBook();
 
         logger.info("Imported " + employees.size() + " employees from " + resolvedPath);
         return new CommandResult(String.format(MESSAGE_SUCCESS, employees.size(), getFilePath()));
