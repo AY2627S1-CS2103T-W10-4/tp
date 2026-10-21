@@ -14,9 +14,15 @@ public class ClearCommand extends Command {
 
 
     @Override
+    public boolean isDataChanging() {
+        return true;
+    }
+
+    @Override
     public CommandResult execute(Model model) {
         requireNonNull(model);
         model.clearEmployees();
+        model.commitAddressBook();
         return new CommandResult(MESSAGE_SUCCESS);
     }
 }
