@@ -183,11 +183,11 @@ Shows only archived employees. Normal `list` continues to show only active emplo
 
 Format: `list archived`
 
-Archived employees retain their IDs, can be edited with `edit`, and can be permanently deleted with `delete`.
+Archived employees retain their IDs, can be edited with `edit`, and can be deleted with `delete` (and restored with `undo` during the same session).
 
 ### Deleting an employee: `delete`
 
-Permanently deletes one employee from the complete roster using their employee ID.
+Deletes one employee from the complete roster using their employee ID.
 
 Format: `delete id/EMPLOYEE_ID`
 
@@ -196,7 +196,7 @@ Format: `delete id/EMPLOYEE_ID`
 * Supply exactly one `id/` parameter. Surrounding spaces and tabs are accepted; spaces within an ID, repeated `id/` parameters and other parameters are rejected.
 * The command searches all employee records, including archived employees and employees hidden by `find`.
 * The current search filter and the order of remaining employees are preserved.
-* Deletion is immediate, with no confirmation or undo. The final employee can be deleted, and a deleted ID can be reused.
+* Deletion is immediate, with no confirmation. Use `undo` to restore it during the same session. The final employee can be deleted, and a deleted ID can be reused.
 
 Examples, assuming the target employee exists:
 
@@ -235,13 +235,74 @@ Format: `clear`
 
 <box type="warning" seamless>
 
-**Caution:** There is no confirmation and no undo. After `clear`, the empty active roster and unchanged archive are
-saved immediately.
+**Caution:** There is no confirmation. After `clear`, the empty active roster and unchanged archive are
+saved immediately. Use `undo` to restore the active roster during the same session. Clearing an already empty
+active roster still succeeds and shows the active view, but creates no history entry.
 </box>
+
+### Undoing and redoing employee changes: `undo`, `redo`
+
+Format: `undo` or `redo`. Use lowercase command words without parameters. Surrounding spaces and tabs are accepted.
+Each command moves exactly one history step.
+
+| Input and condition | Exact result |
+| --- | --- |
+| `undo`, with a preceding state | `Undo successful.` |
+| `redo`, with a subsequent state | `Redo successful.` |
+| `  undo  `, with a preceding state | `Undo successful.` |
+| `undo`, with no preceding state | `No more commands to undo.` |
+| `redo`, with no subsequent state | `No more commands to redo.` |
+
+Arguments such as `undo 2` or `undo id/E0123` produce:
+
+```text
+Invalid command format.
+undo: Reverts the most recent data-changing command.
+Parameters: none
+Example: undo
+```
+
+Arguments such as `redo 2` or `redo now` produce:
+
+```text
+Invalid command format.
+redo: Reapplies the most recently undone data-changing command.
+Parameters: none
+Example: redo
+```
+
+Syntax is checked before history availability, so these format errors also apply to a new session.
+Aliases, step counts and uppercase command words are not supported. For example:
+
+```text
+Unknown command: UNDO
+Type help to see the available commands.
+```
+
+The same template applies to `Undo`, `REDO`, `u`, `r` and `undo2`, preserving the entered command word.
+Normal parsing and command errors retain your input and use the command box's existing error styling;
+they do not save or change records, history or the view. Successful commands clear the command box.
+
+One history step covers an entire successful `add`, `edit`, `delete`, `clear`, `import`, `archive` or `unarchive`.
+An import of several employees is reversed by one undo. Redo restores saved data directly, even if the original
+CSV has changed or been deleted. All employee values, ID spelling, archive status and stored order are restored,
+including employees hidden from the current view. Clear affects only active employees.
+
+Undo and redo preserve the view active immediately before the command: active-only, archived-only or the current
+search, even when it matches nobody. Restored employees can remain hidden; use `list` or `list archived` to see them.
+A historical search is not restored. Selection and scroll position are not guaranteed to remain unchanged.
+
+A successful actual employee-data change after undo discards the redo states. An identical edit or an empty
+active-roster clear creates no history entry, preserves redo, and retains its existing success message and reset
+to the active view. Failed commands and `list`, `list archived`, `find`, `help`, `export`, `backup` and `exit` preserve
+redo. Exported and backup files are outside employee history. Header-only imports remain errors.
+
+History has no explicit capacity limit and exists only for this session. Starting HuntR loads the saved employee
+state as one initial snapshot; neither undo nor redo is available until you make changes in that session.
 
 ### Exiting the program: `exit`
 
-Closes HuntR. Your employee records are saved after every command, so nothing is lost when you exit.
+Closes HuntR after saving the current employee state. Session undo/redo history is discarded when HuntR closes.
 
 Format: `exit`
 
@@ -249,11 +310,33 @@ The command takes no parameters, and extra text such as `exit now` is rejected.
 
 ### Saving the data
 
-HuntR automatically saves data after every command. You do not need to save manually.
+HuntR automatically saves the current employee state after every successfully executed command, including
+read-only commands and commands that change nothing. You do not need to save manually. History and view filters
+are never written to JSON.
+
+If a data-changing command (including undo or redo) fails during execution or automatic saving, HuntR restores
+its previous in-memory employee data, complete history and current view. A failed save is not reported as a
+successful command. The automatic-save messages retain the underlying exception's message:
+
+```text
+Could not save data due to the following error: <exception-message>
+```
+
+```text
+Could not save data to file <exception-message> due to insufficient permissions to write to the file or the folder.
+```
+
+The permission message can contain more than the destination path. These normal errors retain the command text
+and existing error styling. Unexpected runtime failures also restore in-memory state, but the existing UI does
+not provide ordinary command-box handling for those exceptions.
+
+Read-only commands retain their existing behavior on automatic-save failure: for example, a changed view stays
+changed. Export/backup files already created remain on disk. This version restores memory on these failures;
+it does not guarantee that a failed write leaves the disk file unchanged.
 
 ### Editing the data file
 
-HuntR data is saved automatically as a JSON file `[JAR file location]/data/addressbook.json`. Advanced users are welcome to update data directly by editing that data file.
+HuntR data is saved automatically as a JSON file `[JAR file location]/data/addressbook.json`. Advanced users may edit that file while HuntR is closed. There is no live reload or concurrent-writer handling.
 
 Each employee in the `employees` array has an `archived` status. Employee IDs remain unique regardless of status.
 Older valid files without the `archived` field continue to load, with those employees treated as active.
@@ -292,6 +375,8 @@ Action     | Format, Examples
 **Edit**   | `edit id/EMPLOYEE_ID [n/NAME] [p/PHONE] [e/EMAIL] [d/DEPARTMENT] [r/ROLE]`<br>e.g., `edit id/E0001 p/91234567 e/alex@example.com`
 **Find**   | `find KEYWORD [MORE_KEYWORDS]`<br> e.g., `find James Jake`
 **List**   | `list` or `list archived`
+**Undo**   | `undo`
+**Redo**   | `redo`
 **Unarchive** | `unarchive id/EMPLOYEE_ID`
 **Help**   | `help`
 **Exit**   | `exit`
