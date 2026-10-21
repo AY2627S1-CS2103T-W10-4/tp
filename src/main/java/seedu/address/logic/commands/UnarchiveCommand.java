@@ -23,6 +23,11 @@ public class UnarchiveCommand extends Command {
     }
 
     @Override
+    public boolean isDataChanging() {
+        return true;
+    }
+
+    @Override
     public CommandResult execute(Model model) throws CommandException {
         requireNonNull(model);
         Employee employee = model.getAddressBook().getEmployeeList().stream()
@@ -32,6 +37,7 @@ public class UnarchiveCommand extends Command {
             throw new CommandException(String.format(MESSAGE_ALREADY_ACTIVE, targetId));
         }
         model.unarchiveEmployee(employee);
+        model.commitAddressBook();
         return new CommandResult(String.format(MESSAGE_SUCCESS, Messages.format(employee)));
     }
 
