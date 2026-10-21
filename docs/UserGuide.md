@@ -353,7 +353,7 @@ Format: `clear`
 
 <box type="warning" seamless>
 
-**Caution:** There is no confirmation and no undo. After `clear`, the empty active roster and retained archived records are
+**Caution:** There is no confirmation and no undo. After `clear`, the empty active roster and unchanged archive are
 saved immediately.
 </box>
 
