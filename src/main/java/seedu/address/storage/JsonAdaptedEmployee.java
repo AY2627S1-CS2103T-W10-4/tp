@@ -25,6 +25,7 @@ class JsonAdaptedEmployee {
     private final String email;
     private final String department;
     private final String role;
+    private final Boolean archived;
 
     /**
      * Constructs a {@code JsonAdaptedEmployee} with the given employee details.
@@ -32,13 +33,20 @@ class JsonAdaptedEmployee {
     @JsonCreator
     public JsonAdaptedEmployee(@JsonProperty("id") String id, @JsonProperty("name") String name,
             @JsonProperty("phone") String phone, @JsonProperty("email") String email,
-            @JsonProperty("department") String department, @JsonProperty("role") String role) {
+            @JsonProperty("department") String department, @JsonProperty("role") String role,
+            @JsonProperty("archived") Boolean archived) {
         this.id = id;
         this.name = name;
         this.phone = phone;
         this.email = email;
         this.department = department;
         this.role = role;
+        this.archived = archived;
+    }
+
+    /** Constructs an active employee adapter for existing callers and tests. */
+    public JsonAdaptedEmployee(String id, String name, String phone, String email, String department, String role) {
+        this(id, name, phone, email, department, role, false);
     }
 
     /**
@@ -51,6 +59,7 @@ class JsonAdaptedEmployee {
         email = source.getEmail().value;
         department = source.getDepartment().value;
         role = source.getRole().value;
+        archived = source.isArchived();
     }
 
     /**
@@ -109,7 +118,8 @@ class JsonAdaptedEmployee {
         }
         final Role modelRole = new Role(role);
 
-        return new Employee(modelId, modelName, modelPhone, modelEmail, modelDepartment, modelRole);
+        return new Employee(modelId, modelName, modelPhone, modelEmail, modelDepartment, modelRole,
+                archived != null && archived);
     }
 
 }

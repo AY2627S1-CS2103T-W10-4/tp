@@ -26,6 +26,7 @@ public class EmployeeBuilder {
     private Email email;
     private Department department;
     private Role role;
+    private boolean archived;
 
     /**
      * Creates a {@code EmployeeBuilder} with the default details.
@@ -49,6 +50,7 @@ public class EmployeeBuilder {
         email = employeeToCopy.getEmail();
         department = employeeToCopy.getDepartment();
         role = employeeToCopy.getRole();
+        archived = employeeToCopy.isArchived();
     }
 
     /**
@@ -99,8 +101,14 @@ public class EmployeeBuilder {
         return this;
     }
 
+    /** Sets whether the employee is archived. */
+    public EmployeeBuilder withArchived(boolean archived) {
+        this.archived = archived;
+        return this;
+    }
+
     public Employee build() {
-        return new Employee(id, name, phone, email, department, role);
+        return new Employee(id, name, phone, email, department, role, archived);
     }
 
 }

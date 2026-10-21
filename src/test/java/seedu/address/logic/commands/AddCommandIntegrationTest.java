@@ -46,6 +46,17 @@ public class AddCommandIntegrationTest {
     }
 
     @Test
+    public void execute_archivedDuplicateAfterClear_throwsArchiveSpecificCommandException() {
+        Employee employeeInList = model.getAddressBook().getEmployeeList().get(0);
+        model.archiveEmployee(employeeInList);
+        model.clearEmployees();
+        Employee replacement = new EmployeeBuilder(employeeInList).withName("Replacement Employee").build();
+
+        assertCommandFailure(new AddCommand(replacement), model,
+                String.format(AddCommand.MESSAGE_DUPLICATE_ARCHIVED_EMPLOYEE, replacement.getId()));
+    }
+
+    @Test
     public void execute_sameIdDifferentCase_throwsCommandException() {
         Employee employeeInList = model.getAddressBook().getEmployeeList().get(0);
         Employee sameIdInLowerCase = new EmployeeBuilder().withName("Someone Else")

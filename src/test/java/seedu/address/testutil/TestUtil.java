@@ -5,6 +5,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import org.junit.jupiter.api.Assumptions;
+
 import seedu.address.commons.core.index.Index;
 import seedu.address.model.Model;
 import seedu.address.model.employee.Employee;
@@ -30,6 +32,18 @@ public class TestUtil {
             throw new RuntimeException(e);
         }
         return SANDBOX_FOLDER.resolve(fileName);
+    }
+
+    /**
+     * Creates a symbolic link at {@code link} that points to {@code target}, and returns the link.
+     * Skips the calling test if this computer does not allow it, as on Windows without the needed privilege.
+     */
+    public static Path createSymbolicLinkOrSkip(Path link, Path target) {
+        try {
+            return Files.createSymbolicLink(link, target);
+        } catch (IOException | UnsupportedOperationException e) {
+            return Assumptions.abort("Symbolic links are not supported here: " + e);
+        }
     }
 
     /**
