@@ -25,28 +25,41 @@ class JsonAdaptedEmployee {
     private final String email;
     private final String department;
     private final String role;
+    private final Boolean archived;
     private final String managerId;
 
     /**
      * Constructs a {@code JsonAdaptedEmployee} with the given employee details.
      */
-    public JsonAdaptedEmployee(String id, String name, String phone, String email, String department, String role) {
-        this(id, name, phone, email, department, role, null);
+    public JsonAdaptedEmployee(String id, String name, String phone, String email, String department, String role,
+            Boolean archived) {
+        this(id, name, phone, email, department, role, archived, null);
     }
 
-    /** Creates an adapted employee including the optional manager ID. */
+    /** Creates an adapter with an optional manager for existing callers. */
+    public JsonAdaptedEmployee(String id, String name, String phone, String email, String department, String role,
+            String managerId) {
+        this(id, name, phone, email, department, role, false, managerId);
+    }
+
     @JsonCreator
     public JsonAdaptedEmployee(@JsonProperty("id") String id, @JsonProperty("name") String name,
             @JsonProperty("phone") String phone, @JsonProperty("email") String email,
             @JsonProperty("department") String department, @JsonProperty("role") String role,
-            @JsonProperty("managerId") String managerId) {
+            @JsonProperty("archived") Boolean archived, @JsonProperty("managerId") String managerId) {
         this.id = id;
         this.name = name;
         this.phone = phone;
         this.email = email;
         this.department = department;
         this.role = role;
+        this.archived = archived;
         this.managerId = managerId;
+    }
+
+    /** Constructs an active employee adapter for existing callers and tests. */
+    public JsonAdaptedEmployee(String id, String name, String phone, String email, String department, String role) {
+        this(id, name, phone, email, department, role, false);
     }
 
     /**
@@ -59,6 +72,7 @@ class JsonAdaptedEmployee {
         email = source.getEmail().value;
         department = source.getDepartment().value;
         role = source.getRole().value;
+        archived = source.isArchived();
         managerId = source.getManagerId().map(employeeId -> employeeId.value).orElse(null);
     }
 
@@ -122,7 +136,7 @@ class JsonAdaptedEmployee {
             throw new IllegalValueException(EmployeeId.MESSAGE_CONSTRAINTS);
         }
         return new Employee(modelId, modelName, modelPhone, modelEmail, modelDepartment, modelRole,
-                managerId == null ? null : new EmployeeId(managerId));
+                archived != null && archived, managerId == null ? null : new EmployeeId(managerId));
     }
 
 }

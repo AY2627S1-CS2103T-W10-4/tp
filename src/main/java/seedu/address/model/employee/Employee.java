@@ -22,18 +22,31 @@ public class Employee {
     private final Email email;
     private final Department department;
     private final Role role;
+    private final boolean archived;
     private final EmployeeId managerId;
 
     /**
      * Every field must be present and not null.
      */
     public Employee(EmployeeId id, Name name, Phone phone, Email email, Department department, Role role) {
-        this(id, name, phone, email, department, role, null);
+        this(id, name, phone, email, department, role, false);
     }
 
-    /** Creates an employee with an optional direct manager (null means unassigned). */
+    /** Creates an employee with an explicit archive status. */
+    public Employee(EmployeeId id, Name name, Phone phone, Email email, Department department, Role role,
+            boolean archived) {
+        this(id, name, phone, email, department, role, archived, null);
+    }
+
+    /** Creates an active employee with an optional manager. */
     public Employee(EmployeeId id, Name name, Phone phone, Email email, Department department, Role role,
             EmployeeId managerId) {
+        this(id, name, phone, email, department, role, false, managerId);
+    }
+
+    /** Creates an employee with archive status and an optional manager. */
+    public Employee(EmployeeId id, Name name, Phone phone, Email email, Department department, Role role,
+            boolean archived, EmployeeId managerId) {
         requireAllNonNull(id, name, phone, email, department, role);
         this.id = id;
         this.name = name;
@@ -41,6 +54,7 @@ public class Employee {
         this.email = email;
         this.department = department;
         this.role = role;
+        this.archived = archived;
         this.managerId = managerId;
     }
 
@@ -48,9 +62,9 @@ public class Employee {
         return Optional.ofNullable(managerId);
     }
 
-    /** Returns a copy with the given manager, or no manager when null. */
+    /** Returns an otherwise identical employee with the given manager, or none when null. */
     public Employee withManager(EmployeeId newManagerId) {
-        return new Employee(id, name, phone, email, department, role, newManagerId);
+        return new Employee(id, name, phone, email, department, role, archived, newManagerId);
     }
 
     public EmployeeId getId() {
@@ -75,6 +89,15 @@ public class Employee {
 
     public Role getRole() {
         return role;
+    }
+
+    public boolean isArchived() {
+        return archived;
+    }
+
+    /** Returns an otherwise identical employee with the requested archive status. */
+    public Employee withArchived(boolean archived) {
+        return new Employee(id, name, phone, email, department, role, archived, managerId);
     }
 
     /**
@@ -111,13 +134,14 @@ public class Employee {
                 && email.equals(otherEmployee.email)
                 && department.equals(otherEmployee.department)
                 && role.equals(otherEmployee.role)
+                && archived == otherEmployee.archived
                 && Objects.equals(managerId, otherEmployee.managerId);
     }
 
     @Override
     public int hashCode() {
         // use this method for custom fields hashing instead of implementing your own
-        return Objects.hash(id, name, phone, email, department, role, managerId);
+        return Objects.hash(id, name, phone, email, department, role, archived, managerId);
     }
 
     @Override
@@ -129,6 +153,7 @@ public class Employee {
                 .add("email", email)
                 .add("department", department)
                 .add("role", role)
+                .add("archived", archived)
                 .add("managerId", managerId)
                 .toString();
     }

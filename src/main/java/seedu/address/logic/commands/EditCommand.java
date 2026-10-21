@@ -92,7 +92,7 @@ public class EditCommand extends Command {
         Role updatedRole = editEmployeeDescriptor.getRole().orElse(employeeToEdit.getRole());
 
         return new Employee(employeeToEdit.getId(), updatedName, updatedPhone, updatedEmail,
-                updatedDepartment, updatedRole, employeeToEdit.getManagerId().orElse(null));
+                updatedDepartment, updatedRole, employeeToEdit.isArchived(), employeeToEdit.getManagerId().orElse(null));
     }
 
     @Override

@@ -36,7 +36,11 @@ public class HelpCommand extends Command {
             "team id/MANAGER_ID (direct reports)",
             "org id/MANAGER_ID (full team)",
             "chain id/EMPLOYEE_ID (reporting chain)",
+            ArchiveCommand.COMMAND_WORD + " " + PREFIX_ID + "EMPLOYEE_ID",
+            UnarchiveCommand.COMMAND_WORD + " " + PREFIX_ID + "EMPLOYEE_ID",
+            ListCommand.COMMAND_WORD + " archived",
             ClearCommand.COMMAND_WORD,
+            BackupCommand.COMMAND_WORD,
             COMMAND_WORD,
             ExitCommand.COMMAND_WORD);
 

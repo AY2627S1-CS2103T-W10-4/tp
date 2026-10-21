@@ -13,6 +13,8 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 
 import seedu.address.logic.commands.AddCommand;
+import seedu.address.logic.commands.ArchiveCommand;
+import seedu.address.logic.commands.BackupCommand;
 import seedu.address.logic.commands.ClearCommand;
 import seedu.address.logic.commands.DeleteCommand;
 import seedu.address.logic.commands.EditCommand;
@@ -21,6 +23,7 @@ import seedu.address.logic.commands.ExitCommand;
 import seedu.address.logic.commands.FindCommand;
 import seedu.address.logic.commands.HelpCommand;
 import seedu.address.logic.commands.ListCommand;
+import seedu.address.logic.commands.UnarchiveCommand;
 import seedu.address.logic.parser.exceptions.ParseException;
 import seedu.address.model.employee.Employee;
 import seedu.address.model.employee.EmployeeId;
@@ -57,6 +60,12 @@ public class AddressBookParserTest {
     public void parseCommand_deleteMixedCaseId_preservesIdAsTyped() throws Exception {
         DeleteCommand command = (DeleteCommand) parser.parseCommand("delete id/eMp-0042");
         assertEquals("eMp-0042", command.getTargetId().value);
+    }
+
+    @Test
+    public void parseCommand_archiveAndUnarchive() throws Exception {
+        assertEquals(new ArchiveCommand(new EmployeeId("E0123")), parser.parseCommand("archive id/E0123"));
+        assertEquals(new UnarchiveCommand(new EmployeeId("E0123")), parser.parseCommand("unarchive id/E0123"));
     }
 
     @Test
@@ -97,9 +106,23 @@ public class AddressBookParserTest {
     }
 
     @Test
+    public void parseCommand_backup() throws Exception {
+        assertTrue(parser.parseCommand(BackupCommand.COMMAND_WORD) instanceof BackupCommand);
+        assertTrue(parser.parseCommand("  " + BackupCommand.COMMAND_WORD + "  ") instanceof BackupCommand);
+    }
+
+    @Test
+    public void parseCommand_backupWithArguments_throwsParseException() {
+        assertThrows(ParseException.class,
+                String.format(MESSAGE_INVALID_COMMAND_FORMAT, BackupCommand.MESSAGE_USAGE), () ->
+                parser.parseCommand(BackupCommand.COMMAND_WORD + " now"));
+    }
+
+    @Test
     public void parseCommand_list() throws Exception {
-        assertTrue(parser.parseCommand(ListCommand.COMMAND_WORD) instanceof ListCommand);
+        assertEquals(new ListCommand(), parser.parseCommand(ListCommand.COMMAND_WORD));
         assertTrue(parser.parseCommand("  " + ListCommand.COMMAND_WORD + "  ") instanceof ListCommand);
+        assertEquals(new ListCommand(true), parser.parseCommand("list archived"));
     }
 
     @Test

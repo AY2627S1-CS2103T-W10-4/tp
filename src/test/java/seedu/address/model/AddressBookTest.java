@@ -79,6 +79,13 @@ public class AddressBookTest {
     }
 
     @Test
+    public void archivedEmployee_copy_success() {
+        Employee archivedAlice = ALICE.withArchived(true);
+        addressBook.addEmployee(archivedAlice);
+        assertEquals(addressBook, new AddressBook(addressBook));
+    }
+
+    @Test
     public void toStringMethod() {
         String expected = AddressBook.class.getCanonicalName() + "{employees=" + addressBook.getEmployeeList() + "}";
         assertEquals(expected, addressBook.toString());
@@ -98,6 +105,7 @@ public class AddressBookTest {
         public ObservableList<Employee> getEmployeeList() {
             return employees;
         }
+
     }
 
 }

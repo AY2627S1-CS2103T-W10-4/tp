@@ -41,7 +41,7 @@ HuntR is based on [AddressBook-Level3](https://github.com/se-edu/addressbook-lev
 
    * `delete id/E0123` : Deletes employee `E0123`, including when hidden by a search.
 
-   * `clear` : Deletes all employees.
+   * `clear` : Deletes all active employees while preserving archived records.
 
    * `exit` : Exits the app.
 
@@ -65,7 +65,7 @@ HuntR is based on [AddressBook-Level3](https://github.com/se-edu/addressbook-lev
   For example, if the command specifies `n/NAME p/PHONE`, `p/PHONE n/NAME` is also acceptable.
 
 * Extraneous parameters for `help` and `clear` are ignored.<br>
-  For example, `help 123` is interpreted as `help`. The `list` and `exit` commands also take no parameters but reject extra text, so `list 1` and `exit now` show an error.
+  For example, `help 123` is interpreted as `help`. The `backup` and `exit` commands also take no parameters but reject extra text, so `backup now` and `exit now` show an error. Likewise, `list` accepts only `archived` after it, so `list 1` shows an error.
 
 * If you are using a PDF version of this document, be careful when copying and pasting commands that span multiple lines as space characters surrounding line-breaks may be omitted when copied over to the application.
 </box>
@@ -153,6 +153,38 @@ Examples:
 * `find alex david` returns `Alex Yeoh`, `David Li`<br>
   ![result for 'find alex david'](images/findAlexDavidResult.png)
 
+### Archiving employees: `archive`
+
+Marks an employee as archived. Archived employees remain stored but are hidden from normal `list` and `find` results.
+After a successful archive, HuntR displays the full active employee list.
+
+Format: `archive id/EMPLOYEE_ID`
+
+Example: `archive id/E0123`
+
+The ID is matched case-insensitively. An unknown ID produces `No employee with ID E0123 was found.` Archiving an
+already archived employee produces `Employee with ID E0123 is already archived.` No data changes on either error.
+
+### Unarchiving employees: `unarchive`
+
+Restores an archived employee to the active roster.
+After a successful unarchive, HuntR displays the full active employee list, including the restored employee.
+
+Format: `unarchive id/EMPLOYEE_ID`
+
+Example: `unarchive id/E0123`
+
+An unknown ID produces the usual employee-not-found error. Attempting to unarchive an active employee produces
+`Employee with ID E0123 is already active.`
+
+### Listing archived employees: `list archived`
+
+Shows only archived employees. Normal `list` continues to show only active employees.
+
+Format: `list archived`
+
+Archived employees retain their IDs, can be edited with `edit`, and can be permanently deleted with `delete`.
+
 ### Deleting an employee: `delete`
 
 Permanently deletes one employee from the complete roster using their employee ID.
@@ -162,7 +194,7 @@ Format: `delete id/EMPLOYEE_ID`
 * Employee IDs contain 1 to 20 letters, digits, hyphens or underscores, with no spaces. For example, `E0001`, `EMP-0042`, `2024-017`, `abc` and `e0123` are valid.
 * ID matching ignores letter case: `e0123` identifies the same employee as `E0123`. The success message shows the ID as stored.
 * Supply exactly one `id/` parameter. Surrounding spaces and tabs are accepted; spaces within an ID, repeated `id/` parameters and other parameters are rejected.
-* The command searches all employee records, including employees hidden by `find`. Employees may share a name; deletion uses only the ID.
+* The command searches all employee records, including archived employees and employees hidden by `find`.
 * The current search filter and the order of remaining employees are preserved.
 * Deletion is immediate, with no confirmation or undo. The final employee can be deleted, and a deleted ID can be reused.
 
@@ -194,16 +226,34 @@ Example: delete id/EMP-0042
 
 A valid ID that does not exist produces `No employee with ID EMP-0042 was found.` (using the entered ID), without the usage block. No records are changed. This also applies to deleting an employee twice or deleting from an empty roster.
 
-### Clearing all employees: `clear`
+### Clearing active employees: `clear`
 
-Clears all employee records from HuntR.
+Clears the active employee roster from HuntR. Archived employee records are preserved and can still be removed with
+`delete`.
 
 Format: `clear`
 
 <box type="warning" seamless>
 
-**Caution:** There is no confirmation and no undo. After `clear`, the empty list is saved immediately.
+**Caution:** There is no confirmation and no undo. After `clear`, the empty active roster and unchanged archive are
+saved immediately.
 </box>
+
+### Backing up the data: `backup`
+
+Saves a copy of all current employee data to a new file in the `data/backups` folder.
+
+Format: `backup`
+
+* The backup is named by the date and time it was made, as `huntr-YYYYMMDD-HHmmss.json`, for example `data/backups/huntr-20261022-153005.json`. The `data/backups` folder is created if needed.
+* The backup uses the same format as the data file `data/addressbook.json` and contains all employees, including employees hidden by `find`.
+* Each backup is a new file, so earlier backups are kept. Two backups made within the same second share a name, and the later one replaces the earlier one.
+* To restore a backup, exit HuntR, then replace `data/addressbook.json` with a copy of the backup file renamed to `addressbook.json`.
+* The command takes no parameters, and extra text such as `backup now` is rejected.
+
+On success, HuntR shows `Backed up N employee(s) to data/backups/huntr-YYYYMMDD-HHmmss.json`.
+
+If the backup cannot be saved, for example because HuntR is not allowed to write to the `data` folder, HuntR shows `Could not save the backup to FILE_PATH. Check that you are allowed to write to that folder.`
 
 ### Exiting the program: `exit`
 
@@ -221,12 +271,13 @@ HuntR automatically saves data after every command. You do not need to save manu
 
 HuntR data is saved automatically as a JSON file `[JAR file location]/data/addressbook.json`. Advanced users are welcome to update data directly by editing that data file.
 
-Every employee in the file must follow the same rules as the `add` command, and no two employees may have the same employee ID (ignoring letter case).
+Each employee in the `employees` array has an `archived` status. Employee IDs remain unique regardless of status.
+Older valid files without the `archived` field continue to load, with those employees treated as active.
 
 <box type="warning" seamless>
 
 **Caution:**
-If your changes make the data file invalid, HuntR rejects the whole file (it does not load only the valid employees) and starts with an empty employee list at the next run. The invalid file remains on disk until you run a command (HuntR saves after every command, which then overwrites it). Therefore, always back up the file before editing it.<br>
+If your changes make the data file invalid, HuntR rejects the whole file (it does not load only the valid employees) and starts with an empty employee list at the next run. The invalid file remains on disk until you run a command (HuntR saves after every command, which then overwrites it). Therefore, always back up the file (for example with `backup`) before editing it.<br>
 Furthermore, certain edits can cause HuntR to behave in unexpected ways (e.g., if a value entered is outside of the acceptable range). Therefore, edit the data file only if you are confident that you can update it correctly.
 </box>
 
@@ -251,10 +302,13 @@ Furthermore, certain edits can cause HuntR to behave in unexpected ways (e.g., i
 Action     | Format, Examples
 -----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 **Add**    | `add id/EMPLOYEE_ID n/NAME p/PHONE e/EMAIL d/DEPARTMENT r/ROLE`<br>e.g., `add id/E0123 n/John Tan p/91234567 e/johntan@example.com d/Engineering r/Software Engineer`
+**Archive** | `archive id/EMPLOYEE_ID`<br>e.g., `archive id/E0123`
+**Backup** | `backup`
 **Clear**  | `clear`
 **Delete** | `delete id/EMPLOYEE_ID`<br> e.g., `delete id/EMP-0042`
 **Edit**   | `edit id/EMPLOYEE_ID [n/NAME] [p/PHONE] [e/EMAIL] [d/DEPARTMENT] [r/ROLE]`<br>e.g., `edit id/E0001 p/91234567 e/alex@example.com`
 **Find**   | `find KEYWORD [MORE_KEYWORDS]`<br> e.g., `find James Jake`
-**List**   | `list`
+**List**   | `list` or `list archived`
+**Unarchive** | `unarchive id/EMPLOYEE_ID`
 **Help**   | `help`
 **Exit**   | `exit`
