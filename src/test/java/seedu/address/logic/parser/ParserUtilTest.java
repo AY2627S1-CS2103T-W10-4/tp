@@ -1,9 +1,13 @@
 package seedu.address.logic.parser;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static seedu.address.logic.parser.ParserUtil.MESSAGE_FILE_PATH_NOT_CSV;
+import static seedu.address.logic.parser.ParserUtil.MESSAGE_FILE_PATH_OUTSIDE_APP_FOLDER;
 import static seedu.address.logic.parser.ParserUtil.MESSAGE_INVALID_INDEX;
 import static seedu.address.testutil.Assert.assertThrows;
 import static seedu.address.testutil.TypicalIndexes.INDEX_FIRST_EMPLOYEE;
+
+import java.nio.file.Paths;
 
 import org.junit.jupiter.api.Test;
 
@@ -278,5 +282,37 @@ public class ParserUtilTest {
         assertThrows(ParseException.class, Role.MESSAGE_BLANK, () -> ParserUtil.parseRole(" "));
         assertThrows(ParseException.class, Role.MESSAGE_TOO_LONG, () -> ParserUtil.parseRole("R".repeat(101)));
         assertThrows(ParseException.class, Role.MESSAGE_CONSTRAINTS, () -> ParserUtil.parseRole("###"));
+    }
+
+    @Test
+    public void parseCsvFilePath_relativeCsvPath_returnsPath() throws Exception {
+        assertEquals(Paths.get("staff.csv"), ParserUtil.parseCsvFilePath("staff.csv"));
+        assertEquals(Paths.get("exports", "staff.csv"), ParserUtil.parseCsvFilePath(
+                WHITESPACE + "exports/staff.csv" + WHITESPACE));
+        assertEquals(Paths.get("my exports", "STAFF.CSV"), ParserUtil.parseCsvFilePath("my exports/STAFF.CSV"));
+    }
+
+    @Test
+    public void parseCsvFilePath_dotSegmentsInsideAppFolder_returnsNormalisedPath() throws Exception {
+        assertEquals(Paths.get("staff.csv"), ParserUtil.parseCsvFilePath("./exports/../staff.csv"));
+    }
+
+    @Test
+    public void parseCsvFilePath_outsideAppFolder_throwsParseException() {
+        String absolutePath = Paths.get("staff.csv").toAbsolutePath().toString();
+        assertThrows(ParseException.class, MESSAGE_FILE_PATH_OUTSIDE_APP_FOLDER, () ->
+                ParserUtil.parseCsvFilePath(absolutePath));
+        assertThrows(ParseException.class, MESSAGE_FILE_PATH_OUTSIDE_APP_FOLDER, () ->
+                ParserUtil.parseCsvFilePath("../staff.csv"));
+        assertThrows(ParseException.class, MESSAGE_FILE_PATH_OUTSIDE_APP_FOLDER, () ->
+                ParserUtil.parseCsvFilePath("exports/../../staff.csv"));
+    }
+
+    @Test
+    public void parseCsvFilePath_notCsvFile_throwsParseException() {
+        assertThrows(ParseException.class, MESSAGE_FILE_PATH_NOT_CSV, () -> ParserUtil.parseCsvFilePath("staff.txt"));
+        assertThrows(ParseException.class, MESSAGE_FILE_PATH_NOT_CSV, () -> ParserUtil.parseCsvFilePath("staff"));
+        assertThrows(ParseException.class, MESSAGE_FILE_PATH_NOT_CSV, () -> ParserUtil.parseCsvFilePath(".csv"));
+        assertThrows(ParseException.class, MESSAGE_FILE_PATH_NOT_CSV, () -> ParserUtil.parseCsvFilePath("exports/"));
     }
 }

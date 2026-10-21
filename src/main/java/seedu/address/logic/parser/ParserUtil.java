@@ -2,6 +2,11 @@ package seedu.address.logic.parser;
 
 import static java.util.Objects.requireNonNull;
 
+import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Locale;
+
 import seedu.address.commons.core.index.Index;
 import seedu.address.commons.util.StringUtil;
 import seedu.address.logic.parser.exceptions.ParseException;
@@ -23,6 +28,12 @@ public class ParserUtil {
     public static final String MESSAGE_BLANK_EMPLOYEE_ID = "Employee ID should not be blank.";
     public static final String MESSAGE_EMPLOYEE_ID_TOO_LONG = "Employee ID should be at most "
             + EMPLOYEE_ID_MAX_LENGTH + " characters long.";
+    public static final String CSV_FILE_EXTENSION = ".csv";
+    public static final String MESSAGE_FILE_PATH_NOT_CSV = "File path should end in " + CSV_FILE_EXTENSION
+            + ", for example exports/staff.csv.";
+    public static final String MESSAGE_FILE_PATH_OUTSIDE_APP_FOLDER = "File path should be relative to the "
+            + "folder HuntR runs from and stay inside it, for example exports/staff.csv.";
+    public static final String MESSAGE_INVALID_FILE_PATH = "File path contains characters that are not allowed.";
 
     /**
      * Parses {@code oneBasedIndex} into an {@code Index} and returns it. Leading and trailing whitespaces will be
@@ -149,6 +160,36 @@ public class ParserUtil {
             throw new ParseException(Email.MESSAGE_CONSTRAINTS);
         }
         return new Email(trimmedEmail);
+    }
+
+    /**
+     * Parses {@code filePath} into a {@code Path} to a CSV file inside the folder HuntR runs from.
+     * Leading and trailing whitespaces will be trimmed.
+     *
+     * @throws ParseException if the path is not valid, is absolute, leads outside the HuntR folder,
+     *     or does not end in {@value #CSV_FILE_EXTENSION}.
+     */
+    public static Path parseCsvFilePath(String filePath) throws ParseException {
+        requireNonNull(filePath);
+        String trimmedFilePath = filePath.trim();
+        Path path;
+        try {
+            path = Paths.get(trimmedFilePath).normalize();
+        } catch (InvalidPathException ipe) {
+            throw new ParseException(MESSAGE_INVALID_FILE_PATH, ipe);
+        }
+        // getRoot() also catches Windows paths such as \staff.csv, which have a root but are not absolute
+        boolean isOutsideAppFolder = path.isAbsolute() || path.getRoot() != null || path.startsWith("..");
+        if (isOutsideAppFolder) {
+            throw new ParseException(MESSAGE_FILE_PATH_OUTSIDE_APP_FOLDER);
+        }
+        String fileName = path.getFileName().toString();
+        boolean isCsvFile = fileName.length() > CSV_FILE_EXTENSION.length()
+                && fileName.toLowerCase(Locale.ROOT).endsWith(CSV_FILE_EXTENSION);
+        if (!isCsvFile) {
+            throw new ParseException(MESSAGE_FILE_PATH_NOT_CSV);
+        }
+        return path;
     }
 
 }

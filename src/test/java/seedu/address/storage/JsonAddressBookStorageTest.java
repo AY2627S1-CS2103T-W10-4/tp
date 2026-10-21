@@ -2,6 +2,7 @@ package seedu.address.storage;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.testutil.Assert.assertThrows;
 import static seedu.address.testutil.TypicalEmployees.ALICE;
 import static seedu.address.testutil.TypicalEmployees.HOON;
@@ -9,6 +10,7 @@ import static seedu.address.testutil.TypicalEmployees.IDA;
 import static seedu.address.testutil.TypicalEmployees.getTypicalAddressBook;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -61,6 +63,42 @@ public class JsonAddressBookStorageTest {
     }
 
     @Test
+    public void readAddressBook_missingEmployeesField_throwsDataLoadingException() throws IOException {
+        Path filePath = testFolder.resolve("MissingEmployeesAddressBook.json");
+        Files.writeString(filePath, "{}");
+
+        JsonAddressBookStorage storage = new JsonAddressBookStorage(filePath);
+        assertThrows(DataLoadingException.class, storage::readAddressBook);
+    }
+
+    @Test
+    public void readAddressBook_nullEmployeesField_throwsDataLoadingException() throws IOException {
+        Path filePath = testFolder.resolve("NullEmployeesAddressBook.json");
+        Files.writeString(filePath, "{\"employees\":null}");
+
+        JsonAddressBookStorage storage = new JsonAddressBookStorage(filePath);
+        assertThrows(DataLoadingException.class, storage::readAddressBook);
+    }
+
+    @Test
+    public void readAddressBook_nullEmployeesWithHasEmployeesTrue_throwsDataLoadingException() throws IOException {
+        Path filePath = testFolder.resolve("NullEmployeesWithHasEmployeesAddressBook.json");
+        Files.writeString(filePath, "{\"employees\":null,\"hasEmployees\":true}");
+
+        JsonAddressBookStorage storage = new JsonAddressBookStorage(filePath);
+        assertThrows(DataLoadingException.class, storage::readAddressBook);
+    }
+
+    @Test
+    public void readAddressBook_emptyEmployeesArray_loadsEmptyAddressBook() throws Exception {
+        Path filePath = testFolder.resolve("EmptyEmployeesAddressBook.json");
+        Files.writeString(filePath, "{\"employees\":[]}");
+
+        JsonAddressBookStorage storage = new JsonAddressBookStorage(filePath);
+        assertTrue(storage.readAddressBook().orElseThrow().getEmployeeList().isEmpty());
+    }
+
+    @Test
     public void readAndSaveAddressBook_allInOrder_success() throws Exception {
         Path filePath = testFolder.resolve("TempAddressBook.json");
         AddressBook original = getTypicalAddressBook();
@@ -84,6 +122,28 @@ public class JsonAddressBookStorageTest {
         readBack = jsonAddressBookStorage.readAddressBook().get(); // file path not specified
         assertEquals(original, new AddressBook(readBack));
 
+    }
+
+    @Test
+    public void readAndSaveAddressBook_withArchivedEmployee_preservesStatus() throws Exception {
+        Path filePath = testFolder.resolve("ArchivedAddressBook.json");
+        AddressBook original = new AddressBook();
+        original.addEmployee(ALICE.withArchived(true));
+        JsonAddressBookStorage storage = new JsonAddressBookStorage(filePath);
+        storage.saveAddressBook(original);
+        assertEquals(original, new AddressBook(storage.readAddressBook().orElseThrow()));
+    }
+
+    @Test
+    public void readAddressBook_legacyEmployeeWithoutArchivedStatus_loadsAsActive() throws Exception {
+        Path filePath = testFolder.resolve("LegacyAddressBook.json");
+        Files.writeString(filePath, """
+                {"employees":[{"id":"E0001","name":"Alice Pauline",
+                "phone":"94351253","email":"alice@example.com","department":"Engineering",
+                "role":"Software Engineer"}]}
+                """);
+        JsonAddressBookStorage storage = new JsonAddressBookStorage(filePath);
+        assertFalse(storage.readAddressBook().orElseThrow().getEmployeeList().getFirst().isArchived());
     }
 
     @Test

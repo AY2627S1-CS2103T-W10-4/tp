@@ -126,7 +126,17 @@ public class AddCommandTest {
         }
 
         @Override
+        public boolean hasArchivedEmployee(Employee employee) {
+            throw new AssertionError("This method should not be called.");
+        }
+
+        @Override
         public void deleteEmployee(Employee target) {
+            throw new AssertionError("This method should not be called.");
+        }
+
+        @Override
+        public void clearEmployees() {
             throw new AssertionError("This method should not be called.");
         }
 
@@ -136,7 +146,22 @@ public class AddCommandTest {
         }
 
         @Override
+        public void archiveEmployee(Employee employee) {
+            throw new AssertionError("This method should not be called.");
+        }
+
+        @Override
+        public void unarchiveEmployee(Employee employee) {
+            throw new AssertionError("This method should not be called.");
+        }
+
+        @Override
         public ObservableList<Employee> getFilteredEmployeeList() {
+            throw new AssertionError("This method should not be called.");
+        }
+
+        @Override
+        public int getArchivedEmployeeCount() {
             throw new AssertionError("This method should not be called.");
         }
 
@@ -152,6 +177,11 @@ public class AddCommandTest {
 
         @Override
         public void resetEmployeeSortOrder() {
+            throw new AssertionError("This method should not be called.");
+        }
+
+        @Override
+        public void showArchivedEmployees() {
             throw new AssertionError("This method should not be called.");
         }
     }
@@ -171,6 +201,12 @@ public class AddCommandTest {
         public boolean hasEmployee(Employee employee) {
             requireNonNull(employee);
             return this.employee.isSameEmployee(employee);
+        }
+
+        @Override
+        public boolean hasArchivedEmployee(Employee employee) {
+            requireNonNull(employee);
+            return this.employee.isArchived() && this.employee.isSameEmployee(employee);
         }
     }
 
