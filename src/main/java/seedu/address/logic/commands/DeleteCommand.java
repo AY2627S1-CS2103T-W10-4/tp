@@ -43,6 +43,11 @@ public class DeleteCommand extends Command {
     }
 
     @Override
+    public boolean isDataChanging() {
+        return true;
+    }
+
+    @Override
     public CommandResult execute(Model model) throws CommandException {
         requireNonNull(model);
         Employee employeeToDelete = model.getAddressBook().getEmployeeList().stream()
@@ -50,6 +55,7 @@ public class DeleteCommand extends Command {
                 .findFirst()
                 .orElseThrow(() -> new CommandException(String.format(Messages.MESSAGE_EMPLOYEE_NOT_FOUND, targetId)));
         model.deleteEmployee(employeeToDelete);
+        model.commitAddressBook();
         return new CommandResult(String.format(MESSAGE_DELETE_EMPLOYEE_SUCCESS, Messages.format(employeeToDelete)));
     }
 
