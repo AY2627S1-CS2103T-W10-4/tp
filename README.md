@@ -67,8 +67,8 @@ History lasts for the current session only.
 
 HuntR saves the current employee state after every successfully executed command and reloads it at the next launch.
 If a data-changing command or its save fails, employee data, history and the view are restored in memory.
-History is not saved. Failed writes are not guaranteed to leave the disk file unchanged; see the
-[User Guide](docs/UserGuide.md#saving-the-data) for save errors and the current storage guarantee.
+Employee files are replaced atomically: handled save failures preserve the last stored file. History is not saved.
+See the [User Guide](docs/UserGuide.md#saving-the-data) for save errors and supported local-file protections.
 
 ### Exit
 

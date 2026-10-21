@@ -129,6 +129,83 @@ The `Storage` component,
 * is implemented by `StorageManager`, which delegates the actual JSON file access to `JsonAddressBookStorage` and `JsonUserPrefsStorage` (one class per data file).
 * depends on some classes in the `Model` component (because the `Storage` component's job is to save/retrieve objects that belong to the `Model`)
 
+#### Atomic employee-file saving
+
+`JsonAddressBookStorage` retains its public API. It converts the complete model to `JsonSerializableAddressBook`,
+serializes using `JsonUtil.toJsonString()` and encodes UTF-8 **before** invoking the storage-local
+`AtomicFileWriter.write(Path, byte[])`. The generic JSON/file utilities, preferences and CSV writers are unchanged.
+JSON backups already use this storage class and therefore share its atomic writer.
+
+The writer resolves the destination and inspects its supported access attributes, creates missing parent
+directories, then creates a uniquely named sibling `.huntr-*.tmp` file. It establishes and verifies restricted
+temporary access before writing any employee bytes, handles short writes until the entire buffer is consumed,
+forces the file and closes it. It then prepares and verifies final access protections and uses
+`Files.move` with `ATOMIC_MOVE` and `REPLACE_EXISTING`. It never pre-creates, truncates or deletes the destination,
+and never falls back to an ordinary overwrite or delete-then-move.
+
+**Successful replacement is the commit point.** No fallible cleanup, attribute update or logging follows it.
+A handled pre-replacement failure preserves the existing destination bytes, or leaves a previously absent
+destination absent. Temporary-file cleanup is attempted on failure; cleanup exceptions are suppressed on the
+original failure. Created parent directories may remain. This is a handled-save-failure guarantee, not a
+crash-recovery journal or a promise of directory-entry durability after power loss.
+
+The supported environment is a single-user application on local filesystems with atomic-replacement and required
+attribute capabilities. The access-protection contract is deliberately limited:
+
+| Concern | Policy |
+| --- | --- |
+| POSIX temporary/new file | Create with owner read/write only (`0600`) and verify before writing bytes. Retain the naturally assigned owner/group for a new destination. |
+| Existing POSIX file | Preserve the nine POSIX permission bits. Its owner and group must match the sibling temporary file's naturally assigned owner/group; otherwise fail. |
+| Windows temporary/new file | Before writing bytes, set and verify an owner-only access ACL granting full file access to the temporary file's creator-assigned owner principal. Retain this ACL and a clear DOS read-only flag for a new destination. |
+| Existing Windows file | Require matching ownership. Copy the same-provider access ACL's ordered entries as an opaque list and verify the copied list and owner before replacement. Do not translate principals or reconstruct inheritance. |
+| Read-only file | Reject an existing file that is not writable. Also require POSIX owner-write permission or, on Windows, an explicitly clear DOS read-only flag. Never clear destination protection. |
+| Unsupported protection | Fail before replacement if required views, compatible ownership, restricted temporary access, permission preservation or ACL round-tripping cannot be established. Actual access-denied exceptions retain their classification. |
+
+Java exposes [POSIX permissions](https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/nio/file/attribute/PosixFileAttributeView.html),
+[access ACLs](https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/nio/file/attribute/AclFileAttributeView.html)
+and [DOS flags](https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/nio/file/attribute/DosFileAttributeView.html)
+through separate views. Windows support covers same-owner, same-provider access-ACL copying only, not arbitrary
+security descriptors, audit ACLs or metadata unavailable through the Java view. POSIX special mode bits, extended
+ACLs and arbitrary extended attributes are outside the preservation contract. There is no ownership/group migration,
+principal remapping or cross-filesystem ACL migration, and no promise to preserve unrelated timestamps or metadata.
+
+Path resolution is internal: configured paths exposed by storage remain unchanged. Bare filenames resolve against
+the working directory. Symbolic-link parents are resolved before choosing the temporary directory. A valid leaf
+link remains in place while its real target is replaced. A dangling leaf link is distinguished from an absent file
+and rejected; directory destinations are also rejected. Temporary files always share the resolved destination's
+parent/filesystem. Loading reads only the configured file, never orphan temporary files; startup scavenging,
+concurrent writers and live external editing are outside scope.
+
+`AtomicMoveNotSupportedException` becomes an `IOException` with message
+`Atomic replacement is not supported for this data file.` and the original exception as its cause. A protection
+capability failure uses `Cannot preserve the required file access protections.`. `AccessDeniedException` remains
+an `AccessDeniedException`. Java makes existing-target replacement implementation-dependent even with
+[`ATOMIC_MOVE`](https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/nio/file/Files.html#move(java.nio.file.Path,java.nio.file.Path,java.nio.file.CopyOption...));
+real existing-file replacement tests must pass on each supported platform. A provider that cannot replace safely
+must fail; destructive fallback is not supported.
+
+`LogicManager` continues saving after every successfully executed command. Its generic presentation is
+`Could not save data due to the following error: <exception-message>`. Its permission presentation is
+`Could not save data to file <exception-message> due to insufficient permissions to write to the file or the folder.`
+The latter substitutes `AccessDeniedException.getMessage()`, including any paths and additional diagnostic text.
+`BackupCommand` translates every `IOException` into
+`Could not save the backup to <backup-path>. Check that you are allowed to write to that folder.`.
+If backup creation succeeds but the automatic save fails, the backup remains and the automatic-save error is the
+final result, rather than the backup success message. For data-changing commands, including undo and redo,
+`LogicManager` restores the checkpoint on save failure, preserving employee records, the complete history and the
+effective view as well as the stored file. Read-only command view changes and completed backup/export files remain.
+
+The pretty-printed UTF-8 schema remains an `employees` array containing `id`, `name`, `phone`, `email`, `department`,
+`role` and `archived`. Employee order, raw values and archive status are preserved. Missing `archived` loads as active;
+empty arrays are valid; invalid employee data and missing/null arrays are rejected; unknown properties are ignored.
+No history, transaction or schema-version fields are added.
+
+The package-private `AtomicFileWriter.FileOperations` seam delegates to ordinary JDK operations. It exposes only
+temporary creation, attribute views/writability, a write/force/close handle, atomic replacement and cleanup.
+Writer tests inject faults there; storage tests verify serialization ordering and payloads; focused logic/backup
+tests verify presentation. Package-private parser/storage factory hooks isolate backup test paths without changing
+public constructors or command behavior. See the repository's `tests/test-plan.md` for coverage and release gates.
+
 ### Common classes
 
 Classes used by multiple components are in the `seedu.address.commons` package.
@@ -267,7 +344,7 @@ condition and corrupt archived-only views. A zero-match search retains its predi
 employee restored by undo. Historical searches are not part of snapshots. Selection, scroll position and
 suppression of intermediate list notifications are outside scope.
 
-#### Persistence and branch integration
+#### Persistence and atomic saving
 
 All successfully executed commands still save, including read-only commands and no-ops. Read-only save failures
 retain existing behavior and are not checkpointed. Export/backup side effects are outside the transaction.
@@ -276,13 +353,15 @@ checkpoint, command or predicate fields. Missing `archived` fields in older vali
 validation, case-insensitive ID uniqueness, invalid-file handling, paths and preferences are unchanged. CSV export
 retains seven columns; import also accepts legacy six-column CSV and rejects header-only files.
 
-This implementation starts at recorded local `master` commit `1d8b4b5eaeae6b1a102f92dd81a7befb18221ecb`.
-`codex/104-safe-data-saving` must start at the same commit. This branch does not incorporate it or modify disk-write
-behavior. In-memory rollback does not guarantee unchanged disk contents on an unsuccessful write with the existing
-API. The safe-saving branch owns atomic replacement and must ensure no fallible post-replacement work reports a
-failure after disk replacement succeeds. After integration, this branch's owner updates the combined user-facing
-explanation and repeats the acceptance run. Restart loads the last successfully saved state as a new initial
-snapshot. External JSON editing while closed remains supported; live reload and concurrent writers are out of scope.
+Employee history and atomic saving share the recorded baseline `1d8b4b5eaeae6b1a102f92dd81a7befb18221ecb`.
+The combined boundary is the writer's successful atomic replacement. Employee changes and history commits are
+tentative until then; a handled failure before replacement preserves file bytes and restores the checkpoint for
+data-changing commands. No fallible work follows replacement, so a completed disk commit cannot be reported as a
+failed save with memory rolled back. A failed no-op also restores its previous view and redo states. A failed new
+change after undo restores the original redo sequence.
+
+Restart loads the last successfully saved state as one initial snapshot with no available undo or redo.
+External JSON editing while closed remains supported; live reload and concurrent writers are out of scope.
 
 #### Validation and performance
 
@@ -296,8 +375,7 @@ Start each of three measured sessions from the same 1,000-employee fixture. Perf
 exactly 1,000 employees, then time all 100 undos and all 100 redos: 600 measured history operations in total. Measure
 from command dispatch through saving to the first rendered UI frame showing the completed result and list update.
 Every operation must complete within two seconds. Record the maximum and environment; keep thresholds out of CI
-unit tests. Run the standalone UI acceptance harness described in `tests/test-plan.md` and repeat after integrating
-atomic saving.
+unit tests. Run the standalone UI acceptance harness described in `tests/test-plan.md` with atomic saving enabled.
 
 ### \[Proposed\] Data archiving
 

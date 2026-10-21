@@ -310,33 +310,76 @@ The command takes no parameters, and extra text such as `exit now` is rejected.
 
 ### Saving the data
 
-HuntR automatically saves the current employee state after every successfully executed command, including
-read-only commands and commands that change nothing. You do not need to save manually. History and view filters
+HuntR automatically saves employee data after every successfully executed command, including commands such as
+`list` and `help`, and commands that change nothing. You do not need to save manually. History and view filters
 are never written to JSON.
 
+HuntR writes the complete JSON to a protected temporary file beside the data file, then replaces the data file
+atomically. If a handled failure occurs before replacement, the last stored file keeps its original bytes. If no
+data file existed, it remains absent. Newly created folders may remain. Successful replacement completes the save.
+
 If a data-changing command (including undo or redo) fails during execution or automatic saving, HuntR restores
-its previous in-memory employee data, complete history and current view. A failed save is not reported as a
-successful command. The automatic-save messages retain the underlying exception's message:
+its previous in-memory employee data, complete history and current view. A failed change after undo preserves
+the original redo sequence. A failed no-op also restores the previous view and preserves redo.
+
+Use HuntR as a single-user application on a local filesystem that supports atomic replacement and the required
+access protections. New files are private to their creator: owner read/write (`0600`) on POSIX systems, or an
+owner-only access ACL granting full file access on Windows. Existing files retain their nine POSIX permission bits
+or supported Windows access ACL, provided their owner (and POSIX group) matches the newly created file's owner/group.
+Read-only files are rejected; HuntR does not clear protection or change ownership to allow a save. Other filesystem
+metadata is not promised to be preserved. See the [Developer Guide](DeveloperGuide.md#storage-component) for the
+precise supported policy.
+
+Configured paths stay unchanged. Valid symbolic links are retained and their real targets are saved; dangling
+links and directory destinations are rejected. Do not run concurrent writers or edit the file while HuntR is open.
+
+An automatic-save failure is displayed instead of the command's success result:
 
 ```text
 Could not save data due to the following error: <exception-message>
 ```
 
+For unsupported atomic replacement, the exact message is:
+
+```text
+Could not save data due to the following error: Atomic replacement is not supported for this data file.
+```
+
+If the required access protections cannot be established or preserved, it is:
+
+```text
+Could not save data due to the following error: Cannot preserve the required file access protections.
+```
+
+Access-denied failures use:
+
 ```text
 Could not save data to file <exception-message> due to insufficient permissions to write to the file or the folder.
 ```
 
-The permission message can contain more than the destination path. These normal errors retain the command text
-and existing error styling. Unexpected runtime failures also restore in-memory state, but the existing UI does
-not provide ordinary command-box handling for those exceptions.
+Here, `<exception-message>` is the filesystem exception's message. It may include paths and additional diagnostic
+text, rather than just the configured destination path. These normal errors retain the command text and existing
+error styling. Unexpected runtime failures also restore in-memory state for data-changing commands, but the
+existing UI does not provide ordinary command-box handling for those exceptions.
 
 Read-only commands retain their existing behavior on automatic-save failure: for example, a changed view stays
-changed. Export/backup files already created remain on disk. This version restores memory on these failures;
-it does not guarantee that a failed write leaves the disk file unchanged.
+changed. Export/backup files already created remain on disk.
+
+JSON backups use the same safer writer and keep their existing location and naming. A backup write failure,
+including unsupported atomic movement or protection, keeps its backup-specific message:
+
+```text
+Could not save the backup to <backup-path>. Check that you are allowed to write to that folder.
+```
+
+Successful backups still report `Backed up <count> employee(s) to <backup-path>`. If the backup is created but the
+following automatic save fails, the backup remains and the final result is the automatic-save error above.
+CSV exports and preference saving are unchanged.
 
 ### Editing the data file
 
-HuntR data is saved automatically as a JSON file `[JAR file location]/data/addressbook.json`. Advanced users may edit that file while HuntR is closed. There is no live reload or concurrent-writer handling.
+HuntR data is saved automatically as a JSON file `[JAR file location]/data/addressbook.json`. Advanced users may
+update that file in a text editor while HuntR is closed.
 
 Each employee in the `employees` array has an `archived` status. Employee IDs remain unique regardless of status.
 Older valid files without the `archived` field continue to load, with those employees treated as active.
