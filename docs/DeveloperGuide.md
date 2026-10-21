@@ -151,6 +151,82 @@ The `Storage` component,
 * is implemented by `StorageManager`, which delegates the actual JSON file access to `JsonAddressBookStorage` and `JsonUserPrefsStorage` (one class per data file).
 * depends on some classes in the `Model` component (because the `Storage` component's job is to save/retrieve objects that belong to the `Model`)
 
+#### Atomic employee-file saving
+
+`JsonAddressBookStorage` retains its public API. It converts the complete model to `JsonSerializableAddressBook`,
+serializes using `JsonUtil.toJsonString()` and encodes UTF-8 **before** invoking the storage-local
+`AtomicFileWriter.write(Path, byte[])`. The generic JSON/file utilities, preferences and CSV writers are unchanged.
+JSON backups already use this storage class and therefore share its atomic writer.
+
+The writer resolves the destination and inspects its supported access attributes, creates missing parent
+directories, then creates a uniquely named sibling `.huntr-*.tmp` file. It establishes and verifies restricted
+temporary access before writing any employee bytes, handles short writes until the entire buffer is consumed,
+forces the file and closes it. It then prepares and verifies final access protections and uses
+`Files.move` with `ATOMIC_MOVE` and `REPLACE_EXISTING`. It never pre-creates, truncates or deletes the destination,
+and never falls back to an ordinary overwrite or delete-then-move.
+
+**Successful replacement is the commit point.** No fallible cleanup, attribute update or logging follows it.
+A handled pre-replacement failure preserves the existing destination bytes, or leaves a previously absent
+destination absent. Temporary-file cleanup is attempted on failure; cleanup exceptions are suppressed on the
+original failure. Created parent directories may remain. This is a handled-save-failure guarantee, not a
+crash-recovery journal or a promise of directory-entry durability after power loss.
+
+The supported environment is a single-user application on local filesystems with atomic-replacement and required
+attribute capabilities. The access-protection contract is deliberately limited:
+
+| Concern | Policy |
+| --- | --- |
+| POSIX temporary/new file | Create with owner read/write only (`0600`) and verify before writing bytes. Retain the naturally assigned owner/group for a new destination. |
+| Existing POSIX file | Preserve the nine POSIX permission bits. Its owner and group must match the sibling temporary file's naturally assigned owner/group; otherwise fail. |
+| Windows temporary/new file | Before writing bytes, set and verify an owner-only access ACL granting full file access to the temporary file's creator-assigned owner principal. Retain this ACL and a clear DOS read-only flag for a new destination. |
+| Existing Windows file | Require matching ownership. Copy the same-provider access ACL's ordered entries as an opaque list and verify the copied list and owner before replacement. Do not translate principals or reconstruct inheritance. |
+| Read-only file | Reject an existing file that is not writable. Also require POSIX owner-write permission or, on Windows, an explicitly clear DOS read-only flag. Never clear destination protection. |
+| Unsupported protection | Fail before replacement if required views, compatible ownership, restricted temporary access, permission preservation or ACL round-tripping cannot be established. Actual access-denied exceptions retain their classification. |
+
+Java exposes [POSIX permissions](https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/nio/file/attribute/PosixFileAttributeView.html),
+[access ACLs](https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/nio/file/attribute/AclFileAttributeView.html)
+and [DOS flags](https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/nio/file/attribute/DosFileAttributeView.html)
+through separate views. Windows support covers same-owner, same-provider access-ACL copying only, not arbitrary
+security descriptors, audit ACLs or metadata unavailable through the Java view. POSIX special mode bits, extended
+ACLs and arbitrary extended attributes are outside the preservation contract. There is no ownership/group migration,
+principal remapping or cross-filesystem ACL migration, and no promise to preserve unrelated timestamps or metadata.
+
+Path resolution is internal: configured paths exposed by storage remain unchanged. Bare filenames resolve against
+the working directory. Symbolic-link parents are resolved before choosing the temporary directory. A valid leaf
+link remains in place while its real target is replaced. A dangling leaf link is distinguished from an absent file
+and rejected; directory destinations are also rejected. Temporary files always share the resolved destination's
+parent/filesystem. Loading reads only the configured file, never orphan temporary files; startup scavenging,
+concurrent writers and live external editing are outside scope.
+
+`AtomicMoveNotSupportedException` becomes an `IOException` with message
+`Atomic replacement is not supported for this data file.` and the original exception as its cause. A protection
+capability failure uses `Cannot preserve the required file access protections.`. `AccessDeniedException` remains
+an `AccessDeniedException`. Java makes existing-target replacement implementation-dependent even with
+[`ATOMIC_MOVE`](https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/nio/file/Files.html#move(java.nio.file.Path,java.nio.file.Path,java.nio.file.CopyOption...));
+real existing-file replacement tests must pass on each supported platform. A provider that cannot replace safely
+must fail; destructive fallback is not supported.
+
+`LogicManager` continues saving after every successfully executed command. Its generic presentation is
+`Could not save data due to the following error: <exception-message>`. Its permission presentation is
+`Could not save data to file <exception-message> due to insufficient permissions to write to the file or the folder.`
+The latter substitutes `AccessDeniedException.getMessage()`, including any paths and additional diagnostic text.
+`BackupCommand` translates every `IOException` into
+`Could not save the backup to <backup-path>. Check that you are allowed to write to that folder.`.
+If backup creation succeeds but the automatic save fails, the backup remains and the automatic-save error is the
+final result, rather than the backup success message. This standalone branch does not roll back memory and has no
+employee history, undo or redo. Failed-save mutations remain in memory and may be persisted by a later save.
+
+The pretty-printed UTF-8 schema remains an `employees` array containing `id`, `name`, `phone`, `email`, `department`,
+`role` and `archived`. Employee order, raw values and archive status are preserved. Missing `archived` loads as active;
+empty arrays are valid; invalid employee data and missing/null arrays are rejected; unknown properties are ignored.
+No history, transaction or schema-version fields are added.
+
+The package-private `AtomicFileWriter.FileOperations` seam delegates to ordinary JDK operations. It exposes only
+temporary creation, attribute views/writability, a write/force/close handle, atomic replacement and cleanup.
+Writer tests inject faults there; storage tests verify serialization ordering and payloads; focused logic/backup
+tests verify presentation. Package-private parser/storage factory hooks isolate backup test paths without changing
+public constructors or command behavior. See the repository's `tests/test-plan.md` for coverage and release gates.
+
 ### Common classes
 
 Classes used by multiple components are in the `seedu.address.commons` package.
