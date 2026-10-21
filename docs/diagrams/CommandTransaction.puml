@@ -21,8 +21,7 @@ Model -> History : copy working list and history container
 History --> Model : data, immutable snapshot references, pointer
 Model --> Logic : checkpoint (including effective predicate)
 Logic -> Command : execute(model)
-Command -> Model : mutate then commitAddressBook()\nor undoAddressBook() / redoAddressBook()
-Model -> History : commit() / undo() / redo()
+Command -> Model : mutate working data\nor undoAddressBook() / redoAddressBook()
 break execution fails (CommandException / RuntimeException)
     Command --> Logic : exception
     Logic -> Model : restoreCheckpoint(checkpoint)
@@ -31,6 +30,19 @@ break execution fails (CommandException / RuntimeException)
     Logic --> UI : rethrow original exception
 end
 Command --> Logic : tentative result
+Logic -> Command : getHistoryAction()
+Command --> Logic : COMMIT / NAVIGATE
+opt history action is COMMIT
+    Logic -> Model : commitAddressBook()
+    Model -> History : commit()
+    break commit fails (RuntimeException)
+        Model --> Logic : exception
+        Logic -> Model : restoreCheckpoint(checkpoint)
+        Model -> History : restore working data, history, pointer
+        Model -> Model : restore effective predicate directly
+        Logic --> UI : rethrow original exception
+    end
+end
 Logic -> Storage : saveAddressBook(current data)
 alt save succeeds
     Storage --> Logic : return
@@ -45,5 +57,6 @@ end
 note over Logic, Storage
 Read-only commands skip checkpoint/rollback,
 but still save after successful execution.
+isDataChanging() derives from getHistoryAction().
 end note
 @enduml

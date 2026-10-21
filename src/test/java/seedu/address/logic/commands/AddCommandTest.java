@@ -42,7 +42,6 @@ public class AddCommandTest {
         assertEquals(String.format(AddCommand.MESSAGE_SUCCESS, Messages.format(validEmployee)),
                 commandResult.getFeedbackToUser());
         assertEquals(List.of(validEmployee), modelStub.employeesAdded);
-        assertEquals(1, modelStub.commits);
     }
 
     @Test
@@ -241,12 +240,6 @@ public class AddCommandTest {
      */
     private class ModelStubAcceptingEmployeeAdded extends ModelStub {
         final ArrayList<Employee> employeesAdded = new ArrayList<>();
-        private int commits;
-
-        @Override
-        public void commitAddressBook() {
-            commits++;
-        }
 
         @Override
         public boolean hasEmployee(Employee employee) {

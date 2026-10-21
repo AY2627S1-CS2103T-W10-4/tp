@@ -54,6 +54,9 @@ public class LogicManager implements Logic {
         ModelCheckpoint checkpoint = command.isDataChanging() ? model.createCheckpoint() : null;
         try {
             CommandResult commandResult = command.execute(model);
+            if (command.getHistoryAction() == Command.HistoryAction.COMMIT) {
+                model.commitAddressBook();
+            }
             try {
                 storage.saveAddressBook(model.getAddressBook());
             } catch (AccessDeniedException e) {

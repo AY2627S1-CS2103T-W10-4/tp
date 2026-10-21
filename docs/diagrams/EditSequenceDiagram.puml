@@ -91,9 +91,6 @@ activate Model
 Model --> EditCommand
 deactivate Model
 
-EditCommand -> Model : commitAddressBook()
-Model --> EditCommand
-
 create CommandResult
 EditCommand -> CommandResult : new CommandResult(\nsuccessMessage)
 activate CommandResult
@@ -103,9 +100,14 @@ deactivate CommandResult
 EditCommand --> LogicManager : r
 deactivate EditCommand
 
+LogicManager -> EditCommand : getHistoryAction()
+EditCommand --> LogicManager : COMMIT
+LogicManager -> Model : commitAddressBook()
+Model --> LogicManager
+
 note over LogicManager
 Save via Storage before returning success.
-On execution or save failure, restore the checkpoint.
+On execution, commit or save failure, restore the checkpoint.
 See CommandTransaction for the transaction boundary.
 end note
 

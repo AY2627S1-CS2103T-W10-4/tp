@@ -1,7 +1,8 @@
 # HuntR documentation
 
 - [User Guide](UserGuide.md): command syntax and exact errors, employee history, view preservation and save failures.
-- [Developer Guide](DeveloperGuide.md): immutable snapshots, checkpoints, transaction boundary and integration contract.
+- [Developer Guide](DeveloperGuide.md): immutable snapshots, command history actions, centralized commits,
+  checkpoints, transaction boundary and integration contract.
 - Repository `tests/test-plan.md`: behavioral coverage, Java 25 validation and rendered-UI performance acceptance.
 
 Build this site explicitly before opening a pull request:

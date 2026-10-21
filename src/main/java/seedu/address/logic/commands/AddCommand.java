@@ -57,8 +57,8 @@ public class AddCommand extends Command {
     }
 
     @Override
-    public boolean isDataChanging() {
-        return true;
+    public HistoryAction getHistoryAction() {
+        return HistoryAction.COMMIT;
     }
 
     @Override
@@ -79,7 +79,6 @@ public class AddCommand extends Command {
                 .collect(Collectors.joining(", "));
 
         model.addEmployee(toAdd);
-        model.commitAddressBook();
 
         String message = String.format(MESSAGE_SUCCESS, Messages.format(toAdd));
         if (!similarEmployeeIds.isEmpty()) {

@@ -211,8 +211,11 @@ current snapshot **before** removing redo states. Employee equality alone ignore
 A changed state discards the redo tail and appends one snapshot; an identical state leaves history untouched.
 
 The model exposes `commitAddressBook()`, `canUndoAddressBook()`, `canRedoAddressBook()`, `undoAddressBook()` and
-`redoAddressBook()`. Each of `add`, `edit`, `delete`, `clear`, `import`, `archive` and `unarchive` commits once after
-its mutations. Import commits only after all rows have been added. Low-level mutations do not commit.
+`redoAddressBook()`. Each of `add`, `edit`, `delete`, `clear`, `import`, `archive` and `unarchive` declares
+`HistoryAction.COMMIT` through `Command#getHistoryAction()`. `LogicManager` commits once after successful command
+execution, before saving. Commands do not call `commitAddressBook()` themselves. This single declaration supplies
+both undo history and checkpoint/rollback protection. Import commits only after all rows have been added and the
+command has returned. Low-level mutations do not commit.
 `setAddressBook()` replaces working data without committing, resetting history or changing the predicate.
 
 `UndoCommand` and `RedoCommand` check availability and move one step without committing. Snapshot data is restored
@@ -222,9 +225,11 @@ messages. They create no entry and retain redo. Read-only and failed commands al
 
 #### Checkpoints and transaction boundary
 
-`Command#isDataChanging()` means “this command may change employee data or navigate employee history.” Its default
-is false. The seven modifying commands and both history commands return true even for no-ops. `LogicManager` parses
-first, captures a `ModelCheckpoint` for those commands, executes, then saves through the existing storage API.
+`Command#getHistoryAction()` defaults to `NONE`; modifying commands return `COMMIT`, and undo/redo return `NAVIGATE`.
+`Command#isDataChanging()` is final and derives its result from that declaration. It means “this command may change
+employee data or navigate employee history.” The seven modifying commands and both history commands therefore
+return true even for no-ops. `LogicManager` parses first, captures a `ModelCheckpoint` for those commands, executes,
+commits only for `COMMIT`, then saves through the existing storage API. `NAVIGATE` never creates a snapshot.
 Only a successful storage return permits the result to be returned. No fallible work is added after that return.
 
 <puml src="diagrams/CommandTransaction.puml" alt="Employee command execution, saving and rollback" />

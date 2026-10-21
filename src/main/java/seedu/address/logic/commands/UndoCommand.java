@@ -14,8 +14,8 @@ public class UndoCommand extends Command {
     public static final String MESSAGE_FAILURE = "No more commands to undo.";
 
     @Override
-    public boolean isDataChanging() {
-        return true;
+    public HistoryAction getHistoryAction() {
+        return HistoryAction.NAVIGATE;
     }
 
     @Override

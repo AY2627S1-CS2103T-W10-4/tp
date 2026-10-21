@@ -123,6 +123,57 @@ public class HistoryTransactionTest {
     }
 
     @Test
+    public void execute_declaredModification_commitsWithoutCommandBookkeeping() throws Exception {
+        CommandResult result = new CommandResult("Modified employees");
+        logic = logicFor(new Command() {
+            @Override
+            public HistoryAction getHistoryAction() {
+                return HistoryAction.COMMIT;
+            }
+
+            @Override
+            public CommandResult execute(Model target) {
+                target.clearEmployees();
+                return result;
+            }
+        });
+
+        assertSame(result, logic.execute("injected command"));
+        assertEquals(1, storage.saves);
+        assertStoredEmployees(List.of(ARCHIVED), model.getAddressBook().getEmployeeList());
+        assertFalse(model.canRedoAddressBook());
+        model.undoAddressBook();
+        assertStoredEmployees(List.of(FIRST_EDIT, ARCHIVED), model.getAddressBook().getEmployeeList());
+        model.redoAddressBook();
+        assertStoredEmployees(List.of(ARCHIVED), model.getAddressBook().getEmployeeList());
+    }
+
+    @Test
+    public void execute_commitFailure_restoresWorkingDataViewAndDiscardedRedoTail() {
+        RuntimeException failure = new IllegalStateException("commit failed");
+        model = new ModelManager(initial(), new UserPrefs()) {
+            private int commits;
+
+            @Override
+            public void commitAddressBook() {
+                super.commitAddressBook();
+                if (++commits == 3) {
+                    throw failure;
+                }
+            }
+        };
+        seedHistory();
+        model.showArchivedEmployees();
+        Object predicate = filtered().getPredicate();
+        logic = createLogic(new AddressBookParser());
+
+        assertSame(failure, assertThrows(RuntimeException.class, () -> logic.execute("clear")));
+        assertEquals(0, storage.saves);
+        assertSame(predicate, filtered().getPredicate());
+        assertEntireHistoryRestored();
+    }
+
+    @Test
     public void execute_partialImportFailure_restoresWorkingDataViewAndRedoTail() {
         RuntimeException failure = new IllegalStateException("addition failed");
         model = new ModelManager(initial(), new UserPrefs()) {
@@ -152,8 +203,8 @@ public class HistoryTransactionTest {
         CommandException failure = new CommandException("execution failed after commit");
         logic = logicFor(new Command() {
             @Override
-            public boolean isDataChanging() {
-                return true;
+            public HistoryAction getHistoryAction() {
+                return HistoryAction.COMMIT;
             }
 
             @Override
