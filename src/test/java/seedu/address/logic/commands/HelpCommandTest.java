@@ -23,7 +23,10 @@ public class HelpCommandTest {
     @Test
     public void commandSummary_listsEveryCommand() {
         String[] commandWords = {AddCommand.COMMAND_WORD, ListCommand.COMMAND_WORD, FindCommand.COMMAND_WORD,
-            FilterCommand.COMMAND_WORD, EditCommand.COMMAND_WORD, DeleteCommand.COMMAND_WORD, ClearCommand.COMMAND_WORD,
+            FilterCommand.COMMAND_WORD, SortCommand.COMMAND_WORD, EditCommand.COMMAND_WORD,
+            DeleteCommand.COMMAND_WORD, ClearCommand.COMMAND_WORD, StatsCommand.COMMAND_WORD, CheckCommand.COMMAND_WORD,
+            ManagerCommand.COMMAND_WORD, UnassignManagerCommand.COMMAND_WORD, TeamCommand.COMMAND_WORD,
+            OrgCommand.COMMAND_WORD, ChainCommand.COMMAND_WORD,
             ArchiveCommand.COMMAND_WORD, UnarchiveCommand.COMMAND_WORD, ImportCommand.COMMAND_WORD,
             ExportCommand.COMMAND_WORD, BackupCommand.COMMAND_WORD,
             HelpCommand.COMMAND_WORD, ExitCommand.COMMAND_WORD, UndoCommand.COMMAND_WORD, RedoCommand.COMMAND_WORD};
