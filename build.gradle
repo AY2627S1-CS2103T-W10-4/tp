@@ -29,7 +29,9 @@ test {
     finalizedBy jacocoTestReport
 }
 
-run {
+// Assertions are off by default for the run task, so turn them on for ./gradlew run only.
+// The generated JAR and java -jar still run without assertions.
+tasks.named('run', JavaExec).configure {
     enableAssertions = true
 }
 
