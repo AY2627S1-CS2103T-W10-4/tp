@@ -33,11 +33,15 @@ HuntR is based on [AddressBook-Level3](https://github.com/se-edu/addressbook-lev
 
    * `list` : Lists all employees.
 
+   * `sort department` : Sorts the displayed employees by department, from A to Z.
+
    * `add id/E0123 n/John Tan p/91234567 e/johntan@example.com d/Engineering r/Software Engineer` : Adds an employee named `John Tan` to HuntR.
 
    * `edit id/E0123 p/92345678 r/Senior Software Engineer` : Updates the phone number and role of employee `E0123`.
 
    * `find Alex` : Finds employees whose names contain the word `Alex`.
+
+   * `filter d/Engineering r/Manager` : Shows only the employees in the Engineering department whose role contains `Manager`.
 
    * `delete id/E0123` : Deletes employee `E0123`, including when hidden by a search.
 
@@ -65,7 +69,7 @@ HuntR is based on [AddressBook-Level3](https://github.com/se-edu/addressbook-lev
   For example, if the command specifies `n/NAME p/PHONE`, `p/PHONE n/NAME` is also acceptable.
 
 * Extraneous parameters for `help` and `clear` are ignored.<br>
-  For example, `help 123` is interpreted as `help`. The `backup` and `exit` commands also take no parameters but reject extra text, so `backup now` and `exit now` show an error. Likewise, `list` accepts only `archived` after it, so `list 1` shows an error.
+  For example, `help 123` is interpreted as `help`. The `list` and `exit` commands also take no parameters but reject extra text, so `list 1` and `exit now` show an error.
 
 * If you are using a PDF version of this document, be careful when copying and pasting commands that span multiple lines as space characters surrounding line-breaks may be omitted when copied over to the application.
 </box>
@@ -106,13 +110,15 @@ Examples:
 ### Listing all employees: `list`
 
 Shows all employees stored in HuntR as a numbered list. Each entry includes the employee's name, employee ID,
-phone number, email, department, and role.
+phone number, email, department, and role. Employees are shown in the order in which they were added, so `list` also undoes any `sort`.
 
 Format: `list`
 
 The command takes no parameters. Leading and trailing spaces are ignored, but additional text is rejected.
 
 If there are no employee records, HuntR displays an empty employee list and explains how to add an employee.
+
+Use `list` to show every employee again after a `find` or `filter`.
 
 ### Editing an employee: `edit`
 
@@ -223,6 +229,40 @@ Examples:
 * `find alex david` returns `Alex Yeoh`, `David Li`<br>
   ![result for 'find alex david'](images/findAlexDavidResult.png)
 
+### Filtering employees: `filter`
+
+Shows only the employees who match the employee ID, name, department and role that you give.
+
+Format: `filter [id/EMPLOYEE_ID] [n/NAME] [d/DEPARTMENT] [r/ROLE]`
+
+* At least one of `id/`, `n/`, `d/` or `r/` must be given. If you give several, an employee must match **all** of them (an `AND` search), so the list is narrowed further.
+* Matching is case-insensitive and uses whole words, like `find`. For example, `d/engineering` matches `Engineering`, and `d/Resources` matches `Human Resources`, but `d/Engineer` does not match `Engineering`.
+* Spaces and punctuation separate words. For example, `d/R&D` matches the department `R&D, Asia`, and `r/Backend` or `r/(Backend)` matches the role `Software Engineer (Backend)`. The symbols `&` and `'` stay part of a word.
+* If a value has several words, every word must appear in that field, in any order. For example, `r/Software Engineer` matches `Software Engineer` but not `Software Manager`.
+* An employee ID must be the whole ID, such as `id/E0123`. The ID is not case-sensitive.
+* To match any of several values of the same field (an `OR` search), repeat the prefix. For example, `d/Sales d/Finance` matches employees in `Sales` or in `Finance`. Each repeated value is a separate search, so `r/Manager r/Analyst` is not the same as `r/Manager Analyst`, which needs both words.
+* Filtering only changes what is shown. Your saved data is not changed. Archived employees are not shown. Use [`list`](#listing-all-employees-list) to show all employees again.
+* A filter with no matches is valid and shows an empty list with the message `0 employees listed!`.
+* Leading and trailing spaces are ignored, and the parameters can be in any order.
+
+Examples:
+* `filter d/Engineering` shows everyone in the Engineering department.
+* `filter r/Manager` shows employees whose role contains the word `Manager`, such as `Engineering Manager`.
+* `filter d/Engineering r/Manager` shows only the Engineering employees whose role contains `Manager`.
+* `filter n/John d/Sales` shows only the employees named `John` who are in Sales. Other people in Sales, and Johns in other departments, are not shown.
+* `filter d/Sales d/Finance r/Manager` shows the managers who are in Sales or in Finance.
+* `filter id/E0123` shows only the employee with the ID `E0123`.
+
+The following input errors leave the displayed list unchanged. Each message is followed by the usage of the command.
+
+| Input | Error message |
+| --- | --- |
+| `filter` or `filter Engineering` | `Invalid command format!` |
+| `filter e/john@example.com` or `filter x/foo` | `Unknown parameter: e/` (or the parameter given) |
+| `filter d/` or `filter n/` | `The value of d/ should contain at least one letter or digit.` (or `n/`, `r/`) |
+| `filter d/@@@` | `The value of d/ should contain at least one letter or digit.` |
+| `filter id/E 1` | The employee ID constraints message |
+
 ### Archiving employees: `archive`
 
 Marks an employee as archived. Archived employees remain stored but are hidden from normal `list` and `find` results.
@@ -253,11 +293,11 @@ Shows only archived employees. Normal `list` continues to show only active emplo
 
 Format: `list archived`
 
-Archived employees retain their IDs, can be edited with `edit`, and can be permanently deleted with `delete`.
+Archived employees retain their IDs, can be edited with `edit`, and can be deleted with `delete` (and restored with `undo` during the same session).
 
 ### Deleting an employee: `delete`
 
-Permanently deletes one employee from the complete roster using their employee ID.
+Deletes one employee from the complete roster using their employee ID.
 
 Format: `delete id/EMPLOYEE_ID`
 
@@ -267,7 +307,7 @@ Format: `delete id/EMPLOYEE_ID`
 * The command searches all employee records, including archived employees and employees hidden by `find`.
 * The current search filter and the order of remaining employees are preserved.
 * Deleting a manager removes the manager assignment from their direct reports, including archived reports. The success message gives the number affected. Other reporting relationships are preserved.
-* Deletion is immediate, with no confirmation or undo. The final employee can be deleted, and a deleted ID can be reused.
+* Deletion is immediate, with no confirmation. Use `undo` to restore it during the same session. The final employee can be deleted, and a deleted ID can be reused.
 
 Examples, assuming the target employee exists:
 
@@ -297,6 +337,33 @@ Example: delete id/EMP-0042
 
 A valid ID that does not exist produces `No employee with ID EMP-0042 was found.` (using the entered ID), without the usage block. No records are changed. This also applies to deleting an employee twice or deleting from an empty roster.
 
+### Sorting employees: `sort`
+
+Sorts the displayed employees by one field, in ascending or descending order.
+
+Format: `sort FIELD [asc|desc]`
+
+* `FIELD` must be one of `id`, `name`, `department` or `role`. It is not case-sensitive, so `Department` also works.
+* The order is `asc` (A to Z) or `desc` (Z to A). It is not case-sensitive. If you leave it out, the order is ascending.
+* Letter case and accents are ignored, so `Émile` is sorted with the names that start with `E`. Otherwise text is compared character by character, so `E10` comes before `E2`.
+* Employees with the same value are always ordered by employee ID from A to Z, also when the order is `desc`.
+* Sorting only changes the order in which employees are shown. Your saved data is not changed.
+* The sorted order is kept when you use `find`, and when you add, edit or delete employees. An employee whose name, department or role is edited moves to the correct position.
+* Use [`list`](#listing-all-employees-list) to show the employees in the order in which they were added again.
+
+Examples:
+* `sort name` shows the employees in alphabetical order of their names.
+* `sort department desc` groups the employees by department, from `Sales` back to `Engineering`.
+* `sort role asc` sorts the employees by their role, from A to Z.
+
+The following input errors leave the displayed order unchanged. Each message is followed by the usage of the command.
+
+| Input | Error message |
+| --- | --- |
+| `sort` or `sort name asc desc` | `Invalid command format!` |
+| `sort salary` or `sort salary desc` | `Unknown sort field: salary. The field must be one of: id, name, department, role.` |
+| `sort name down` | `Unknown sort order: down. The order must be one of: asc, desc.` |
+
 ### Clearing active employees: `clear`
 
 Clears the active employee roster from HuntR. Archived employee records are preserved and can still be removed with
@@ -306,29 +373,74 @@ Format: `clear`
 
 <box type="warning" seamless>
 
-**Caution:** There is no confirmation and no undo. After `clear`, the empty active roster and retained archived records are
-saved immediately.
+**Caution:** There is no confirmation. After `clear`, the empty active roster and unchanged archive are
+saved immediately. Use `undo` to restore the active roster during the same session. Clearing an already empty
+active roster still succeeds and shows the active view, but creates no history entry.
 </box>
 
-### Backing up the data: `backup`
+### Undoing and redoing employee changes: `undo`, `redo`
 
-Saves a copy of all current employee data to a new file in the `data/backups` folder.
+Format: `undo` or `redo`. Use lowercase command words without parameters. Surrounding spaces and tabs are accepted.
+Each command moves exactly one history step.
 
-Format: `backup`
+| Input and condition | Exact result |
+| --- | --- |
+| `undo`, with a preceding state | `Undo successful.` |
+| `redo`, with a subsequent state | `Redo successful.` |
+| `  undo  `, with a preceding state | `Undo successful.` |
+| `undo`, with no preceding state | `No more commands to undo.` |
+| `redo`, with no subsequent state | `No more commands to redo.` |
 
-* The backup is named by the date and time it was made, as `huntr-YYYYMMDD-HHmmss.json`, for example `data/backups/huntr-20261022-153005.json`. The `data/backups` folder is created if needed.
-* The backup uses the same format as the data file `data/addressbook.json` and contains all employees, including employees hidden by `find`.
-* Each backup is a new file, so earlier backups are kept. Two backups made within the same second share a name, and the later one replaces the earlier one.
-* To restore a backup, exit HuntR, then replace `data/addressbook.json` with a copy of the backup file renamed to `addressbook.json`.
-* The command takes no parameters, and extra text such as `backup now` is rejected.
+Arguments such as `undo 2` or `undo id/E0123` produce:
 
-On success, HuntR shows `Backed up N employee(s) to data/backups/huntr-YYYYMMDD-HHmmss.json`.
+```text
+Invalid command format.
+undo: Reverts the most recent data-changing command.
+Parameters: none
+Example: undo
+```
 
-If the backup cannot be saved, for example because HuntR is not allowed to write to the `data` folder, HuntR shows `Could not save the backup to FILE_PATH. Check that you are allowed to write to that folder.`
+Arguments such as `redo 2` or `redo now` produce:
+
+```text
+Invalid command format.
+redo: Reapplies the most recently undone data-changing command.
+Parameters: none
+Example: redo
+```
+
+Syntax is checked before history availability, so these format errors also apply to a new session.
+Aliases, step counts and uppercase command words are not supported. For example:
+
+```text
+Unknown command: UNDO
+Type help to see the available commands.
+```
+
+The same template applies to `Undo`, `REDO`, `u`, `r` and `undo2`, preserving the entered command word.
+Normal parsing and command errors retain your input and use the command box's existing error styling;
+they do not save or change records, history or the view. Successful commands clear the command box.
+
+One history step covers an entire successful `add`, `edit`, `delete`, `clear`, `import`, `archive` or `unarchive`.
+An import of several employees is reversed by one undo. Redo restores saved data directly, even if the original
+CSV has changed or been deleted. All employee values, ID spelling, archive status and stored order are restored,
+including employees hidden from the current view. Clear affects only active employees.
+
+Undo and redo preserve the view active immediately before the command: active-only, archived-only or the current
+search, even when it matches nobody. Restored employees can remain hidden; use `list` or `list archived` to see them.
+A historical search is not restored. Selection and scroll position are not guaranteed to remain unchanged.
+
+A successful actual employee-data change after undo discards the redo states. An identical edit or an empty
+active-roster clear creates no history entry, preserves redo, and retains its existing success message and reset
+to the active view. Failed commands and `list`, `list archived`, `find`, `help`, `export`, `backup` and `exit` preserve
+redo. Exported and backup files are outside employee history. Header-only imports remain errors.
+
+History has no explicit capacity limit and exists only for this session. Starting HuntR loads the saved employee
+state as one initial snapshot; neither undo nor redo is available until you make changes in that session.
 
 ### Exiting the program: `exit`
 
-Closes HuntR. Your employee records are saved after every command, so nothing is lost when you exit.
+Closes HuntR after saving the current employee state. Session undo/redo history is discarded when HuntR closes.
 
 Format: `exit`
 
@@ -336,11 +448,76 @@ The command takes no parameters, and extra text such as `exit now` is rejected.
 
 ### Saving the data
 
-HuntR automatically saves data after every command. You do not need to save manually.
+HuntR automatically saves employee data after every successfully executed command, including commands such as
+`list` and `help`, and commands that change nothing. You do not need to save manually. History and view filters
+are never written to JSON.
+
+HuntR writes the complete JSON to a protected temporary file beside the data file, then replaces the data file
+atomically. If a handled failure occurs before replacement, the last stored file keeps its original bytes. If no
+data file existed, it remains absent. Newly created folders may remain. Successful replacement completes the save.
+
+If a data-changing command (including undo or redo) fails during execution or automatic saving, HuntR restores
+its previous in-memory employee data, complete history and current view. A failed change after undo preserves
+the original redo sequence. A failed no-op also restores the previous view and preserves redo.
+
+Use HuntR as a single-user application on a local filesystem that supports atomic replacement and the required
+access protections. New files are private to their creator: owner read/write (`0600`) on POSIX systems, or an
+owner-only access ACL granting full file access on Windows. Existing files retain their nine POSIX permission bits
+or supported Windows access ACL, provided their owner (and POSIX group) matches the newly created file's owner/group.
+Read-only files are rejected; HuntR does not clear protection or change ownership to allow a save. Other filesystem
+metadata is not promised to be preserved. See the [Developer Guide](DeveloperGuide.md#storage-component) for the
+precise supported policy.
+
+Configured paths stay unchanged. Valid symbolic links are retained and their real targets are saved; dangling
+links and directory destinations are rejected. Do not run concurrent writers or edit the file while HuntR is open.
+
+An automatic-save failure is displayed instead of the command's success result:
+
+```text
+Could not save data due to the following error: <exception-message>
+```
+
+For unsupported atomic replacement, the exact message is:
+
+```text
+Could not save data due to the following error: Atomic replacement is not supported for this data file.
+```
+
+If the required access protections cannot be established or preserved, it is:
+
+```text
+Could not save data due to the following error: Cannot preserve the required file access protections.
+```
+
+Access-denied failures use:
+
+```text
+Could not save data to file <exception-message> due to insufficient permissions to write to the file or the folder.
+```
+
+Here, `<exception-message>` is the filesystem exception's message. It may include paths and additional diagnostic
+text, rather than just the configured destination path. These normal errors retain the command text and existing
+error styling. Unexpected runtime failures also restore in-memory state for data-changing commands, but the
+existing UI does not provide ordinary command-box handling for those exceptions.
+
+Read-only commands retain their existing behavior on automatic-save failure: for example, a changed view stays
+changed. Export/backup files already created remain on disk.
+
+JSON backups use the same safer writer and keep their existing location and naming. A backup write failure,
+including unsupported atomic movement or protection, keeps its backup-specific message:
+
+```text
+Could not save the backup to <backup-path>. Check that you are allowed to write to that folder.
+```
+
+Successful backups still report `Backed up <count> employee(s) to <backup-path>`. If the backup is created but the
+following automatic save fails, the backup remains and the final result is the automatic-save error above.
+CSV exports and preference saving are unchanged.
 
 ### Editing the data file
 
-HuntR data is saved automatically as a JSON file `[JAR file location]/data/addressbook.json`. Advanced users are welcome to update data directly by editing that data file.
+HuntR data is saved automatically as a JSON file `[JAR file location]/data/addressbook.json`. Advanced users may
+update that file in a text editor while HuntR is closed.
 
 Each employee in the `employees` array has an `archived` status. Employee IDs remain unique regardless of status.
 Older valid files without the `archived` field continue to load, with those employees treated as active.
@@ -351,7 +528,7 @@ whole file to be rejected.
 <box type="warning" seamless>
 
 **Caution:**
-If your changes make the data file invalid, HuntR rejects the whole file (it does not load only the valid employees) and starts with an empty employee list at the next run. The invalid file remains on disk until you run a command (HuntR saves after every command, which then overwrites it). Therefore, always back up the file (for example with `backup`) before editing it.<br>
+If your changes make the data file invalid, HuntR rejects the whole file (it does not load only the valid employees) and starts with an empty employee list at the next run. The invalid file remains on disk until you run a command (HuntR saves after every command, which then overwrites it). Therefore, always back up the file before editing it.<br>
 Furthermore, certain edits can cause HuntR to behave in unexpected ways (e.g., if a value entered is outside of the acceptable range). Therefore, edit the data file only if you are confident that you can update it correctly.
 </box>
 
@@ -377,17 +554,20 @@ Action     | Format, Examples
 -----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 **Add**    | `add id/EMPLOYEE_ID n/NAME p/PHONE e/EMAIL d/DEPARTMENT r/ROLE [m/MANAGER_ID]`<br>e.g., `add id/E0123 n/John Tan p/91234567 e/johntan@example.com d/Engineering r/Software Engineer`
 **Archive** | `archive id/EMPLOYEE_ID`<br>e.g., `archive id/E0123`
-**Backup** | `backup`
 **Clear**  | `clear`
 **Delete** | `delete id/EMPLOYEE_ID`<br> e.g., `delete id/EMP-0042`
 **Edit**   | `edit id/EMPLOYEE_ID [n/NAME] [p/PHONE] [e/EMAIL] [d/DEPARTMENT] [r/ROLE] [m/MANAGER_ID]`<br>e.g., `edit id/E0001 p/91234567 e/alex@example.com`
 **Find**   | `find KEYWORD [MORE_KEYWORDS]`<br> e.g., `find James Jake`
+**Filter** | `filter [id/EMPLOYEE_ID] [n/NAME] [d/DEPARTMENT] [r/ROLE]`<br> e.g., `filter n/John d/Sales`, `filter d/Sales d/Finance r/Manager`
 **List**   | `list` or `list archived`
 **Manager** | `manager id/EMPLOYEE_ID m/MANAGER_ID`
 **Unassign manager** | `unassign-manager id/EMPLOYEE_ID`
 **Team** | `team id/EMPLOYEE_ID`
 **Org** | `org id/EMPLOYEE_ID`
 **Chain** | `chain id/EMPLOYEE_ID`
+**Undo**   | `undo`
+**Redo**   | `redo`
 **Unarchive** | `unarchive id/EMPLOYEE_ID`
 **Help**   | `help`
+**Sort**   | `sort FIELD [asc\|desc]`<br> e.g., `sort department desc`
 **Exit**   | `exit`

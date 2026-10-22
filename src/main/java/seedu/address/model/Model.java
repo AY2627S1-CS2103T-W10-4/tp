@@ -1,5 +1,6 @@
 package seedu.address.model;
 
+import java.util.Comparator;
 import java.util.function.Predicate;
 
 import javafx.collections.ObservableList;
@@ -29,9 +30,30 @@ public interface Model {
     void setGuiSettings(GuiSettings guiSettings);
 
     /**
-     * Replaces address book data with the data in {@code addressBook}.
+     * Replaces working data without committing, resetting history or changing the view.
      */
     void setAddressBook(ReadOnlyAddressBook addressBook);
+
+    /** Commits an actual change to the working employee data as one history entry. */
+    void commitAddressBook();
+
+    /** Returns whether there is a preceding snapshot. */
+    boolean canUndoAddressBook();
+
+    /** Returns whether there is a subsequent snapshot. */
+    boolean canRedoAddressBook();
+
+    /** Restores the preceding snapshot, preserving the current view. */
+    void undoAddressBook();
+
+    /** Restores the subsequent snapshot, preserving the current view. */
+    void redoAddressBook();
+
+    /** Captures working data, complete history and the effective view for rollback. */
+    ModelCheckpoint createCheckpoint();
+
+    /** Restores working data, complete history and the saved effective view. */
+    void restoreCheckpoint(ModelCheckpoint checkpoint);
 
     /** Returns the AddressBook */
     ReadOnlyAddressBook getAddressBook();
@@ -73,7 +95,7 @@ public interface Model {
     /** Replaces an employee with an active copy. */
     void unarchiveEmployee(Employee employee);
 
-    /** Returns an unmodifiable view of the filtered employee list */
+    /** Returns an unmodifiable view of the filtered employee list, in the current sort order */
     ObservableList<Employee> getFilteredEmployeeList();
 
     /** Returns the number of archived employees. */
@@ -84,6 +106,15 @@ public interface Model {
      * @throws NullPointerException if {@code predicate} is null.
      */
     void updateFilteredEmployeeList(Predicate<Employee> predicate);
+
+    /**
+     * Sorts the displayed employee list with the given {@code comparator}. The stored order is not changed.
+     * @throws NullPointerException if {@code comparator} is null.
+     */
+    void updateEmployeeSortOrder(Comparator<Employee> comparator);
+
+    /** Shows the displayed employee list in the order in which the employees are stored. */
+    void resetEmployeeSortOrder();
 
     /** Updates the filtered list to show archived employees only. */
     void showArchivedEmployees();
