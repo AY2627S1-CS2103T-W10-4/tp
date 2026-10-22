@@ -28,6 +28,8 @@ public class HelpCommand extends Command {
             ListCommand.COMMAND_WORD,
             SortCommand.COMMAND_WORD + " FIELD [asc|desc]",
             FindCommand.COMMAND_WORD + " KEYWORD [MORE_KEYWORDS]",
+            FilterCommand.COMMAND_WORD + " [" + PREFIX_ID + "EMPLOYEE_ID] [" + PREFIX_NAME + "NAME] ["
+                    + PREFIX_DEPARTMENT + "DEPARTMENT] [" + PREFIX_ROLE + "ROLE]",
             EditCommand.COMMAND_WORD + " " + PREFIX_ID + "EMPLOYEE_ID [" + PREFIX_NAME + "NAME] [" + PREFIX_PHONE
                     + "PHONE] [" + PREFIX_EMAIL + "EMAIL] [" + PREFIX_DEPARTMENT + "DEPARTMENT] [" + PREFIX_ROLE
                     + "ROLE]",
