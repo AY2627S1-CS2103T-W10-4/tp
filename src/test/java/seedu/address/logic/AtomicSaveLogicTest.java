@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import javafx.collections.transformation.FilteredList;
+import javafx.collections.transformation.SortedList;
 import seedu.address.logic.commands.BackupCommand;
 import seedu.address.logic.commands.Command;
 import seedu.address.logic.commands.ExportCommand;
@@ -201,7 +202,7 @@ public class AtomicSaveLogicTest {
             String command, List<List<Employee>> history, int pointer) throws Exception {
         Path destination = storage.getAddressBookFilePath();
         byte[] original = Files.readAllBytes(destination);
-        Object predicate = ((FilteredList<Employee>) model.getFilteredEmployeeList()).getPredicate();
+        Object predicate = filteredEmployees(model).getPredicate();
         List<Employee> visible = List.copyOf(model.getFilteredEmployeeList());
         PosixFileAttributeView posix = Files.getFileAttributeView(destination, PosixFileAttributeView.class);
         DosFileAttributeView dos = Files.getFileAttributeView(destination, DosFileAttributeView.class);
@@ -214,7 +215,7 @@ public class AtomicSaveLogicTest {
             CommandException failure = assertThrows(CommandException.class, () -> logic.execute(command), command);
             assertTrue(failure.getCause() instanceof AccessDeniedException);
             assertArrayEquals(original, Files.readAllBytes(destination));
-            assertSame(predicate, ((FilteredList<Employee>) model.getFilteredEmployeeList()).getPredicate());
+            assertSame(predicate, filteredEmployees(model).getPredicate());
             assertStoredEmployees(visible, model.getFilteredEmployeeList());
             assertStoredEmployees(history.get(pointer), model.getAddressBook().getEmployeeList());
             Model reloaded = new ModelManager(storage.readAddressBook().orElseThrow(), new UserPrefs());
@@ -265,5 +266,10 @@ public class AtomicSaveLogicTest {
             super.saveAddressBook(addressBook);
             saves++;
         }
+    }
+
+    private static FilteredList<Employee> filteredEmployees(Model model) {
+        // the displayed list is a sorted view of the filtered list
+        return (FilteredList<Employee>) ((SortedList<Employee>) model.getFilteredEmployeeList()).getSource();
     }
 }
