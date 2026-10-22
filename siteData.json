@@ -140,6 +140,8 @@
         "viewing-the-reporting-chain-chain": "Viewing the reporting chain: chain",
         "reporting-command-input-rules": "Reporting command input rules",
         "finding-employees-by-name-find": "Finding employees by name: find",
+        "viewing-workforce-statistics-stats": "Viewing workforce statistics: stats",
+        "checking-data-quality-check": "Checking data quality: check",
         "filtering-employees-filter": "Filtering employees: filter",
         "archiving-employees-archive": "Archiving employees: archive",
         "unarchiving-employees-unarchive": "Unarchiving employees: unarchive",
