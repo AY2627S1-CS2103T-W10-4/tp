@@ -103,6 +103,32 @@ public class ReportingCommandTest {
     }
 
     @Test
+    public void execute_queriesIncludeArchivedReportsAndManagers_matchingMessagesAndSortedCards() throws Exception {
+        for (int archivedMask = 1; archivedMask < 8; archivedMask++) {
+            setUp();
+            List<Employee> hierarchy = List.of(boss, lead, worker);
+            for (int i = 0; i < hierarchy.size(); i++) {
+                if ((archivedMask & (1 << i)) != 0) {
+                    run("archive id/" + hierarchy.get(i).getId());
+                }
+            }
+            AddressBook original = new AddressBook(model.getAddressBook());
+            run("sort id desc");
+            String team = run("team id/LEAD").getFeedbackToUser();
+            assertEquals("Team of Lead (LEAD): Manager: Boss (BOSS); Direct reports: 1. Worker (WORKER)", team);
+            assertEquals(List.of(find(worker.getId()), find(lead.getId()), find(boss.getId())),
+                    model.getFilteredEmployeeList());
+            assertTrue(run("org id/BOSS").getFeedbackToUser().contains("Lead (LEAD), Worker (WORKER)"));
+            assertEquals(List.of(find(worker.getId()), find(lead.getId())), model.getFilteredEmployeeList());
+            assertTrue(run("chain id/WORKER").getFeedbackToUser().contains("Lead (LEAD) -> Boss (BOSS)"));
+            assertEquals(List.of(find(lead.getId()), find(boss.getId())), model.getFilteredEmployeeList());
+            assertEquals(original, model.getAddressBook());
+            run("list");
+            assertTrue(model.getFilteredEmployeeList().stream().noneMatch(Employee::isArchived));
+        }
+    }
+
+    @Test
     public void execute_editPreservesManager() throws Exception {
         EditEmployeeDescriptor descriptor = new EditEmployeeDescriptor();
         descriptor.setName(new Name("Updated Worker"));

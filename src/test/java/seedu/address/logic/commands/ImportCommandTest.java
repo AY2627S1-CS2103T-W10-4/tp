@@ -19,7 +19,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,7 +34,9 @@ import seedu.address.model.Model;
 import seedu.address.model.ModelManager;
 import seedu.address.model.UserPrefs;
 import seedu.address.model.employee.Employee;
+import seedu.address.model.employee.EmployeeId;
 import seedu.address.model.employee.Phone;
+import seedu.address.model.employee.ReportingStructure;
 import seedu.address.testutil.EmployeeBuilder;
 
 public class ImportCommandTest {
@@ -102,7 +106,7 @@ public class ImportCommandTest {
     @Test
     public void execute_noArchivedColumn_employeesImportedAsActive() throws Exception {
         String header = CsvUtil.toCsvLine(ExportCommand.REQUIRED_CSV_COLUMNS);
-        writeCsv(header, AMY_ROW.substring(0, AMY_ROW.lastIndexOf(',')));
+        writeCsv(header, CsvUtil.toCsvLine(CsvUtil.parseCsvLine(AMY_ROW).subList(0, 6)));
         Model expectedModel = new ModelManager(getTypicalAddressBook(), new UserPrefs());
         expectedModel.addEmployee(AMY);
 
@@ -111,9 +115,64 @@ public class ImportCommandTest {
     }
 
     @Test
+    public void execute_legacySevenColumns_preservesArchiveStatusWithoutManager() throws Exception {
+        writeCsv(CsvUtil.toCsvLine(ExportCommand.LEGACY_CSV_COLUMNS),
+                CsvUtil.toCsvLine(CsvUtil.parseCsvLine(ExportCommand.toCsvLine(AMY.withArchived(true)))
+                        .subList(0, 7)));
+        Model imported = new ModelManager();
+        importStaffCsv().execute(imported);
+        assertEquals(List.of(AMY.withArchived(true)), imported.getAddressBook().getEmployeeList());
+    }
+
+    @Test
+    public void execute_exportedRelationships_roundTripPreservesOrderAndForwardReferences() throws Exception {
+        Employee boss = new EmployeeBuilder(AMY).withId("BOSS").build();
+        Employee lead = new EmployeeBuilder(BOB).withId("LEAD").build().withArchived(true)
+                .withManager(boss.getId());
+        Employee worker = new EmployeeBuilder(ALICE).withId("WORKER").build().withManager(lead.getId());
+        AddressBook original = new AddressBook();
+        original.setEmployees(List.of(worker, lead, boss));
+        new ExportCommand(appFolder, STAFF_CSV).execute(new ModelManager(original, new UserPrefs()));
+        assertEquals("id,name,phone,email,department,role,archived,managerId",
+                Files.readAllLines(appFolder.resolve(STAFF_CSV)).getFirst());
+        Model imported = new ModelManager();
+        importStaffCsv().execute(imported);
+        assertEquals(original.getEmployeeList(), imported.getAddressBook().getEmployeeList());
+    }
+
+    @Test
+    public void execute_managerInExistingRoster_canonicalisesReference() throws Exception {
+        Employee amy = AMY.withManager(new EmployeeId(ALICE.getId().value.toLowerCase(Locale.ROOT)));
+        writeCsv(ExportCommand.CSV_HEADER, ExportCommand.toCsvLine(amy));
+        importStaffCsv().execute(model);
+        Employee imported = model.getAddressBook().getEmployeeList().getLast();
+        assertEquals(ALICE.getId().value, imported.getManagerId().orElseThrow().value);
+    }
+
+    @Test
+    public void execute_invalidRelationships_nothingAddedAndViewUnchanged() throws Exception {
+        model.updateFilteredEmployeeList(employee -> false);
+        writeCsv(ExportCommand.CSV_HEADER, BOB_ROW,
+                ExportCommand.toCsvLine(AMY.withManager(new EmployeeId("MISSING"))));
+        assertCommandFailure(importStaffCsv(), model, String.format(ImportCommand.MESSAGE_INVALID_ROW, 3,
+                String.format(ReportingStructure.MESSAGE_MISSING_MANAGER, "MISSING")));
+        writeCsv(ExportCommand.CSV_HEADER, ExportCommand.toCsvLine(AMY.withManager(AMY.getId())));
+        assertCommandFailure(importStaffCsv(), model, String.format(ImportCommand.MESSAGE_INVALID_ROW, 2,
+                ReportingStructure.MESSAGE_SELF_REPORTING));
+        writeCsv(ExportCommand.CSV_HEADER, ExportCommand.toCsvLine(AMY.withManager(BOB.getId())),
+                ExportCommand.toCsvLine(BOB.withManager(AMY.getId())));
+        assertCommandFailure(importStaffCsv(), model, String.format(ImportCommand.MESSAGE_INVALID_RELATIONSHIPS,
+                ReportingStructure.MESSAGE_CYCLE));
+        writeCsv(ExportCommand.CSV_HEADER, AMY_ROW + "@@@");
+        assertCommandFailure(importStaffCsv(), model, String.format(ImportCommand.MESSAGE_INVALID_ROW, 2,
+                EmployeeId.MESSAGE_CONSTRAINTS));
+        assertTrue(model.getFilteredEmployeeList().isEmpty());
+    }
+
+    @Test
     public void execute_archivedValueBlankOrMixedCase_parsed() throws Exception {
-        String amyRowBlank = AMY_ROW.substring(0, AMY_ROW.lastIndexOf(',') + 1);
-        String bobRowTrue = BOB_ROW.substring(0, BOB_ROW.lastIndexOf(',') + 1) + " TRUE ";
+        String amyRowBlank = rowWithArchived(AMY, "");
+        String bobRowTrue = rowWithArchived(BOB, " TRUE ");
         writeCsv(ExportCommand.CSV_HEADER, amyRowBlank, bobRowTrue);
         Model emptyModel = new ModelManager();
 
@@ -124,7 +183,7 @@ public class ImportCommandTest {
 
     @Test
     public void execute_invalidArchivedValue_nothingAddedAndRowNamed() throws Exception {
-        writeCsv(ExportCommand.CSV_HEADER, AMY_ROW.substring(0, AMY_ROW.lastIndexOf(',') + 1) + "yes");
+        writeCsv(ExportCommand.CSV_HEADER, rowWithArchived(AMY, "yes"));
 
         assertCommandFailure(importStaffCsv(), model,
                 String.format(ImportCommand.MESSAGE_INVALID_ROW, 2, ImportCommand.MESSAGE_INVALID_ARCHIVED));
@@ -142,7 +201,7 @@ public class ImportCommandTest {
 
     @Test
     public void execute_byteOrderMarkBlankLinesAndHeaderCase_ignored() throws Exception {
-        writeCsv("\uFEFFID, Name ,Phone,Email,Department,ROLE, Archived", "", AMY_ROW, "  ");
+        writeCsv("\uFEFFID, Name ,Phone,Email,Department,ROLE, Archived, ManagerID", "", AMY_ROW, "  ");
         Model expectedModel = new ModelManager(getTypicalAddressBook(), new UserPrefs());
         expectedModel.addEmployee(AMY);
 
@@ -171,7 +230,7 @@ public class ImportCommandTest {
         writeCsv(ExportCommand.CSV_HEADER, AMY_ROW + ",extra");
 
         assertCommandFailure(importStaffCsv(), model, String.format(ImportCommand.MESSAGE_INVALID_ROW, 2,
-                String.format(ImportCommand.MESSAGE_WRONG_VALUE_COUNT, 7, ExportCommand.CSV_HEADER, 8)));
+                String.format(ImportCommand.MESSAGE_WRONG_VALUE_COUNT, 8, ExportCommand.CSV_HEADER, 9)));
     }
 
     @Test
@@ -287,6 +346,12 @@ public class ImportCommandTest {
 
     private ImportCommand importStaffCsv() {
         return new ImportCommand(appFolder, STAFF_CSV);
+    }
+
+    private String rowWithArchived(Employee employee, String archived) throws Exception {
+        List<String> values = new ArrayList<>(CsvUtil.parseCsvLine(ExportCommand.toCsvLine(employee)));
+        values.set(6, archived);
+        return CsvUtil.toCsvLine(values);
     }
 
     /**

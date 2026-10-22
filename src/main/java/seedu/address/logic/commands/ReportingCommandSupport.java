@@ -28,7 +28,7 @@ final class ReportingCommandSupport {
     static void show(Model model, List<Employee> employees) {
         Set<EmployeeId> ids = new HashSet<>();
         employees.forEach(employee -> ids.add(employee.getId()));
-        model.updateFilteredEmployeeList(employee -> ids.contains(employee.getId()));
+        model.updateReportingEmployeeList(employee -> ids.contains(employee.getId()));
     }
 
     static String describe(List<Employee> employees, String separator) {
