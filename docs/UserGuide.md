@@ -75,6 +75,21 @@ HuntR is based on [AddressBook-Level3](https://github.com/se-edu/addressbook-lev
 * If you are using a PDF version of this document, be careful when copying and pasting commands that span multiple lines as space characters surrounding line-breaks may be omitted when copied over to the application.
 </box>
 
+### Typing commands faster
+
+These keys work in the command box:
+
+| Key | What it does |
+| --- | --- |
+| <kbd>↑</kbd> | Brings back the command you typed before. Press it again to go further back. |
+| <kbd>↓</kbd> | Goes forward again. After the newest command, it shows what you had been typing. |
+| <kbd>Tab</kbd> | Completes the command word. `fil` becomes `filter `. When several commands start with what you typed, it completes as far as they are the same, so `u` becomes `un` (`undo`, `unarchive` and `unassign-manager`). |
+| <kbd>Esc</kbd> | Clears the command box. |
+
+* The commands you typed are kept until you close HuntR. Up to 100 are kept, and a command that gave an error is kept too, so you can bring it back and correct it.
+* A command that is the same as the one before it is kept once.
+* <kbd>Tab</kbd> only completes the first word, so it does nothing once you have typed a space. <kbd>Shift</kbd>+<kbd>Tab</kbd> still moves between parts of the window.
+
 ### Viewing help: `help`
 
 Opens a help window that lists the format of every command and links to this user guide.

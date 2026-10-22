@@ -3,6 +3,7 @@ package seedu.address.ui;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.TextField;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.Region;
 import seedu.address.logic.commands.CommandResult;
 import seedu.address.logic.commands.exceptions.CommandException;
@@ -17,6 +18,7 @@ public class CommandBox extends UiPart<Region> {
     private static final String FXML = "CommandBox.fxml";
 
     private final CommandExecutor commandExecutor;
+    private final CommandHistory history = new CommandHistory();
 
     @FXML
     private TextField commandTextField;
@@ -29,6 +31,37 @@ public class CommandBox extends UiPart<Region> {
         this.commandExecutor = commandExecutor;
         // calls #setStyleToDefault() whenever there is a change to the text of the command box.
         commandTextField.textProperty().addListener((unused1, unused2, unused3) -> setStyleToDefault());
+        commandTextField.addEventFilter(KeyEvent.KEY_PRESSED, this::handleKeyPressed);
+    }
+
+    /**
+     * Handles the keys that help to type commands: Up and Down go through the commands typed before, Tab completes
+     * the command word and Escape clears the command box. A key with Shift, Ctrl, Alt or Meta is left alone.
+     */
+    private void handleKeyPressed(KeyEvent event) {
+        if (event.isShiftDown() || event.isControlDown() || event.isAltDown() || event.isMetaDown()) {
+            return;
+        }
+        switch (event.getCode()) {
+            case UP -> show(history.previous(commandTextField.getText()), event);
+            case DOWN -> show(history.next(commandTextField.getText()), event);
+            case TAB -> show(CommandCompleter.complete(commandTextField.getText()), event);
+            case ESCAPE -> {
+                history.reset();
+                show("", event);
+            }
+            default -> { }
+        }
+    }
+
+    /**
+     * Puts {@code text} in the command box, with the caret at the end, and stops {@code event} from also moving the
+     * caret or the focus.
+     */
+    private void show(String text, KeyEvent event) {
+        commandTextField.setText(text);
+        commandTextField.positionCaret(text.length());
+        event.consume();
     }
 
     /**
@@ -40,6 +73,7 @@ public class CommandBox extends UiPart<Region> {
         if (commandText.equals("")) {
             return;
         }
+        history.record(commandText);
 
         try {
             commandExecutor.execute(commandText);
