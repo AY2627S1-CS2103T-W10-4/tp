@@ -92,7 +92,7 @@ public class EmployeeTest {
         String expected = Employee.class.getCanonicalName() + "{id=" + ALICE.getId() + ", name=" + ALICE.getName()
                 + ", phone=" + ALICE.getPhone() + ", email=" + ALICE.getEmail()
                 + ", department=" + ALICE.getDepartment() + ", role=" + ALICE.getRole()
-                + ", archived=" + ALICE.isArchived() + "}";
+                + ", archived=" + ALICE.isArchived() + ", managerId=null}";
         assertEquals(expected, ALICE.toString());
     }
 }

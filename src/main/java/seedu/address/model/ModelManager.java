@@ -3,11 +3,13 @@ package seedu.address.model;
 import static java.util.Objects.requireNonNull;
 import static seedu.address.commons.util.CollectionUtil.requireAllNonNull;
 
+import java.util.Comparator;
 import java.util.function.Predicate;
 import java.util.logging.Logger;
 
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
+import javafx.collections.transformation.SortedList;
 import seedu.address.commons.core.GuiSettings;
 import seedu.address.commons.core.LogsCenter;
 import seedu.address.model.employee.Employee;
@@ -21,6 +23,7 @@ public class ModelManager implements Model {
     private final VersionedAddressBook addressBook;
     private final UserPrefs userPrefs;
     private final FilteredList<Employee> filteredEmployees;
+    private final SortedList<Employee> sortedEmployees;
 
     /**
      * Initializes a ModelManager with the given addressBook and userPrefs.
@@ -33,6 +36,7 @@ public class ModelManager implements Model {
         this.addressBook = new VersionedAddressBook(addressBook);
         this.userPrefs = new UserPrefs(userPrefs);
         filteredEmployees = new FilteredList<>(this.addressBook.getEmployeeList(), employee -> !employee.isArchived());
+        sortedEmployees = new SortedList<>(filteredEmployees);
     }
 
     public ModelManager() {
@@ -160,11 +164,11 @@ public class ModelManager implements Model {
 
     /**
      * Returns an unmodifiable view of the list of {@code Employee} backed by the internal list of
-     * {@code addressBook}
+     * {@code addressBook}, filtered by the current predicate and in the current sort order.
      */
     @Override
     public ObservableList<Employee> getFilteredEmployeeList() {
-        return filteredEmployees;
+        return sortedEmployees;
     }
 
     @Override
@@ -184,6 +188,23 @@ public class ModelManager implements Model {
     }
 
     @Override
+    public void updateReportingEmployeeList(Predicate<Employee> predicate) {
+        requireNonNull(predicate);
+        filteredEmployees.setPredicate(predicate);
+    }
+
+    @Override
+    public void updateEmployeeSortOrder(Comparator<Employee> comparator) {
+        requireNonNull(comparator);
+        sortedEmployees.setComparator(comparator);
+    }
+
+    @Override
+    public void resetEmployeeSortOrder() {
+        sortedEmployees.setComparator(null);
+    }
+
+    @Override
     public boolean equals(Object other) {
         if (other == this) {
             return true;
@@ -196,7 +217,7 @@ public class ModelManager implements Model {
 
         return addressBook.equals(otherModelManager.addressBook)
                 && userPrefs.equals(otherModelManager.userPrefs)
-                && filteredEmployees.equals(otherModelManager.filteredEmployees);
+                && sortedEmployees.equals(otherModelManager.sortedEmployees);
     }
 
 }

@@ -4,6 +4,7 @@ import static seedu.address.logic.Messages.MESSAGE_INVALID_COMMAND_FORMAT;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_DEPARTMENT;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_EMAIL;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_ID;
+import static seedu.address.logic.parser.CliSyntax.PREFIX_MANAGER;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_NAME;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_PHONE;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_ROLE;
@@ -33,10 +34,10 @@ public class AddCommandParser implements Parser<AddCommand> {
     public AddCommand parse(String args) throws ParseException {
         String hiddenArgs = ArgumentPreprocessor.hideNameRelationWords(args);
         ArgumentPreprocessor.rejectUnknownParameters(hiddenArgs, AddCommand.MESSAGE_USAGE,
-                PREFIX_ID, PREFIX_NAME, PREFIX_PHONE, PREFIX_EMAIL, PREFIX_DEPARTMENT, PREFIX_ROLE);
+                PREFIX_ID, PREFIX_NAME, PREFIX_PHONE, PREFIX_EMAIL, PREFIX_DEPARTMENT, PREFIX_ROLE, PREFIX_MANAGER);
 
         ArgumentMultimap argMultimap = ArgumentTokenizer.tokenize(hiddenArgs,
-                PREFIX_ID, PREFIX_NAME, PREFIX_PHONE, PREFIX_EMAIL, PREFIX_DEPARTMENT, PREFIX_ROLE);
+                PREFIX_ID, PREFIX_NAME, PREFIX_PHONE, PREFIX_EMAIL, PREFIX_DEPARTMENT, PREFIX_ROLE, PREFIX_MANAGER);
 
         if (!arePrefixesPresent(argMultimap,
                 PREFIX_ID, PREFIX_NAME, PREFIX_PHONE, PREFIX_EMAIL, PREFIX_DEPARTMENT, PREFIX_ROLE)
@@ -45,7 +46,7 @@ public class AddCommandParser implements Parser<AddCommand> {
         }
 
         argMultimap.verifyNoDuplicatePrefixesFor(
-                PREFIX_ID, PREFIX_NAME, PREFIX_PHONE, PREFIX_EMAIL, PREFIX_DEPARTMENT, PREFIX_ROLE);
+                PREFIX_ID, PREFIX_NAME, PREFIX_PHONE, PREFIX_EMAIL, PREFIX_DEPARTMENT, PREFIX_ROLE, PREFIX_MANAGER);
         EmployeeId id = ParserUtil.parseEmployeeId(valueOf(argMultimap, PREFIX_ID));
         Name name = ParserUtil.parseName(valueOf(argMultimap, PREFIX_NAME));
         Phone phone = ParserUtil.parsePhone(valueOf(argMultimap, PREFIX_PHONE));
@@ -53,7 +54,9 @@ public class AddCommandParser implements Parser<AddCommand> {
         Department department = ParserUtil.parseDepartment(valueOf(argMultimap, PREFIX_DEPARTMENT));
         Role role = ParserUtil.parseRole(valueOf(argMultimap, PREFIX_ROLE));
 
-        Employee employee = new Employee(id, name, phone, email, department, role);
+        EmployeeId manager = argMultimap.getValue(PREFIX_MANAGER).isPresent()
+                ? ParserUtil.parseEmployeeId(argMultimap.getValue(PREFIX_MANAGER).orElseThrow()) : null;
+        Employee employee = new Employee(id, name, phone, email, department, role, manager);
 
         return new AddCommand(employee);
     }

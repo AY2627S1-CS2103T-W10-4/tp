@@ -5,6 +5,7 @@ import static seedu.address.logic.Messages.MESSAGE_INVALID_COMMAND_FORMAT;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_DEPARTMENT;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_EMAIL;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_ID;
+import static seedu.address.logic.parser.CliSyntax.PREFIX_MANAGER;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_NAME;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_PHONE;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_ROLE;
@@ -28,18 +29,18 @@ public class EditCommandParser implements Parser<EditCommand> {
         requireNonNull(args);
         String hiddenArgs = ArgumentPreprocessor.hideNameRelationWords(args);
         ArgumentPreprocessor.rejectUnknownParameters(hiddenArgs, EditCommand.MESSAGE_USAGE,
-                PREFIX_ID, PREFIX_NAME, PREFIX_PHONE, PREFIX_EMAIL, PREFIX_DEPARTMENT, PREFIX_ROLE);
+                PREFIX_ID, PREFIX_NAME, PREFIX_PHONE, PREFIX_EMAIL, PREFIX_DEPARTMENT, PREFIX_ROLE, PREFIX_MANAGER);
 
         ArgumentMultimap argMultimap =
                 ArgumentTokenizer.tokenize(hiddenArgs, PREFIX_ID, PREFIX_NAME, PREFIX_PHONE, PREFIX_EMAIL,
-                        PREFIX_DEPARTMENT, PREFIX_ROLE);
+                        PREFIX_DEPARTMENT, PREFIX_ROLE, PREFIX_MANAGER);
 
         if (argMultimap.getValue(PREFIX_ID).isEmpty() || !argMultimap.getPreamble().isEmpty()) {
             throw new ParseException(String.format(MESSAGE_INVALID_COMMAND_FORMAT, EditCommand.MESSAGE_USAGE));
         }
 
         argMultimap.verifyNoDuplicatePrefixesFor(PREFIX_ID, PREFIX_NAME, PREFIX_PHONE, PREFIX_EMAIL,
-                PREFIX_DEPARTMENT, PREFIX_ROLE);
+                PREFIX_DEPARTMENT, PREFIX_ROLE, PREFIX_MANAGER);
 
         EmployeeId targetId = ParserUtil.parseEmployeeId(argMultimap.getValue(PREFIX_ID).get());
 
@@ -62,6 +63,11 @@ public class EditCommandParser implements Parser<EditCommand> {
         }
         if (argMultimap.getValue(PREFIX_ROLE).isPresent()) {
             editEmployeeDescriptor.setRole(ParserUtil.parseRole(argMultimap.getValue(PREFIX_ROLE).get()));
+        }
+
+        if (argMultimap.getValue(PREFIX_MANAGER).isPresent()) {
+            String manager = argMultimap.getValue(PREFIX_MANAGER).orElseThrow();
+            editEmployeeDescriptor.setManagerId(manager.isBlank() ? null : ParserUtil.parseEmployeeId(manager));
         }
 
         if (!editEmployeeDescriptor.isAnyFieldEdited()) {

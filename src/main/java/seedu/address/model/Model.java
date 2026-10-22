@@ -1,5 +1,6 @@
 package seedu.address.model;
 
+import java.util.Comparator;
 import java.util.function.Predicate;
 
 import javafx.collections.ObservableList;
@@ -94,7 +95,7 @@ public interface Model {
     /** Replaces an employee with an active copy. */
     void unarchiveEmployee(Employee employee);
 
-    /** Returns an unmodifiable view of the filtered employee list */
+    /** Returns an unmodifiable view of the filtered employee list, in the current sort order */
     ObservableList<Employee> getFilteredEmployeeList();
 
     /** Returns the number of archived employees. */
@@ -105,6 +106,18 @@ public interface Model {
      * @throws NullPointerException if {@code predicate} is null.
      */
     void updateFilteredEmployeeList(Predicate<Employee> predicate);
+
+    /** Updates the filter for a reporting query, including matching active and archived employees. */
+    void updateReportingEmployeeList(Predicate<Employee> predicate);
+
+    /**
+     * Sorts the displayed employee list with the given {@code comparator}. The stored order is not changed.
+     * @throws NullPointerException if {@code comparator} is null.
+     */
+    void updateEmployeeSortOrder(Comparator<Employee> comparator);
+
+    /** Shows the displayed employee list in the order in which the employees are stored. */
+    void resetEmployeeSortOrder();
 
     /** Updates the filtered list to show archived employees only. */
     void showArchivedEmployees();

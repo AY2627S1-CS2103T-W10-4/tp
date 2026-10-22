@@ -207,7 +207,11 @@ public class JsonAddressBookStorageTest {
                 JsonNode root = JsonUtil.fromJsonString(json, JsonNode.class);
                 assertEquals(1, root.size());
                 assertTrue(root.has("employees"));
-                root.get("employees").forEach(employee -> assertEquals(7, employee.size()));
+                root.get("employees").forEach(employee -> {
+                    assertEquals(8, employee.size());
+                    assertTrue(employee.has("managerId"));
+                    assertTrue(employee.get("managerId").isNull());
+                });
                 invoked.set(true);
             }
         };

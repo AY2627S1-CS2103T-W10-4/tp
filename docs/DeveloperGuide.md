@@ -216,6 +216,80 @@ Classes used by multiple components are in the `seedu.address.commons` package.
 
 This section describes some noteworthy details on how certain features are implemented.
 
+### Reporting relationships and team structure
+
+The reporting implementation is introduced in [PR #110](https://github.com/AY2627S1-CS2103T-W10-4/tp/pull/110).
+Its developer documentation and the reporting sections in the [User Guide](UserGuide.md#assigning-a-manager-manager)
+are maintained together in [PR #111](https://github.com/AY2627S1-CS2103T-W10-4/tp/pull/111).
+The implementation described here requires #110; the documentation PR does not add the commands itself.
+
+#### Model and relationship validation
+
+`Employee` stores an optional direct manager as an immutable `EmployeeId`. `getManagerId()` exposes an `Optional`,
+and `withManager()` returns a replacement employee while preserving all other fields, including archive status.
+Existing constructors create employees without managers. Employee identity still depends only on the
+case-insensitive employee ID; full equality and hashing also include the manager assignment.
+
+`ReportingStructure` queries the complete roster, including archived employees. `withCanonicalManager()` resolves
+a supplied manager ID to the spelling stored in the roster and rejects self-reporting or a missing manager.
+`validate()` builds an ID lookup and follows manager links, tracking the current path and previously completed
+paths to reject cycles, missing managers and self-reporting. Every employee has at most one manager; multiple
+unconnected reporting trees and employees without managers are valid.
+
+`AddressBook#addEmployee`, `setEmployee` and `setEmployees` validate the candidate roster before replacing stored
+data and canonicalise manager references. A failed validation leaves the existing roster unchanged. Removing an
+employee clears only their direct reports' manager assignments, including archived reports. Clearing active
+employees retains archived employees and clears references to managers that were removed.
+
+#### Parsing and command execution
+
+`AddressBookParser` routes the five reporting commands to their individual parsers. These delegate to
+`ReportingParserSupport`, which rejects unknown parameters, duplicate prefixes, non-empty preambles, missing
+values and invalid IDs, and appends command-specific usage to parse errors. `manager` requires both `id/` and
+`m/`; the other four commands accept only `id/`.
+
+`ReportingCommandSupport.find()` searches the complete roster by case-insensitive ID, independently of the
+displayed list. `ManagerCommand` creates a replacement employee, resolves the manager, then calls
+`model.setEmployee`; relationship validation failures become `CommandException`s. `UnassignManagerCommand`
+replaces the employee with `withManager(null)`, succeeding even if no manager was assigned. `AddCommand` and
+`EditCommand` also support `m/`: omitting it during an edit preserves the assignment, and an empty edit `m/`
+removes it. An empty manager value on `add` or `manager` is rejected.
+
+| Query command | Relationship selection |
+| --- | --- |
+| `team` | The target employee, their direct manager if assigned, and their direct reports. |
+| `org` | All direct and indirect reports, excluding the target, using breadth-first traversal. |
+| `chain` | Managers from the immediate manager to the root, excluding the target. |
+
+`ReportingStructure.reports()` scans the roster for each visited manager; recursive queries take O(nk) time for
+n employees and k visited managers. `chain()` builds an ID lookup and follows manager links in O(n + h) time for
+a chain of height h. Both traversals track visited IDs. Result messages retain traversal order, while
+`ReportingCommandSupport.show()` installs an ID-membership predicate without resetting the `SortedList` comparator.
+Employee cards therefore preserve the current sort order, or roster order when no sort is active.
+These queries replace the current filter without modifying employee records. `Model#updateReportingEmployeeList`
+applies the membership predicate without the normal active-only restriction, so both messages and cards include
+related archived employees. Normal `list` and `find` continue to exclude archived employees.
+
+#### Storage and presentation
+
+`JsonAdaptedEmployee` persists the optional manager as `managerId`; a missing or null field means no manager,
+so older valid JSON files remain readable. `JsonSerializableAddressBook#toModelType()` converts all employees
+before calling `AddressBook#setEmployees`, allowing a manager to appear after their reports in the JSON array.
+Duplicate IDs and invalid relationships reject the entire file through `IllegalValueException`; no partial
+roster is loaded. Saved manager IDs use the existing manager's ID spelling.
+
+`ExportCommand` writes eight CSV columns ending in `archived,managerId`; a blank manager ID means no assignment.
+`ImportCommand` also accepts legacy six-column files and seven-column files ending in `archived`. After parsing
+and checking IDs for duplicates, it resolves managers against the existing roster plus all imported rows and
+validates the complete hierarchy before changing the model. It adds employees without managers first, then
+sets their validated assignments, preserving CSV row order even when a manager appears later in the file.
+`LogicManager` commits the import as one history step and restores its checkpoint on execution or save failure.
+`ImportCommandTest` covers relationship round trips, forward references, legacy files and rejected relationships.
+
+`EmployeeCard` and `EmployeeListCard.fxml` display the manager ID or `Unassigned`. Reporting usage is also listed
+by `HelpCommand`. `ReportingCommandTest`, `ReportingCommandParserTest` and `ReportingStorageTest` cover command
+behaviour, strict input validation and persistence; manual scenarios are provided below.
+
 ### Employee archiving
 
 `Employee` has an immutable boolean archive status. Active and archived employees remain in the same
@@ -242,7 +316,10 @@ ID validation uses `ParserUtil.parseEmployeeId` and the existing `EmployeeId` ru
 
 ### Edit an employee by ID
 
-`EditCommandParser` requires exactly one `id/` parameter and at least one field: `n/`, `p/`, `e/`, `d/` or `r/`. It rejects unknown parameters, a non-empty preamble and repeated prefixes. A missing ID or unexpected preamble produces `Invalid command format.` followed by usage; an ID without any fields produces `At least one field to edit must be provided.`
+`EditCommandParser` requires exactly one `id/` parameter and at least one field: `n/`, `p/`, `e/`, `d/` or `r/`;
+the reporting implementation also accepts `m/` as described above. It rejects unknown parameters, a non-empty
+preamble and repeated prefixes. A missing ID or unexpected preamble produces `Invalid command format.` followed
+by usage; an ID without any fields produces `At least one field to edit must be provided.`
 
 `ParserUtil` validates the ID and supplied field values, returning the corresponding validation messages for invalid values. The parser stores validated changes in an `EditEmployeeDescriptor`; omitted fields keep their existing values. The ID only selects the employee and cannot be changed.
 
@@ -288,7 +365,8 @@ current snapshot **before** removing redo states. Employee equality alone ignore
 A changed state discards the redo tail and appends one snapshot; an identical state leaves history untouched.
 
 The model exposes `commitAddressBook()`, `canUndoAddressBook()`, `canRedoAddressBook()`, `undoAddressBook()` and
-`redoAddressBook()`. Each of `add`, `edit`, `delete`, `clear`, `import`, `archive` and `unarchive` declares
+`redoAddressBook()`. Each of `add`, `edit`, `delete`, `clear`, `import`, `archive`, `unarchive`, `manager` and
+`unassign-manager` declares
 `HistoryAction.COMMIT` through `Command#getHistoryAction()`. `LogicManager` commits once after successful command
 execution, before saving. Commands do not call `commitAddressBook()` themselves. This single declaration supplies
 both undo history and checkpoint/rollback protection. Import commits only after all rows have been added and the
@@ -304,7 +382,7 @@ messages. They create no entry and retain redo. Read-only and failed commands al
 
 `Command#getHistoryAction()` defaults to `NONE`; modifying commands return `COMMIT`, and undo/redo return `NAVIGATE`.
 `Command#isDataChanging()` is final and derives its result from that declaration. It means “this command may change
-employee data or navigate employee history.” The seven modifying commands and both history commands therefore
+employee data or navigate employee history.” The nine modifying commands and both history commands therefore
 return true even for no-ops. `LogicManager` parses first, captures a `ModelCheckpoint` for those commands, executes,
 commits only for `COMMIT`, then saves through the existing storage API. `NAVIGATE` never creates a snapshot.
 Only a successful storage return permits the result to be returned. No fallible work is added after that return.
@@ -351,7 +429,8 @@ retain existing behavior and are not checkpointed. Export/backup side effects ar
 Only the current employee state is serialized in the existing `employees` JSON schema; there are no history,
 checkpoint, command or predicate fields. Missing `archived` fields in older valid JSON still load as active;
 validation, case-insensitive ID uniqueness, invalid-file handling, paths and preferences are unchanged. CSV export
-retains seven columns; import also accepts legacy six-column CSV and rejects header-only files.
+uses eight columns including manager IDs; import also accepts legacy six-column and seven-column CSV and rejects
+header-only files.
 
 Employee history and atomic saving share the recorded baseline `1d8b4b5eaeae6b1a102f92dd81a7befb18221ecb`.
 The combined boundary is the writer's successful atomic replacement. Employee changes and history commits are
@@ -675,7 +754,7 @@ These definitions describe HuntR's employee-management domain. The inherited cod
 | **Keyword** | A space-separated search term supplied to `find`. It matches a whole word in an employee's name, ignoring letter case. With multiple keywords, a match on any one keyword is sufficient. |
 | **Main success scenario (MSS)** | The sequence of steps in a use case when the interaction succeeds without taking an error or alternative path. |
 | **Preferences file** | The local `preferences.json` file containing application settings, such as window size and position, rather than employee records. |
-| **Reporting relationship** | The relationship identifying which employee another employee reports to in the organisation, as referenced by the proposed reporting-structure user stories. |
+| **Reporting relationship** | An optional link from an employee to their direct manager, identified by employee ID. Manager references must exist, and self-reporting and cycles are rejected. |
 | **Role** | An employee's job title, such as Software Engineer or Accountant; supplied using `r/`. It does not denote application access permissions. |
 | **Session** | One period of application use, from launch until shutdown. |
 | **Workforce records / roster** | The complete collection of employee records stored in HuntR, including employees not visible in the current filtered list. |
@@ -783,6 +862,36 @@ testers are expected to do more *exploratory* testing.
 6. Delete the last remaining employee, enter `exit`, and relaunch HuntR.<br>
    Expected: The roster remains empty after relaunch. The deleted ID can be used again in a new `add` command.
 
+
+### Reporting relationships and team structure
+
+**Prerequisites:** Use a build containing the reporting implementation from PR #110. Add active employees
+`R1001`, `R1002` and `R1003`, initially without managers. Ensure `R9999` does not exist. Back up the data before
+testing deletion or editing the JSON file.
+
+1. Enter `manager id/r1002 m/r1001`, then `manager id/R1003 m/R1002`.<br>
+   Expected: The assignments succeed using the stored ID spelling. The cards show managers `R1001` and `R1002`.
+2. Enter `team id/R1002`, `org id/R1001` and `chain id/R1003` separately.<br>
+   Expected: The team contains all three employees and reports one direct report. The organisation query excludes
+   `R1001` and lists `R1002` then `R1003` in its message. The chain message lists `R1002` then `R1001`.
+3. Enter `manager id/R1001 m/R1003`, `manager id/R1001 m/R1001`, `manager id/R1002 m/R9999` and
+   `manager id/R9999 m/R1001` separately.<br>
+   Expected: Respectively, HuntR reports `Reporting relationships cannot contain a cycle.`,
+   `An employee cannot report to themselves.`, `Manager does not exist: R9999` and
+   `No employee with ID R9999 was found.` The assignments and current view remain unchanged.
+4. Enter `team id/R1002 id/R1003`, `team id/R1002 x/foo` and `manager id/R1002 m/` separately.<br>
+   Expected: Each command reports an input error with its own usage and leaves records and the view unchanged.
+5. Enter `edit id/R1003 r/Senior Analyst`, then `unassign-manager id/R1003` twice.<br>
+   Expected: The role edit preserves manager `R1002`; both unassign commands succeed, leaving the manager unset.
+   Enter `edit id/R1003 m/R1002` to restore it, then `edit id/R1003 m/` to verify removal through editing.
+6. Restore `R1003`'s manager to `R1002`, archive `R1003`, then enter `team id/R1002`.<br>
+   Expected: The message counts the archived direct report and the cards include `R1003`. Enter `list archived`
+   to confirm that its manager assignment remains. Delete `R1002`, then enter `list archived` again.<br>
+   Expected: `R1003` remains archived with no manager; the delete message reports one affected direct report.
+7. Assign a manager to a remaining employee, exit and relaunch.<br>
+   Expected: The assignment is retained. With HuntR closed, remove `managerId` from a record in a copy of the
+   valid JSON file and load it: that employee has no manager. A missing manager reference, self-reference or
+   reporting cycle in the file causes the entire file to be rejected. Restore the backup after testing.
 
 ### Saving data
 

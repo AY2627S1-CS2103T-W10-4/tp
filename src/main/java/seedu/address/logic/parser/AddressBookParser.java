@@ -11,6 +11,7 @@ import seedu.address.commons.core.LogsCenter;
 import seedu.address.logic.commands.AddCommand;
 import seedu.address.logic.commands.ArchiveCommand;
 import seedu.address.logic.commands.BackupCommand;
+import seedu.address.logic.commands.ChainCommand;
 import seedu.address.logic.commands.CheckCommand;
 import seedu.address.logic.commands.ClearCommand;
 import seedu.address.logic.commands.Command;
@@ -18,13 +19,19 @@ import seedu.address.logic.commands.DeleteCommand;
 import seedu.address.logic.commands.EditCommand;
 import seedu.address.logic.commands.ExitCommand;
 import seedu.address.logic.commands.ExportCommand;
+import seedu.address.logic.commands.FilterCommand;
 import seedu.address.logic.commands.FindCommand;
 import seedu.address.logic.commands.HelpCommand;
 import seedu.address.logic.commands.ImportCommand;
 import seedu.address.logic.commands.ListCommand;
+import seedu.address.logic.commands.ManagerCommand;
+import seedu.address.logic.commands.OrgCommand;
 import seedu.address.logic.commands.RedoCommand;
+import seedu.address.logic.commands.SortCommand;
 import seedu.address.logic.commands.StatsCommand;
+import seedu.address.logic.commands.TeamCommand;
 import seedu.address.logic.commands.UnarchiveCommand;
+import seedu.address.logic.commands.UnassignManagerCommand;
 import seedu.address.logic.commands.UndoCommand;
 import seedu.address.logic.parser.exceptions.ParseException;
 
@@ -61,6 +68,11 @@ public class AddressBookParser {
         logger.fine("Command word: " + commandWord + "; Arguments: " + arguments);
 
         return switch (commandWord) {
+            case ManagerCommand.COMMAND_WORD -> new ManagerCommandParser().parse(arguments);
+            case UnassignManagerCommand.COMMAND_WORD -> new UnassignManagerCommandParser().parse(arguments);
+            case TeamCommand.COMMAND_WORD -> new TeamCommandParser().parse(arguments);
+            case OrgCommand.COMMAND_WORD -> new OrgCommandParser().parse(arguments);
+            case ChainCommand.COMMAND_WORD -> new ChainCommandParser().parse(arguments);
             case AddCommand.COMMAND_WORD -> new AddCommandParser().parse(arguments);
             case EditCommand.COMMAND_WORD -> new EditCommandParser().parse(arguments);
             case DeleteCommand.COMMAND_WORD -> new DeleteCommandParser().parse(arguments);
@@ -82,6 +94,7 @@ public class AddressBookParser {
                 }
                 yield new CheckCommand();
             }
+            case FilterCommand.COMMAND_WORD -> new FilterCommandParser().parse(arguments);
             case ImportCommand.COMMAND_WORD -> new ImportCommandParser().parse(arguments);
             case ExportCommand.COMMAND_WORD -> new ExportCommandParser().parse(arguments);
             case ListCommand.COMMAND_WORD -> {
@@ -121,6 +134,7 @@ public class AddressBookParser {
                 yield new RedoCommand();
             }
             case HelpCommand.COMMAND_WORD -> new HelpCommand();
+            case SortCommand.COMMAND_WORD -> new SortCommandParser().parse(arguments);
             default -> {
                 logger.finer("This user input caused a ParseException: " + userInput);
                 throw new ParseException(String.format(MESSAGE_UNKNOWN_COMMAND, commandWord));

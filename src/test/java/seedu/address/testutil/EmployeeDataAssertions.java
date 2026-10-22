@@ -16,6 +16,7 @@ public class EmployeeDataAssertions {
     private static List<List<String>> storedValues(List<Employee> employees) {
         return employees.stream().map(employee -> List.of(employee.getId().value, employee.getName().fullName,
                 employee.getPhone().value, employee.getEmail().value, employee.getDepartment().value,
-                employee.getRole().value, Boolean.toString(employee.isArchived()))).toList();
+                employee.getRole().value, Boolean.toString(employee.isArchived()),
+                employee.getManagerId().map(id -> id.value).orElse(""))).toList();
     }
 }
