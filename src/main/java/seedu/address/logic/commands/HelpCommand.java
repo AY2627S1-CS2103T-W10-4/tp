@@ -24,7 +24,8 @@ public class HelpCommand extends Command {
     public static final String COMMAND_SUMMARY = String.join("\n",
             "Commands:",
             AddCommand.COMMAND_WORD + " " + PREFIX_ID + "EMPLOYEE_ID " + PREFIX_NAME + "NAME " + PREFIX_PHONE
-                    + "PHONE " + PREFIX_EMAIL + "EMAIL " + PREFIX_DEPARTMENT + "DEPARTMENT " + PREFIX_ROLE + "ROLE",
+                    + "PHONE " + PREFIX_EMAIL + "EMAIL " + PREFIX_DEPARTMENT + "DEPARTMENT " + PREFIX_ROLE
+                    + "ROLE [m/MANAGER_ID]",
             ListCommand.COMMAND_WORD,
             SortCommand.COMMAND_WORD + " FIELD [asc|desc]",
             FindCommand.COMMAND_WORD + " KEYWORD [MORE_KEYWORDS]",
@@ -32,8 +33,13 @@ public class HelpCommand extends Command {
                     + PREFIX_DEPARTMENT + "DEPARTMENT] [" + PREFIX_ROLE + "ROLE]",
             EditCommand.COMMAND_WORD + " " + PREFIX_ID + "EMPLOYEE_ID [" + PREFIX_NAME + "NAME] [" + PREFIX_PHONE
                     + "PHONE] [" + PREFIX_EMAIL + "EMAIL] [" + PREFIX_DEPARTMENT + "DEPARTMENT] [" + PREFIX_ROLE
-                    + "ROLE]",
+                    + "ROLE] [m/MANAGER_ID] (empty m/ removes manager)",
             DeleteCommand.COMMAND_WORD + " " + PREFIX_ID + "EMPLOYEE_ID",
+            ManagerCommand.COMMAND_WORD + " id/EMPLOYEE_ID m/MANAGER_ID",
+            UnassignManagerCommand.COMMAND_WORD + " id/EMPLOYEE_ID",
+            TeamCommand.COMMAND_WORD + " id/EMPLOYEE_ID (employee, manager and direct reports)",
+            OrgCommand.COMMAND_WORD + " id/MANAGER_ID (full team)",
+            ChainCommand.COMMAND_WORD + " id/EMPLOYEE_ID (reporting chain)",
             ArchiveCommand.COMMAND_WORD + " " + PREFIX_ID + "EMPLOYEE_ID",
             UnarchiveCommand.COMMAND_WORD + " " + PREFIX_ID + "EMPLOYEE_ID",
             ListCommand.COMMAND_WORD + " archived",

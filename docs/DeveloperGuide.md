@@ -266,8 +266,9 @@ n employees and k visited managers. `chain()` builds an ID lookup and follows ma
 a chain of height h. Both traversals track visited IDs. Result messages retain traversal order, while
 `ReportingCommandSupport.show()` installs an ID-membership predicate without resetting the `SortedList` comparator.
 Employee cards therefore preserve the current sort order, or roster order when no sort is active.
-These queries replace the current filter without modifying employee records. The model's active-only filter
-still hides archived cards, although relationship counts and result messages include archived employees.
+These queries replace the current filter without modifying employee records. `Model#updateReportingEmployeeList`
+applies the membership predicate without the normal active-only restriction, so both messages and cards include
+related archived employees. Normal `list` and `find` continue to exclude archived employees.
 
 #### Storage and presentation
 
@@ -276,6 +277,14 @@ so older valid JSON files remain readable. `JsonSerializableAddressBook#toModelT
 before calling `AddressBook#setEmployees`, allowing a manager to appear after their reports in the JSON array.
 Duplicate IDs and invalid relationships reject the entire file through `IllegalValueException`; no partial
 roster is loaded. Saved manager IDs use the existing manager's ID spelling.
+
+`ExportCommand` writes eight CSV columns ending in `archived,managerId`; a blank manager ID means no assignment.
+`ImportCommand` also accepts legacy six-column files and seven-column files ending in `archived`. After parsing
+and checking IDs for duplicates, it resolves managers against the existing roster plus all imported rows and
+validates the complete hierarchy before changing the model. It adds employees without managers first, then
+sets their validated assignments, preserving CSV row order even when a manager appears later in the file.
+`LogicManager` commits the import as one history step and restores its checkpoint on execution or save failure.
+`ImportCommandTest` covers relationship round trips, forward references, legacy files and rejected relationships.
 
 `EmployeeCard` and `EmployeeListCard.fxml` display the manager ID or `Unassigned`. Reporting usage is also listed
 by `HelpCommand`. `ReportingCommandTest`, `ReportingCommandParserTest` and `ReportingStorageTest` cover command
@@ -420,7 +429,8 @@ retain existing behavior and are not checkpointed. Export/backup side effects ar
 Only the current employee state is serialized in the existing `employees` JSON schema; there are no history,
 checkpoint, command or predicate fields. Missing `archived` fields in older valid JSON still load as active;
 validation, case-insensitive ID uniqueness, invalid-file handling, paths and preferences are unchanged. CSV export
-retains seven columns; import also accepts legacy six-column CSV and rejects header-only files.
+uses eight columns including manager IDs; import also accepts legacy six-column and seven-column CSV and rejects
+header-only files.
 
 Employee history and atomic saving share the recorded baseline `1d8b4b5eaeae6b1a102f92dd81a7befb18221ecb`.
 The combined boundary is the writer's successful atomic replacement. Employee changes and history commits are
@@ -875,7 +885,7 @@ testing deletion or editing the JSON file.
    Expected: The role edit preserves manager `R1002`; both unassign commands succeed, leaving the manager unset.
    Enter `edit id/R1003 m/R1002` to restore it, then `edit id/R1003 m/` to verify removal through editing.
 6. Restore `R1003`'s manager to `R1002`, archive `R1003`, then enter `team id/R1002`.<br>
-   Expected: The message counts the archived direct report, while the cards hide `R1003`. Enter `list archived`
+   Expected: The message counts the archived direct report and the cards include `R1003`. Enter `list archived`
    to confirm that its manager assignment remains. Delete `R1002`, then enter `list archived` again.<br>
    Expected: `R1003` remains archived with no manager; the delete message reports one affected direct report.
 7. Assign a manager to a remaining employee, exit and relaunch.<br>

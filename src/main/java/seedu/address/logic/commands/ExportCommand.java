@@ -28,9 +28,13 @@ public class ExportCommand extends CsvFileCommand {
     public static final List<String> REQUIRED_CSV_COLUMNS =
             List.of("id", "name", "phone", "email", "department", "role");
     public static final String ARCHIVED_COLUMN = "archived";
-    /** Column names of the CSV files written by {@code export}, in order. */
-    public static final List<String> CSV_COLUMNS = Stream.concat(REQUIRED_CSV_COLUMNS.stream(),
+    public static final String MANAGER_COLUMN = "managerId";
+    /** Legacy columns including archive status but no reporting relationships. */
+    public static final List<String> LEGACY_CSV_COLUMNS = Stream.concat(REQUIRED_CSV_COLUMNS.stream(),
             Stream.of(ARCHIVED_COLUMN)).toList();
+    /** Column names of the CSV files written by {@code export}, in order. */
+    public static final List<String> CSV_COLUMNS = Stream.concat(LEGACY_CSV_COLUMNS.stream(),
+            Stream.of(MANAGER_COLUMN)).toList();
     public static final String CSV_HEADER = CsvUtil.toCsvLine(CSV_COLUMNS);
 
     public static final String MESSAGE_USAGE = COMMAND_WORD + ": Exports all employees to a CSV file, "
@@ -98,6 +102,7 @@ public class ExportCommand extends CsvFileCommand {
                 employee.getEmail().toString(),
                 employee.getDepartment().toString(),
                 employee.getRole().toString(),
-                String.valueOf(employee.isArchived())));
+                String.valueOf(employee.isArchived()),
+                employee.getManagerId().map(id -> id.value).orElse("")));
     }
 }

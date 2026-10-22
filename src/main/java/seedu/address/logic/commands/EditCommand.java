@@ -23,6 +23,7 @@ import seedu.address.model.employee.Employee;
 import seedu.address.model.employee.EmployeeId;
 import seedu.address.model.employee.Name;
 import seedu.address.model.employee.Phone;
+import seedu.address.model.employee.ReportingStructure;
 import seedu.address.model.employee.Role;
 
 /**
@@ -40,7 +41,7 @@ public class EditCommand extends Command {
             + "[" + PREFIX_PHONE + "PHONE] "
             + "[" + PREFIX_EMAIL + "EMAIL] "
             + "[" + PREFIX_DEPARTMENT + "DEPARTMENT] "
-            + "[" + PREFIX_ROLE + "ROLE]\n"
+            + "[" + PREFIX_ROLE + "ROLE] [m/MANAGER_ID] (empty m/ removes manager)\n"
             + "Example: " + COMMAND_WORD + " " + PREFIX_ID + "E0001 "
             + PREFIX_PHONE + "91234567 "
             + PREFIX_EMAIL + "johndoe@example.com";
@@ -77,7 +78,13 @@ public class EditCommand extends Command {
                 .orElseThrow(() -> new CommandException(String.format(Messages.MESSAGE_EMPLOYEE_NOT_FOUND, targetId)));
         Employee editedEmployee = createEditedEmployee(employeeToEdit, editEmployeeDescriptor);
 
-        model.setEmployee(employeeToEdit, editedEmployee);
+        try {
+            editedEmployee = ReportingStructure.withCanonicalManager(model.getAddressBook().getEmployeeList(),
+                    editedEmployee);
+            model.setEmployee(employeeToEdit, editedEmployee);
+        } catch (IllegalArgumentException e) {
+            throw new CommandException(e.getMessage());
+        }
         model.updateFilteredEmployeeList(PREDICATE_SHOW_ALL_EMPLOYEES);
         return new CommandResult(String.format(MESSAGE_EDIT_EMPLOYEE_SUCCESS, Messages.format(editedEmployee)));
     }
@@ -97,7 +104,9 @@ public class EditCommand extends Command {
         Role updatedRole = editEmployeeDescriptor.getRole().orElse(employeeToEdit.getRole());
 
         return new Employee(employeeToEdit.getId(), updatedName, updatedPhone, updatedEmail,
-                updatedDepartment, updatedRole, employeeToEdit.isArchived());
+                updatedDepartment, updatedRole, employeeToEdit.isArchived(), editEmployeeDescriptor.isManagerEdited()
+                        ? editEmployeeDescriptor.getManagerId().orElse(null)
+                        : employeeToEdit.getManagerId().orElse(null));
     }
 
     @Override
@@ -133,6 +142,8 @@ public class EditCommand extends Command {
         private Email email;
         private Department department;
         private Role role;
+        private EmployeeId managerId;
+        private boolean managerEdited;
 
         public EditEmployeeDescriptor() {}
 
@@ -145,13 +156,29 @@ public class EditCommand extends Command {
             setEmail(toCopy.email);
             setDepartment(toCopy.department);
             setRole(toCopy.role);
+            managerId = toCopy.managerId;
+            managerEdited = toCopy.managerEdited;
         }
 
         /**
          * Returns true if at least one field is edited.
          */
         public boolean isAnyFieldEdited() {
-            return CollectionUtil.isAnyNonNull(name, phone, email, department, role);
+            return managerEdited || CollectionUtil.isAnyNonNull(name, phone, email, department, role);
+        }
+
+        /** Marks the manager as edited; null explicitly removes the manager. */
+        public void setManagerId(EmployeeId managerId) {
+            this.managerId = managerId;
+            managerEdited = true;
+        }
+
+        public Optional<EmployeeId> getManagerId() {
+            return Optional.ofNullable(managerId);
+        }
+
+        public boolean isManagerEdited() {
+            return managerEdited;
         }
 
         public void setName(Name name) {
@@ -209,7 +236,9 @@ public class EditCommand extends Command {
                     && Objects.equals(phone, otherEditEmployeeDescriptor.phone)
                     && Objects.equals(email, otherEditEmployeeDescriptor.email)
                     && Objects.equals(department, otherEditEmployeeDescriptor.department)
-                    && Objects.equals(role, otherEditEmployeeDescriptor.role);
+                    && Objects.equals(role, otherEditEmployeeDescriptor.role)
+                    && managerEdited == otherEditEmployeeDescriptor.managerEdited
+                    && Objects.equals(managerId, otherEditEmployeeDescriptor.managerId);
         }
 
         @Override

@@ -251,8 +251,16 @@ This applies to `team`, `org`, `chain` and `unassign-manager` as well as `manage
 list unchanged.
 
 Reporting queries replace the current search filter and leave records unchanged. They query relationships across
-the complete stored roster, so counts and messages include archived employees. As with normal employee listings,
-archived employees are hidden from the cards; use `list archived` to view them. Use `list` to return to all active employees.
+the complete stored roster. Related archived employees are included in both the messages and employee cards,
+so report counts and named managers agree with the displayed results. The current sort order is preserved.
+Use `list` to return to all active employees, or `list archived` to show only archived employees.
+
+Reporting relationships are also preserved by CSV export and import. `export FILE_PATH` writes the header
+`id,name,phone,email,department,role,archived,managerId`; a blank `managerId` means no manager. For example,
+use `export exports/staff.csv` and then `import exports/staff.csv` into an empty roster. Import accepts the older
+six-column format and seven-column format ending in `archived`, treating those rows as having no manager.
+A manager may appear later in the file or already exist in HuntR. Invalid IDs, missing managers, self-reporting
+and cycles reject the import without adding any employees. Existing employee IDs are rejected rather than overwritten.
 
 ### Finding employees by name: `find`
 

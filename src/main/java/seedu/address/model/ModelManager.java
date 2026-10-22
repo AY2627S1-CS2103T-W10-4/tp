@@ -188,6 +188,12 @@ public class ModelManager implements Model {
     }
 
     @Override
+    public void updateReportingEmployeeList(Predicate<Employee> predicate) {
+        requireNonNull(predicate);
+        filteredEmployees.setPredicate(predicate);
+    }
+
+    @Override
     public void updateEmployeeSortOrder(Comparator<Employee> comparator) {
         requireNonNull(comparator);
         sortedEmployees.setComparator(comparator);

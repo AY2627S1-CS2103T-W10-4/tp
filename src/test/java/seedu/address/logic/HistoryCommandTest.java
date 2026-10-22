@@ -39,17 +39,63 @@ import seedu.address.logic.parser.AddressBookParser;
 import seedu.address.logic.parser.exceptions.ParseException;
 import seedu.address.model.Model;
 import seedu.address.model.ModelManager;
+import seedu.address.model.UserPrefs;
 import seedu.address.model.employee.Employee;
 import seedu.address.model.employee.NameContainsKeywordsPredicate;
 import seedu.address.storage.JsonAddressBookStorage;
 import seedu.address.storage.JsonUserPrefsStorage;
 import seedu.address.storage.StorageManager;
+import seedu.address.testutil.AddressBookBuilder;
 import seedu.address.testutil.EditEmployeeDescriptorBuilder;
 import seedu.address.testutil.EmployeeBuilder;
 
 public class HistoryCommandTest {
     @TempDir
     public Path temporaryFolder;
+
+    @Test
+    public void execute_reportingCommands_undoAndRedoRestoreAssignmentsAndSavedData() throws Exception {
+        Employee report = BENSON.withArchived(true);
+        Employee assigned = report.withManager(ALICE.getId());
+        ModelManager model = new ModelManager(new AddressBookBuilder()
+                .withEmployee(ALICE).withEmployee(report).build(), new UserPrefs());
+        JsonAddressBookStorage employeeStorage = new JsonAddressBookStorage(temporaryFolder.resolve("employees.json"));
+        LogicManager logic = new LogicManager(model, new StorageManager(employeeStorage,
+                new JsonUserPrefsStorage(temporaryFolder.resolve("preferences.json"))));
+        List<String> commands = List.of("manager id/" + report.getId() + " m/" + ALICE.getId(),
+                "undo", "redo", "unassign-manager id/" + report.getId(), "undo", "redo");
+        List<Employee> expectedReports = List.of(assigned, report, assigned, report, assigned, report);
+        for (int i = 0; i < commands.size(); i++) {
+            logic.execute(commands.get(i));
+            List<Employee> expected = List.of(ALICE, expectedReports.get(i));
+            assertStoredEmployees(expected, model.getAddressBook().getEmployeeList());
+            assertStoredEmployees(expected, employeeStorage.readAddressBook().orElseThrow().getEmployeeList());
+        }
+        logic.execute("undo");
+        logic.execute("undo");
+        assertStoredEmployees(List.of(ALICE, report), model.getAddressBook().getEmployeeList());
+        assertFalse(model.canUndoAddressBook());
+    }
+
+    @Test
+    public void execute_editThenManager_undoRevertsOnlyTheLatestChange() throws Exception {
+        ModelManager model = new ModelManager(new AddressBookBuilder()
+                .withEmployee(ALICE).withEmployee(BENSON).build(), new UserPrefs());
+        LogicManager logic = new LogicManager(model, new StorageManager(
+                new JsonAddressBookStorage(temporaryFolder.resolve("employees.json")),
+                new JsonUserPrefsStorage(temporaryFolder.resolve("preferences.json"))));
+        Employee edited = new EmployeeBuilder(ALICE).withRole("Updated role").build();
+        logic.execute("edit id/" + ALICE.getId() + " r/Updated role");
+        logic.execute("manager id/" + BENSON.getId() + " m/" + ALICE.getId());
+        logic.execute("undo");
+        assertStoredEmployees(List.of(edited, BENSON), model.getAddressBook().getEmployeeList());
+        logic.execute("undo");
+        assertStoredEmployees(List.of(ALICE, BENSON), model.getAddressBook().getEmployeeList());
+        logic.execute("redo");
+        logic.execute("redo");
+        assertStoredEmployees(List.of(edited, BENSON.withManager(ALICE.getId())),
+                model.getAddressBook().getEmployeeList());
+    }
 
     @Test
     public void execute_allModifyingCommands_commitOnceAndTraverseEveryState() throws Exception {

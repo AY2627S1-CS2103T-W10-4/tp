@@ -3,6 +3,7 @@ package seedu.address.model.employee;
 import static seedu.address.commons.util.CollectionUtil.requireAllNonNull;
 
 import java.util.Objects;
+import java.util.Optional;
 
 import seedu.address.commons.util.ToStringBuilder;
 
@@ -22,6 +23,7 @@ public class Employee {
     private final Department department;
     private final Role role;
     private final boolean archived;
+    private final EmployeeId managerId;
 
     /**
      * Every field must be present and not null.
@@ -33,6 +35,18 @@ public class Employee {
     /** Creates an employee with an explicit archive status. */
     public Employee(EmployeeId id, Name name, Phone phone, Email email, Department department, Role role,
             boolean archived) {
+        this(id, name, phone, email, department, role, archived, null);
+    }
+
+    /** Creates an active employee with an optional manager. */
+    public Employee(EmployeeId id, Name name, Phone phone, Email email, Department department, Role role,
+            EmployeeId managerId) {
+        this(id, name, phone, email, department, role, false, managerId);
+    }
+
+    /** Creates an employee with archive status and an optional manager. */
+    public Employee(EmployeeId id, Name name, Phone phone, Email email, Department department, Role role,
+            boolean archived, EmployeeId managerId) {
         requireAllNonNull(id, name, phone, email, department, role);
         this.id = id;
         this.name = name;
@@ -41,6 +55,16 @@ public class Employee {
         this.department = department;
         this.role = role;
         this.archived = archived;
+        this.managerId = managerId;
+    }
+
+    public Optional<EmployeeId> getManagerId() {
+        return Optional.ofNullable(managerId);
+    }
+
+    /** Returns an otherwise identical employee with the given manager, or none when null. */
+    public Employee withManager(EmployeeId newManagerId) {
+        return new Employee(id, name, phone, email, department, role, archived, newManagerId);
     }
 
     public EmployeeId getId() {
@@ -73,7 +97,7 @@ public class Employee {
 
     /** Returns an otherwise identical employee with the requested archive status. */
     public Employee withArchived(boolean archived) {
-        return new Employee(id, name, phone, email, department, role, archived);
+        return new Employee(id, name, phone, email, department, role, archived, managerId);
     }
 
     /**
@@ -110,13 +134,14 @@ public class Employee {
                 && email.equals(otherEmployee.email)
                 && department.equals(otherEmployee.department)
                 && role.equals(otherEmployee.role)
-                && archived == otherEmployee.archived;
+                && archived == otherEmployee.archived
+                && Objects.equals(managerId, otherEmployee.managerId);
     }
 
     @Override
     public int hashCode() {
         // use this method for custom fields hashing instead of implementing your own
-        return Objects.hash(id, name, phone, email, department, role, archived);
+        return Objects.hash(id, name, phone, email, department, role, archived, managerId);
     }
 
     @Override
@@ -129,6 +154,7 @@ public class Employee {
                 .add("department", department)
                 .add("role", role)
                 .add("archived", archived)
+                .add("managerId", managerId)
                 .toString();
     }
 

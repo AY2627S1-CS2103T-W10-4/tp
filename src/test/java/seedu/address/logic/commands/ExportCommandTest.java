@@ -62,7 +62,7 @@ public class ExportCommandTest {
         List<String> lines = Files.readAllLines(appFolder.resolve(STAFF_CSV));
         assertEquals(employeeCount + 1, lines.size());
         assertEquals(ExportCommand.CSV_HEADER, lines.get(0));
-        assertEquals("E0001,Alice Pauline,94351253,alice@example.com,Engineering,Software Engineer,false",
+        assertEquals("E0001,Alice Pauline,94351253,alice@example.com,Engineering,Software Engineer,false,",
                 lines.get(1));
     }
 
@@ -74,7 +74,7 @@ public class ExportCommandTest {
 
         new ExportCommand(appFolder, STAFF_CSV).execute(model);
 
-        assertEquals("E0001,\"Tan, Ah Kow\",94351253,alice@example.com,\"R&D, Asia\",Software Engineer,false",
+        assertEquals("E0001,\"Tan, Ah Kow\",94351253,alice@example.com,\"R&D, Asia\",Software Engineer,false,",
                 Files.readAllLines(appFolder.resolve(STAFF_CSV)).get(1));
     }
 
@@ -85,7 +85,7 @@ public class ExportCommandTest {
 
         new ExportCommand(appFolder, STAFF_CSV).execute(model);
 
-        assertTrue(Files.readAllLines(appFolder.resolve(STAFF_CSV)).get(1).endsWith(",true"));
+        assertTrue(Files.readAllLines(appFolder.resolve(STAFF_CSV)).get(1).endsWith(",true,"));
     }
 
     @Test

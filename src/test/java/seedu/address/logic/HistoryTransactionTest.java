@@ -95,6 +95,33 @@ public class HistoryTransactionTest {
     }
 
     @Test
+    public void execute_reportingCommands_saveFailureRestoresAssignmentsAndHistory() throws Exception {
+        for (boolean unassign : List.of(false, true)) {
+            setUp();
+            if (unassign) {
+                logic.execute("manager id/" + BENSON.getId() + " m/" + ALICE.getId());
+                // Return to a state with an assignment and an available redo entry.
+                logic.execute("edit id/" + ALICE.getId() + " r/Another role");
+                logic.execute("undo");
+            }
+            List<Employee> before = List.copyOf(model.getAddressBook().getEmployeeList());
+            storage.failure = new IOException("save failed");
+            String command = unassign ? "unassign-manager id/" + BENSON.getId()
+                    : "manager id/" + BENSON.getId() + " m/" + ALICE.getId();
+            assertThrows(CommandException.class, () -> logic.execute(command));
+            assertStoredEmployees(before, model.getAddressBook().getEmployeeList());
+            assertTrue(model.canRedoAddressBook());
+            model.redoAddressBook();
+            Employee expectedAlice = unassign ? new EmployeeBuilder(ALICE).withRole("Another role").build()
+                    : SECOND_EDIT;
+            Employee expectedReport = unassign ? ARCHIVED.withManager(ALICE.getId()) : ARCHIVED;
+            assertStoredEmployees(List.of(expectedAlice, expectedReport), model.getAddressBook().getEmployeeList());
+            model.undoAddressBook();
+            assertStoredEmployees(before, model.getAddressBook().getEmployeeList());
+        }
+    }
+
+    @Test
     public void execute_permissionIoAndRuntimeFailures_restoreThenPreservePresentationOrOriginalException()
             throws Exception {
         List<Exception> failures = List.of(new AccessDeniedException("target", "other", "reason"),

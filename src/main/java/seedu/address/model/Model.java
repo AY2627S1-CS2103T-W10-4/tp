@@ -107,6 +107,9 @@ public interface Model {
      */
     void updateFilteredEmployeeList(Predicate<Employee> predicate);
 
+    /** Updates the filter for a reporting query, including matching active and archived employees. */
+    void updateReportingEmployeeList(Predicate<Employee> predicate);
+
     /**
      * Sorts the displayed employee list with the given {@code comparator}. The stored order is not changed.
      * @throws NullPointerException if {@code comparator} is null.

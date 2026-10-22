@@ -22,6 +22,7 @@ import seedu.address.logic.parser.ParserUtil;
 import seedu.address.model.Model;
 import seedu.address.model.employee.Employee;
 import seedu.address.model.employee.EmployeeId;
+import seedu.address.model.employee.ReportingStructure;
 
 /**
  * Adds every employee in a CSV file. If any row is invalid, no employee is added.
@@ -34,7 +35,7 @@ public class ImportCommand extends CsvFileCommand {
             + "If any row is invalid, no employee is added.\n"
             + "Parameters: FILE_PATH (relative to the folder HuntR runs from, ending in .csv)\n"
             + "The file must start with the header " + ExportCommand.CSV_HEADER
-            + " (the " + ExportCommand.ARCHIVED_COLUMN + " column may be left out)\n"
+            + " (legacy six-column files and seven-column files ending in archived are also accepted)\n"
             + "Example: " + COMMAND_WORD + " exports/staff.csv";
 
     public static final String MESSAGE_SUCCESS = "Imported %1$d employee(s) from %2$s";
@@ -45,7 +46,8 @@ public class ImportCommand extends CsvFileCommand {
             + "In Excel, save it as \"CSV UTF-8\".";
     public static final String MESSAGE_EMPTY_FILE = "%1$s is empty.";
     public static final String MESSAGE_WRONG_HEADER = "%1$s should start with the header " + ExportCommand.CSV_HEADER
-            + " (the " + ExportCommand.ARCHIVED_COLUMN + " column may be left out)";
+            + " (legacy six-column files and seven-column files ending in archived are also accepted)";
+    public static final String MESSAGE_INVALID_RELATIONSHIPS = "Nothing was imported. %s";
     public static final String MESSAGE_NO_EMPLOYEES = "%1$s has no employee rows to import.";
     public static final String MESSAGE_INVALID_ROW = "Nothing was imported. Row %1$d: %2$s";
     public static final String MESSAGE_WRONG_VALUE_COUNT = "Expected %1$d values (%2$s) but found %3$d.";
@@ -89,7 +91,10 @@ public class ImportCommand extends CsvFileCommand {
         List<String> columns = readColumns(lines);
         List<Employee> employees = parseEmployees(lines.subList(1, lines.size()), columns, model);
 
-        employees.forEach(model::addEmployee);
+        // Add every identity before assigning managers, so CSV row order does not restrict references.
+        employees.forEach(employee -> model.addEmployee(employee.withManager(null)));
+        employees.stream().filter(employee -> employee.getManagerId().isPresent())
+                .forEach(employee -> model.setEmployee(employee.withManager(null), employee));
         model.updateFilteredEmployeeList(Model.PREDICATE_SHOW_ALL_EMPLOYEES);
 
         logger.info("Imported " + employees.size() + " employees from " + resolvedPath);
@@ -111,10 +116,10 @@ public class ImportCommand extends CsvFileCommand {
     }
 
     /**
-     * Returns the column names in the first line, in lower case and without surrounding spaces.
+     * Returns recognised column names in their canonical spelling, ignoring header case and surrounding spaces.
      *
-     * @throws CommandException unless they are {@link ExportCommand#CSV_COLUMNS}, or
-     *     {@link ExportCommand#REQUIRED_CSV_COLUMNS} for files without the archived column.
+     * @throws CommandException unless the header matches the current eight-column format or a legacy
+     *     six-column or seven-column format.
      */
     private List<String> readColumns(List<String> lines) throws CommandException {
         boolean isEmpty = lines.stream().allMatch(String::isBlank);
@@ -131,12 +136,14 @@ public class ImportCommand extends CsvFileCommand {
         } catch (IllegalValueException ive) {
             throw new CommandException(String.format(MESSAGE_WRONG_HEADER, getFilePath()), ive);
         }
-        boolean isKnownHeader = columns.equals(ExportCommand.CSV_COLUMNS)
+        boolean isKnownHeader = columns.equals(ExportCommand.CSV_COLUMNS.stream()
+                .map(column -> column.toLowerCase(Locale.ROOT)).toList())
+                || columns.equals(ExportCommand.LEGACY_CSV_COLUMNS)
                 || columns.equals(ExportCommand.REQUIRED_CSV_COLUMNS);
         if (!isKnownHeader) {
             throw new CommandException(String.format(MESSAGE_WRONG_HEADER, getFilePath()));
         }
-        return columns;
+        return columns.size() == ExportCommand.CSV_COLUMNS.size() ? ExportCommand.CSV_COLUMNS : columns;
     }
 
     /**
@@ -163,7 +170,22 @@ public class ImportCommand extends CsvFileCommand {
         if (employees.isEmpty()) {
             throw new CommandException(String.format(MESSAGE_NO_EMPLOYEES, getFilePath()));
         }
-        return employees;
+        List<Employee> combined = new ArrayList<>(model.getAddressBook().getEmployeeList());
+        combined.addAll(employees);
+        List<Employee> canonical = new ArrayList<>();
+        for (Employee employee : employees) {
+            try {
+                canonical.add(ReportingStructure.withCanonicalManager(combined, employee));
+            } catch (IllegalArgumentException e) {
+                throw createRowError(rowNumbersById.get(employee.getId()), e.getMessage());
+            }
+        }
+        try {
+            ReportingStructure.validate(combined);
+        } catch (IllegalArgumentException e) {
+            throw new CommandException(String.format(MESSAGE_INVALID_RELATIONSHIPS, e.getMessage()), e);
+        }
+        return canonical;
     }
 
     /**
@@ -178,6 +200,9 @@ public class ImportCommand extends CsvFileCommand {
             }
             boolean isArchived = columns.contains(ExportCommand.ARCHIVED_COLUMN)
                     && parseArchived(values.get(columns.indexOf(ExportCommand.ARCHIVED_COLUMN)));
+            int managerIndex = columns.indexOf(ExportCommand.MANAGER_COLUMN);
+            EmployeeId managerId = managerIndex < 0 || values.get(managerIndex).isBlank() ? null
+                    : ParserUtil.parseEmployeeId(values.get(managerIndex));
             // values are in the order of ExportCommand.CSV_COLUMNS
             return new Employee(
                     ParserUtil.parseEmployeeId(values.get(0)),
@@ -186,7 +211,7 @@ public class ImportCommand extends CsvFileCommand {
                     ParserUtil.parseEmail(values.get(3)),
                     ParserUtil.parseDepartment(values.get(4)),
                     ParserUtil.parseRole(values.get(5)),
-                    isArchived);
+                    isArchived, managerId);
         } catch (IllegalValueException ive) {
             throw new CommandException(String.format(MESSAGE_INVALID_ROW, rowNumber, ive.getMessage()), ive);
         }

@@ -39,6 +39,8 @@ public class EmployeeCard extends UiPart<Region> {
     private Label department;
     @FXML
     private Label role;
+    @FXML
+    private Label manager;
 
     /**
      * Creates a {@code EmployeeCard} with the given {@code Employee} and index to display.
@@ -53,5 +55,6 @@ public class EmployeeCard extends UiPart<Region> {
         email.setText("Email: " + employee.getEmail().value);
         department.setText("Department: " + employee.getDepartment().value);
         role.setText("Role: " + employee.getRole().value);
+        manager.setText("Manager: " + employee.getManagerId().map(Object::toString).orElse("Unassigned"));
     }
 }

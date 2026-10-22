@@ -2,11 +2,13 @@ package seedu.address.model;
 
 import static java.util.Objects.requireNonNull;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import javafx.collections.ObservableList;
 import seedu.address.commons.util.ToStringBuilder;
 import seedu.address.model.employee.Employee;
+import seedu.address.model.employee.ReportingStructure;
 import seedu.address.model.employee.UniqueEmployeeList;
 
 /**
@@ -34,7 +36,9 @@ public class AddressBook implements ReadOnlyAddressBook {
      * {@code employees} must not contain duplicate employees.
      */
     public void setEmployees(List<Employee> employees) {
-        this.employees.setEmployees(employees);
+        ReportingStructure.validate(employees);
+        this.employees.setEmployees(employees.stream()
+                .map(employee -> ReportingStructure.withCanonicalManager(employees, employee)).toList());
     }
 
     /**
@@ -60,7 +64,10 @@ public class AddressBook implements ReadOnlyAddressBook {
      * The employee must not already exist in the address book.
      */
     public void addEmployee(Employee p) {
-        employees.add(p);
+        List<Employee> updated = new ArrayList<>(getEmployeeList());
+        updated.add(p);
+        ReportingStructure.validate(updated);
+        employees.add(ReportingStructure.withCanonicalManager(updated, p));
     }
 
     /**
@@ -72,7 +79,13 @@ public class AddressBook implements ReadOnlyAddressBook {
     public void setEmployee(Employee target, Employee editedEmployee) {
         requireNonNull(editedEmployee);
 
-        employees.setEmployee(target, editedEmployee);
+        List<Employee> updated = new ArrayList<>(getEmployeeList());
+        int targetIndex = updated.indexOf(target);
+        if (targetIndex >= 0) {
+            updated.set(targetIndex, editedEmployee);
+            ReportingStructure.validate(updated);
+        }
+        employees.setEmployee(target, ReportingStructure.withCanonicalManager(updated, editedEmployee));
     }
 
     /**
@@ -81,12 +94,20 @@ public class AddressBook implements ReadOnlyAddressBook {
      */
     public void removeEmployee(Employee key) {
         employees.remove(key);
+        // Keep the remaining hierarchy valid when a manager leaves the roster.
+        for (Employee employee : new ArrayList<>(getEmployeeList())) {
+            if (employee.getManagerId().filter(key.getId()::equals).isPresent()) {
+                employees.setEmployee(employee, employee.withManager(null));
+            }
+        }
     }
 
-    /** Removes all active employees without modifying the archive. */
+    /** Removes active employees and clears references to their IDs from archived employees. */
     public void clearEmployees() {
-        employees.setEmployees(employees.asUnmodifiableObservableList().stream()
-                .filter(Employee::isArchived).toList());
+        List<Employee> archived = getEmployeeList().stream().filter(Employee::isArchived).toList();
+        setEmployees(archived.stream().map(employee -> employee.getManagerId().isPresent()
+                && archived.stream().noneMatch(manager -> manager.getId().equals(employee.getManagerId().orElseThrow()))
+                ? employee.withManager(null) : employee).toList());
     }
 
     //// util methods

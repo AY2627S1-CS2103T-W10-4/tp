@@ -26,15 +26,27 @@ class JsonAdaptedEmployee {
     private final String department;
     private final String role;
     private final Boolean archived;
+    private final String managerId;
 
     /**
      * Constructs a {@code JsonAdaptedEmployee} with the given employee details.
      */
+    public JsonAdaptedEmployee(String id, String name, String phone, String email, String department, String role,
+            Boolean archived) {
+        this(id, name, phone, email, department, role, archived, null);
+    }
+
+    /** Creates an adapter with an optional manager for existing callers. */
+    public JsonAdaptedEmployee(String id, String name, String phone, String email, String department, String role,
+            String managerId) {
+        this(id, name, phone, email, department, role, false, managerId);
+    }
+
     @JsonCreator
     public JsonAdaptedEmployee(@JsonProperty("id") String id, @JsonProperty("name") String name,
             @JsonProperty("phone") String phone, @JsonProperty("email") String email,
             @JsonProperty("department") String department, @JsonProperty("role") String role,
-            @JsonProperty("archived") Boolean archived) {
+            @JsonProperty("archived") Boolean archived, @JsonProperty("managerId") String managerId) {
         this.id = id;
         this.name = name;
         this.phone = phone;
@@ -42,6 +54,7 @@ class JsonAdaptedEmployee {
         this.department = department;
         this.role = role;
         this.archived = archived;
+        this.managerId = managerId;
     }
 
     /** Constructs an active employee adapter for existing callers and tests. */
@@ -60,6 +73,7 @@ class JsonAdaptedEmployee {
         department = source.getDepartment().value;
         role = source.getRole().value;
         archived = source.isArchived();
+        managerId = source.getManagerId().map(employeeId -> employeeId.value).orElse(null);
     }
 
     /**
@@ -118,8 +132,11 @@ class JsonAdaptedEmployee {
         }
         final Role modelRole = new Role(role);
 
+        if (managerId != null && !EmployeeId.isValidEmployeeId(managerId)) {
+            throw new IllegalValueException(EmployeeId.MESSAGE_CONSTRAINTS);
+        }
         return new Employee(modelId, modelName, modelPhone, modelEmail, modelDepartment, modelRole,
-                archived != null && archived);
+                archived != null && archived, managerId == null ? null : new EmployeeId(managerId));
     }
 
 }
