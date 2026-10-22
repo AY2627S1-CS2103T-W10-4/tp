@@ -132,6 +132,7 @@
         "listing-all-employees-list": "Listing all employees: list",
         "editing-an-employee-edit": "Editing an employee: edit",
         "finding-employees-by-name-find": "Finding employees by name: find",
+        "filtering-employees-filter": "Filtering employees: filter",
         "archiving-employees-archive": "Archiving employees: archive",
         "unarchiving-employees-unarchive": "Unarchiving employees: unarchive",
         "listing-archived-employees-list-archived": "Listing archived employees: list archived",
