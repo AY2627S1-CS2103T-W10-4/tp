@@ -39,6 +39,8 @@ HuntR is based on [AddressBook-Level3](https://github.com/se-edu/addressbook-lev
 
    * `find Alex` : Finds employees whose names contain the word `Alex`.
 
+   * `filter d/Engineering r/Manager` : Shows only the employees in the Engineering department whose role contains `Manager`.
+
    * `delete id/E0123` : Deletes employee `E0123`, including when hidden by a search.
 
    * `clear` : Deletes all active employees while preserving archived records.
@@ -111,6 +113,8 @@ The command takes no parameters. Leading and trailing spaces are ignored, but ad
 
 If there are no employee records, HuntR displays an empty employee list and explains how to add an employee.
 
+Use `list` to show every employee again after a `find` or `filter`.
+
 ### Editing an employee: `edit`
 
 Edits an existing employee in HuntR using their employee ID.
@@ -152,6 +156,40 @@ Examples:
 * `find John` returns employees named `john` and `John Doe`
 * `find alex david` returns `Alex Yeoh`, `David Li`<br>
   ![result for 'find alex david'](images/findAlexDavidResult.png)
+
+### Filtering employees: `filter`
+
+Shows only the employees who match the employee ID, name, department and role that you give.
+
+Format: `filter [id/EMPLOYEE_ID] [n/NAME] [d/DEPARTMENT] [r/ROLE]`
+
+* At least one of `id/`, `n/`, `d/` or `r/` must be given. If you give several, an employee must match **all** of them (an `AND` search), so the list is narrowed further.
+* Matching is case-insensitive and uses whole words, like `find`. For example, `d/engineering` matches `Engineering`, and `d/Resources` matches `Human Resources`, but `d/Engineer` does not match `Engineering`.
+* Spaces and punctuation separate words. For example, `d/R&D` matches the department `R&D, Asia`, and `r/Backend` or `r/(Backend)` matches the role `Software Engineer (Backend)`. The symbols `&` and `'` stay part of a word.
+* If a value has several words, every word must appear in that field, in any order. For example, `r/Software Engineer` matches `Software Engineer` but not `Software Manager`.
+* An employee ID must be the whole ID, such as `id/E0123`. The ID is not case-sensitive.
+* To match any of several values of the same field (an `OR` search), repeat the prefix. For example, `d/Sales d/Finance` matches employees in `Sales` or in `Finance`. Each repeated value is a separate search, so `r/Manager r/Analyst` is not the same as `r/Manager Analyst`, which needs both words.
+* Filtering only changes what is shown. Your saved data is not changed. Archived employees are not shown. Use [`list`](#listing-all-employees-list) to show all employees again.
+* A filter with no matches is valid and shows an empty list with the message `0 employees listed!`.
+* Leading and trailing spaces are ignored, and the parameters can be in any order.
+
+Examples:
+* `filter d/Engineering` shows everyone in the Engineering department.
+* `filter r/Manager` shows employees whose role contains the word `Manager`, such as `Engineering Manager`.
+* `filter d/Engineering r/Manager` shows only the Engineering employees whose role contains `Manager`.
+* `filter n/John d/Sales` shows only the employees named `John` who are in Sales. Other people in Sales, and Johns in other departments, are not shown.
+* `filter d/Sales d/Finance r/Manager` shows the managers who are in Sales or in Finance.
+* `filter id/E0123` shows only the employee with the ID `E0123`.
+
+The following input errors leave the displayed list unchanged. Each message is followed by the usage of the command.
+
+| Input | Error message |
+| --- | --- |
+| `filter` or `filter Engineering` | `Invalid command format!` |
+| `filter e/john@example.com` or `filter x/foo` | `Unknown parameter: e/` (or the parameter given) |
+| `filter d/` or `filter n/` | `The value of d/ should contain at least one letter or digit.` (or `n/`, `r/`) |
+| `filter d/@@@` | `The value of d/ should contain at least one letter or digit.` |
+| `filter id/E 1` | The employee ID constraints message |
 
 ### Archiving employees: `archive`
 
@@ -417,6 +455,7 @@ Action     | Format, Examples
 **Delete** | `delete id/EMPLOYEE_ID`<br> e.g., `delete id/EMP-0042`
 **Edit**   | `edit id/EMPLOYEE_ID [n/NAME] [p/PHONE] [e/EMAIL] [d/DEPARTMENT] [r/ROLE]`<br>e.g., `edit id/E0001 p/91234567 e/alex@example.com`
 **Find**   | `find KEYWORD [MORE_KEYWORDS]`<br> e.g., `find James Jake`
+**Filter** | `filter [id/EMPLOYEE_ID] [n/NAME] [d/DEPARTMENT] [r/ROLE]`<br> e.g., `filter n/John d/Sales`, `filter d/Sales d/Finance r/Manager`
 **List**   | `list` or `list archived`
 **Undo**   | `undo`
 **Redo**   | `redo`
