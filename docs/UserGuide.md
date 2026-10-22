@@ -195,7 +195,8 @@ An employee with no manager and no reports is shown on their own with a direct-r
 ### Viewing all reports: `org`
 
 Shows all direct and indirect reports under the specified employee. The employee themselves is excluded.
-The result message lists descendants in breadth-first order; employee cards retain roster order.
+The result message lists descendants in breadth-first order. Employee cards preserve the current sort order,
+or roster order when no sort is active. For example, after `sort id desc`, the cards remain sorted by descending ID.
 
 Format: `org id/EMPLOYEE_ID`
 
@@ -205,7 +206,8 @@ the result includes `E0002` and `E0003`. With no reports, the list is empty and 
 ### Viewing the reporting chain: `chain`
 
 Shows the specified employee's managers, from their immediate manager to the top of the hierarchy.
-The employee themselves is excluded. The result message shows chain order using `->`; employee cards retain roster order.
+The employee themselves is excluded. The result message shows chain order using `->`. Employee cards preserve
+the current sort order, or roster order when no sort is active.
 
 Format: `chain id/EMPLOYEE_ID`
 
@@ -468,9 +470,10 @@ The same template applies to `Undo`, `REDO`, `u`, `r` and `undo2`, preserving th
 Normal parsing and command errors retain your input and use the command box's existing error styling;
 they do not save or change records, history or the view. Successful commands clear the command box.
 
-One history step covers an entire successful `add`, `edit`, `delete`, `clear`, `import`, `archive` or `unarchive`.
+One history step covers an entire successful `add`, `edit`, `delete`, `clear`, `import`, `archive`, `unarchive`,
+`manager` or `unassign-manager`.
 An import of several employees is reversed by one undo. Redo restores saved data directly, even if the original
-CSV has changed or been deleted. All employee values, ID spelling, archive status and stored order are restored,
+CSV has changed or been deleted. All employee values, ID spelling, archive status, manager assignments and stored order are restored,
 including employees hidden from the current view. Clear affects only active employees.
 
 Undo and redo preserve the view active immediately before the command: active-only, archived-only or the current

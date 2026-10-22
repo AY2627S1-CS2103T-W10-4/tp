@@ -264,7 +264,8 @@ removes it. An empty manager value on `add` or `manager` is rejected.
 `ReportingStructure.reports()` scans the roster for each visited manager; recursive queries take O(nk) time for
 n employees and k visited managers. `chain()` builds an ID lookup and follows manager links in O(n + h) time for
 a chain of height h. Both traversals track visited IDs. Result messages retain traversal order, while
-`ReportingCommandSupport.show()` installs an ID-membership predicate so employee cards retain roster order.
+`ReportingCommandSupport.show()` installs an ID-membership predicate without resetting the `SortedList` comparator.
+Employee cards therefore preserve the current sort order, or roster order when no sort is active.
 These queries replace the current filter without modifying employee records. The model's active-only filter
 still hides archived cards, although relationship counts and result messages include archived employees.
 
@@ -355,7 +356,8 @@ current snapshot **before** removing redo states. Employee equality alone ignore
 A changed state discards the redo tail and appends one snapshot; an identical state leaves history untouched.
 
 The model exposes `commitAddressBook()`, `canUndoAddressBook()`, `canRedoAddressBook()`, `undoAddressBook()` and
-`redoAddressBook()`. Each of `add`, `edit`, `delete`, `clear`, `import`, `archive` and `unarchive` declares
+`redoAddressBook()`. Each of `add`, `edit`, `delete`, `clear`, `import`, `archive`, `unarchive`, `manager` and
+`unassign-manager` declares
 `HistoryAction.COMMIT` through `Command#getHistoryAction()`. `LogicManager` commits once after successful command
 execution, before saving. Commands do not call `commitAddressBook()` themselves. This single declaration supplies
 both undo history and checkpoint/rollback protection. Import commits only after all rows have been added and the
@@ -371,7 +373,7 @@ messages. They create no entry and retain redo. Read-only and failed commands al
 
 `Command#getHistoryAction()` defaults to `NONE`; modifying commands return `COMMIT`, and undo/redo return `NAVIGATE`.
 `Command#isDataChanging()` is final and derives its result from that declaration. It means “this command may change
-employee data or navigate employee history.” The seven modifying commands and both history commands therefore
+employee data or navigate employee history.” The nine modifying commands and both history commands therefore
 return true even for no-ops. `LogicManager` parses first, captures a `ModelCheckpoint` for those commands, executes,
 commits only for `COMMIT`, then saves through the existing storage API. `NAVIGATE` never creates a snapshot.
 Only a successful storage return permits the result to be returned. No fallible work is added after that return.
