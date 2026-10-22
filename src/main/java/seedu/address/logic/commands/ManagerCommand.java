@@ -25,6 +25,11 @@ public class ManagerCommand extends Command {
     }
 
     @Override
+    public HistoryAction getHistoryAction() {
+        return HistoryAction.COMMIT;
+    }
+
+    @Override
     public CommandResult execute(Model model) throws CommandException {
         requireNonNull(model);
         Employee employee = ReportingCommandSupport.find(model, employeeId);
