@@ -26,6 +26,7 @@ import seedu.address.model.Model;
 import seedu.address.model.ModelManager;
 import seedu.address.model.UserPrefs;
 import seedu.address.model.employee.Employee;
+import seedu.address.model.employee.EmployeeMatchesCriteriaPredicate;
 import seedu.address.model.employee.NameContainsKeywordsPredicate;
 import seedu.address.testutil.AddressBookBuilder;
 import seedu.address.testutil.EmployeeBuilder;
@@ -182,6 +183,120 @@ public class SortCommandTest {
         new SortCommand(SortField.ROLE).execute(model);
         // Account Manager (Daniel) comes before HR Executive (Benson)
         assertEquals(List.of(DANIEL, BENSON), model.getFilteredEmployeeList());
+    }
+
+    /** Returns a filter for the Finance, Sales and Marketing departments, which are Carl, Daniel and Fiona. */
+    private static FilterCommand filterFinanceSalesAndMarketing() {
+        return new FilterCommand(new EmployeeMatchesCriteriaPredicate(
+                List.of(), List.of(), List.of("Finance", "Sales", "Marketing"), List.of()));
+    }
+
+    @Test
+    public void execute_filterThenSort_sortsOnlyTheFilteredEmployees() {
+        filterFinanceSalesAndMarketing().execute(model);
+        // stored order
+        assertEquals(List.of(CARL, DANIEL, FIONA), model.getFilteredEmployeeList());
+
+        // Account Manager (Daniel), Accountant (Carl), Marketing Executive (Fiona)
+        new SortCommand(SortField.ROLE).execute(model);
+        assertEquals(List.of(DANIEL, CARL, FIONA), model.getFilteredEmployeeList());
+
+        new SortCommand(SortField.NAME, SortOrder.DESC).execute(model);
+        assertEquals(List.of(FIONA, DANIEL, CARL), model.getFilteredEmployeeList());
+    }
+
+    @Test
+    public void execute_sortThenFilter_keepsSortOrderOfTheFilteredEmployees() {
+        new SortCommand(SortField.ROLE, SortOrder.DESC).execute(model);
+
+        filterFinanceSalesAndMarketing().execute(model);
+        // Marketing Executive (Fiona), Accountant (Carl), Account Manager (Daniel)
+        assertEquals(List.of(FIONA, CARL, DANIEL), model.getFilteredEmployeeList());
+
+        // a narrower filter keeps the order too
+        new FilterCommand(new EmployeeMatchesCriteriaPredicate(
+                List.of(), List.of(), List.of("Finance", "Marketing"), List.of())).execute(model);
+        assertEquals(List.of(FIONA, CARL), model.getFilteredEmployeeList());
+    }
+
+    @Test
+    public void execute_sortAndFilterInEitherOrder_showTheSameEmployeesInTheSameOrder() {
+        Model filterFirstModel = new ModelManager(getTypicalAddressBook(), new UserPrefs());
+        filterFinanceSalesAndMarketing().execute(filterFirstModel);
+        new SortCommand(SortField.ID, SortOrder.DESC).execute(filterFirstModel);
+
+        new SortCommand(SortField.ID, SortOrder.DESC).execute(model);
+        filterFinanceSalesAndMarketing().execute(model);
+
+        assertEquals(List.of(FIONA, DANIEL, CARL), filterFirstModel.getFilteredEmployeeList());
+        assertEquals(filterFirstModel.getFilteredEmployeeList(), model.getFilteredEmployeeList());
+    }
+
+    @Test
+    public void execute_listAfterSortAndFilter_restoresAllEmployeesInSavedOrder() {
+        new SortCommand(SortField.NAME, SortOrder.DESC).execute(model);
+        filterFinanceSalesAndMarketing().execute(model);
+        assertEquals(List.of(FIONA, DANIEL, CARL), model.getFilteredEmployeeList());
+
+        new ListCommand().execute(model);
+        assertEquals(getTypicalAddressBook().getEmployeeList(), model.getFilteredEmployeeList());
+    }
+
+    @Test
+    public void execute_filterAndSort_doNotChangeStoredData() {
+        filterFinanceSalesAndMarketing().execute(model);
+        new SortCommand(SortField.ROLE, SortOrder.DESC).execute(model);
+        assertEquals(getTypicalAddressBook(), model.getAddressBook());
+        assertEquals(getTypicalAddressBook().getEmployeeList(), model.getAddressBook().getEmployeeList());
+    }
+
+    @Test
+    public void execute_editSortKeyUnderFilterAndSort_movesEmployeeWithinTheFilteredEmployees() {
+        filterFinanceSalesAndMarketing().execute(model);
+        new SortCommand(SortField.NAME).execute(model);
+        assertEquals(List.of(CARL, DANIEL, FIONA), model.getFilteredEmployeeList());
+
+        Employee renamedCarl = new EmployeeBuilder(CARL).withName("Zara Kurz").build();
+        model.setEmployee(CARL, renamedCarl);
+        assertEquals(List.of(DANIEL, FIONA, renamedCarl), model.getFilteredEmployeeList());
+
+        // an edit that moves the employee out of the filtered departments removes them from the list
+        model.setEmployee(DANIEL, new EmployeeBuilder(DANIEL).withDepartment("Legal").build());
+        assertEquals(List.of(FIONA, renamedCarl), model.getFilteredEmployeeList());
+    }
+
+    @Test
+    public void execute_undoAndRedoAfterAnAddUnderSort_keepSortOrder() {
+        new SortCommand(SortField.NAME, SortOrder.DESC).execute(model);
+        // "Zed Zimmer" is after every typical name, so it is shown first when the order is descending
+        Employee zed = new EmployeeBuilder().withId("E0099").withName("Zed Zimmer").build();
+
+        model.addEmployee(zed);
+        model.commitAddressBook();
+        assertEquals(List.of(zed, GEORGE, FIONA, ELLE, DANIEL, CARL, BENSON, ALICE),
+                model.getFilteredEmployeeList());
+
+        model.undoAddressBook();
+        assertEquals(List.of(GEORGE, FIONA, ELLE, DANIEL, CARL, BENSON, ALICE), model.getFilteredEmployeeList());
+
+        model.redoAddressBook();
+        assertEquals(List.of(zed, GEORGE, FIONA, ELLE, DANIEL, CARL, BENSON, ALICE),
+                model.getFilteredEmployeeList());
+    }
+
+    @Test
+    public void execute_undoAfterADeleteUnderFilterAndSort_restoresEmployeeInSortedPosition() {
+        filterFinanceSalesAndMarketing().execute(model);
+        new SortCommand(SortField.ROLE).execute(model);
+        assertEquals(List.of(DANIEL, CARL, FIONA), model.getFilteredEmployeeList());
+
+        model.deleteEmployee(CARL);
+        model.commitAddressBook();
+        assertEquals(List.of(DANIEL, FIONA), model.getFilteredEmployeeList());
+
+        // Carl comes back between Daniel and Fiona, and the filter and the sort are both still applied
+        model.undoAddressBook();
+        assertEquals(List.of(DANIEL, CARL, FIONA), model.getFilteredEmployeeList());
     }
 
     @Test
