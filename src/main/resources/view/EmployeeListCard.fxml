@@ -12,7 +12,7 @@
     <Insets top="8" right="10" bottom="8" left="14" />
   </padding>
   <Label fx:id="avatar" styleClass="avatar" text="\$initials" />
-  <VBox alignment="CENTER_LEFT" spacing="2" HBox.hgrow="ALWAYS">
+  <VBox alignment="CENTER_LEFT" spacing="2" minWidth="0" HBox.hgrow="ALWAYS">
     <HBox spacing="8" alignment="BASELINE_LEFT">
       <Label fx:id="id" styleClass="cell_big_label">
         <minWidth>
@@ -20,11 +20,16 @@
           <Region fx:constant="USE_PREF_SIZE" />
         </minWidth>
       </Label>
-      <Label fx:id="name" text="\$first" styleClass="cell_big_label" />
-      <Label fx:id="employeeId" styleClass="employee-id" text="\$employeeId" />
+      <Label fx:id="name" text="\$first" styleClass="cell_big_label" minWidth="0" />
+      <Label fx:id="employeeId" styleClass="employee-id" text="\$employeeId">
+        <minWidth>
+          <!-- Ensures that the ID is never cut short -->
+          <Region fx:constant="USE_PREF_SIZE" />
+        </minWidth>
+      </Label>
     </HBox>
-    <Label fx:id="role" styleClass="cell_small_label" text="\$role" />
-    <Label fx:id="contact" styleClass="cell_small_label, label-muted" text="\$contact" />
+    <Label fx:id="role" styleClass="cell_small_label" text="\$role" minWidth="0" />
+    <Label fx:id="contact" styleClass="cell_small_label, label-muted" text="\$contact" minWidth="0" />
     <HBox spacing="6" alignment="CENTER_LEFT">
       <padding>
         <Insets top="3" bottom="0" />
