@@ -64,6 +64,11 @@ public class EditCommand extends Command {
     }
 
     @Override
+    public HistoryAction getHistoryAction() {
+        return HistoryAction.COMMIT;
+    }
+
+    @Override
     public CommandResult execute(Model model) throws CommandException {
         requireNonNull(model);
         Employee employeeToEdit = model.getAddressBook().getEmployeeList().stream()
