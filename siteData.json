@@ -52,6 +52,7 @@
         "storage-component": "Storage component",
         "common-classes": "Common classes",
         "implementation": "Implementation",
+        "reporting-relationships-and-team-structure": "Reporting relationships and team structure",
         "employee-archiving": "Employee archiving",
         "delete-an-employee-by-id": "Delete an employee by ID",
         "edit-an-employee-by-id": "Edit an employee by ID",
@@ -73,6 +74,7 @@
         "finding-employees": "Finding employees",
         "editing-an-employee": "Editing an employee",
         "deleting-an-employee": "Deleting an employee",
+        "reporting-relationships-and-team-structure-2": "Reporting relationships and team structure",
         "saving-data": "Saving data"
       },
       "headingKeywords": {}
@@ -131,6 +133,12 @@
         "adding-an-employee-add": "Adding an employee: add",
         "listing-all-employees-list": "Listing all employees: list",
         "editing-an-employee-edit": "Editing an employee: edit",
+        "assigning-a-manager-manager": "Assigning a manager: manager",
+        "removing-a-manager-unassign-manager": "Removing a manager: unassign-manager",
+        "viewing-an-employee-s-team-team": "Viewing an employee's team: team",
+        "viewing-all-reports-org": "Viewing all reports: org",
+        "viewing-the-reporting-chain-chain": "Viewing the reporting chain: chain",
+        "reporting-command-input-rules": "Reporting command input rules",
         "finding-employees-by-name-find": "Finding employees by name: find",
         "filtering-employees-filter": "Filtering employees: filter",
         "archiving-employees-archive": "Archiving employees: archive",
