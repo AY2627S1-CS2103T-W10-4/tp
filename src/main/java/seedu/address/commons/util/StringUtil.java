@@ -6,11 +6,34 @@ import static seedu.address.commons.util.AppUtil.checkArgument;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Locale;
+import java.util.regex.Pattern;
 
 /**
  * Helper functions for handling strings.
  */
 public class StringUtil {
+
+    /** Anything that is not a letter, a mark that belongs to a letter, a digit, {@code &} or {@code '}. */
+    private static final Pattern NOT_PART_OF_SEARCH_WORD = Pattern.compile("[^\\p{L}\\p{M}\\p{N}&']+");
+
+    /**
+     * Returns the lower-case words of {@code text}, to be matched whole against other words.
+     * Words are separated by spaces and punctuation, except for {@code &} and {@code '} which stay in a word.
+     *   <br>examples:<pre>
+     *       getSearchWords("R&amp;D, Asia") == ["r&amp;d", "asia"]
+     *       getSearchWords("Engineer (Backend)") == ["engineer", "backend"]
+     *       getSearchWords("@@@") == []
+     *       </pre>
+     * @param text cannot be null
+     */
+    public static List<String> getSearchWords(String text) {
+        requireNonNull(text);
+        return NOT_PART_OF_SEARCH_WORD.splitAsStream(text.toLowerCase(Locale.ROOT))
+                .filter(word -> !word.isEmpty())
+                .toList();
+    }
 
     /**
      * Returns true if the {@code sentence} contains the {@code word}.

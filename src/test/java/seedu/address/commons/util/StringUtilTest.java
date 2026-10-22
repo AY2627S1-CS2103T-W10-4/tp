@@ -1,10 +1,13 @@
 package seedu.address.commons.util;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.testutil.Assert.assertThrows;
 
 import java.io.FileNotFoundException;
+import java.util.List;
+import java.util.Locale;
 
 import org.junit.jupiter.api.Test;
 
@@ -128,6 +131,47 @@ public class StringUtilTest {
     /*
      * Equivalence Partitions: null, valid throwable object
      */
+
+    @Test
+    public void getSearchWords_nullGiven_throwsNullPointerException() {
+        assertThrows(NullPointerException.class, () -> StringUtil.getSearchWords(null));
+    }
+
+    @Test
+    public void getSearchWords_splitsOnSpacesAndPunctuation() {
+        assertEquals(List.of("software", "engineer"), StringUtil.getSearchWords("Software Engineer"));
+        assertEquals(List.of("software", "engineer"), StringUtil.getSearchWords("  Software    Engineer "));
+        assertEquals(List.of("engineer", "backend"), StringUtil.getSearchWords("Engineer (Backend)"));
+        assertEquals(List.of("r&d", "asia"), StringUtil.getSearchWords("R&D, Asia"));
+        assertEquals(List.of("co", "op"), StringUtil.getSearchWords("Co-op"));
+        assertEquals(List.of("sr", "manager"), StringUtil.getSearchWords("Sr. Manager"));
+    }
+
+    @Test
+    public void getSearchWords_keepsAmpersandsApostrophesAccentsAndDigits() {
+        assertEquals(List.of("o", "&", "g"), StringUtil.getSearchWords("O & G"));
+        assertEquals(List.of("o'neil"), StringUtil.getSearchWords("O'Neil"));
+        assertEquals(List.of("émile", "roux"), StringUtil.getSearchWords("Émile Roux"));
+        assertEquals(List.of("level", "2"), StringUtil.getSearchWords("Level 2"));
+    }
+
+    @Test
+    public void getSearchWords_noLetterOrDigit_returnsEmptyList() {
+        assertEquals(List.of(), StringUtil.getSearchWords(""));
+        assertEquals(List.of(), StringUtil.getSearchWords("   "));
+        assertEquals(List.of(), StringUtil.getSearchWords("@@@ ,.- ()"));
+    }
+
+    @Test
+    public void getSearchWords_isNotAffectedByDefaultLocale() {
+        Locale defaultLocale = Locale.getDefault();
+        try {
+            Locale.setDefault(Locale.forLanguageTag("tr"));
+            assertEquals(List.of("id"), StringUtil.getSearchWords("ID"));
+        } finally {
+            Locale.setDefault(defaultLocale);
+        }
+    }
 
     @Test
     public void getDetails_exceptionGiven() {
