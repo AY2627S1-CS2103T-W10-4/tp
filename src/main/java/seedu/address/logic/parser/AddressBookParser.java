@@ -25,12 +25,11 @@ import seedu.address.logic.commands.ImportCommand;
 import seedu.address.logic.commands.ListCommand;
 import seedu.address.logic.commands.ManagerCommand;
 import seedu.address.logic.commands.OrgCommand;
+import seedu.address.logic.commands.RedoCommand;
+import seedu.address.logic.commands.SortCommand;
 import seedu.address.logic.commands.TeamCommand;
 import seedu.address.logic.commands.UnarchiveCommand;
 import seedu.address.logic.commands.UnassignManagerCommand;
-import seedu.address.logic.commands.RedoCommand;
-import seedu.address.logic.commands.SortCommand;
-import seedu.address.logic.commands.UnarchiveCommand;
 import seedu.address.logic.commands.UndoCommand;
 import seedu.address.logic.parser.exceptions.ParseException;
 
