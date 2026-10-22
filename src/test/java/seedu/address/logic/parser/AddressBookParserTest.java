@@ -24,6 +24,7 @@ import seedu.address.logic.commands.FindCommand;
 import seedu.address.logic.commands.HelpCommand;
 import seedu.address.logic.commands.ListCommand;
 import seedu.address.logic.commands.RedoCommand;
+import seedu.address.logic.commands.SortCommand;
 import seedu.address.logic.commands.UnarchiveCommand;
 import seedu.address.logic.commands.UndoCommand;
 import seedu.address.logic.parser.exceptions.ParseException;
@@ -176,5 +177,16 @@ public class AddressBookParserTest {
 
         assertThrows(ParseException.class, unknownCommandMessage, () -> parser.parseCommand(unknownCommand));
         assertThrows(ParseException.class, uppercaseCommandMessage, () -> parser.parseCommand("LIST"));
+    }
+
+    @Test
+    public void parseCommand_sort() throws Exception {
+        SortCommand command = (SortCommand) parser.parseCommand(SortCommand.COMMAND_WORD + " department");
+        assertEquals(new SortCommand(SortCommand.SortField.DEPARTMENT), command);
+
+        SortCommand descendingCommand = (SortCommand) parser.parseCommand(
+                SortCommand.COMMAND_WORD + " department desc");
+        assertEquals(new SortCommand(SortCommand.SortField.DEPARTMENT, SortCommand.SortOrder.DESC),
+                descendingCommand);
     }
 }

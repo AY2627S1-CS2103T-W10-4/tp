@@ -51,4 +51,9 @@ public class HelpCommandTest {
         assertTrue(COMMAND_SUMMARY.lines().anyMatch("export FILE_PATH"::equals));
         assertTrue(COMMAND_SUMMARY.lines().anyMatch("backup"::equals));
     }
+
+    @Test
+    public void commandSummary_listsSortCommandWithItsField() {
+        assertTrue(COMMAND_SUMMARY.contains("sort FIELD [asc|desc]"));
+    }
 }

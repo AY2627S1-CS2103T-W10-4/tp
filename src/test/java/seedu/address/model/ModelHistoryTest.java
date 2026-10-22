@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
 
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
+import javafx.collections.transformation.SortedList;
 import seedu.address.model.employee.Employee;
 import seedu.address.testutil.AddressBookBuilder;
 import seedu.address.testutil.EmployeeBuilder;
@@ -187,6 +188,7 @@ public class ModelHistoryTest {
     }
 
     private FilteredList<Employee> filtered() {
-        return (FilteredList<Employee>) model.getFilteredEmployeeList();
+        // the displayed list is a sorted view of the filtered list
+        return (FilteredList<Employee>) ((SortedList<Employee>) model.getFilteredEmployeeList()).getSource();
     }
 }

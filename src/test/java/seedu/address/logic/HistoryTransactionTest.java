@@ -22,6 +22,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
+import javafx.collections.transformation.SortedList;
 import seedu.address.logic.commands.BackupCommand;
 import seedu.address.logic.commands.Command;
 import seedu.address.logic.commands.CommandResult;
@@ -389,7 +390,8 @@ public class HistoryTransactionTest {
     }
 
     private FilteredList<Employee> filtered() {
-        return (FilteredList<Employee>) model.getFilteredEmployeeList();
+        // the displayed list is a sorted view of the filtered list
+        return (FilteredList<Employee>) ((SortedList<Employee>) model.getFilteredEmployeeList()).getSource();
     }
 
     private LogicManager createLogic(AddressBookParser parser) {
