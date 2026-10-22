@@ -14,19 +14,23 @@ import org.junit.jupiter.api.Test;
 
 import seedu.address.logic.commands.AddCommand;
 import seedu.address.logic.commands.ArchiveCommand;
-import seedu.address.logic.commands.BackupCommand;
 import seedu.address.logic.commands.ClearCommand;
 import seedu.address.logic.commands.DeleteCommand;
 import seedu.address.logic.commands.EditCommand;
 import seedu.address.logic.commands.EditCommand.EditEmployeeDescriptor;
 import seedu.address.logic.commands.ExitCommand;
+import seedu.address.logic.commands.FilterCommand;
 import seedu.address.logic.commands.FindCommand;
 import seedu.address.logic.commands.HelpCommand;
 import seedu.address.logic.commands.ListCommand;
+import seedu.address.logic.commands.RedoCommand;
+import seedu.address.logic.commands.SortCommand;
 import seedu.address.logic.commands.UnarchiveCommand;
+import seedu.address.logic.commands.UndoCommand;
 import seedu.address.logic.parser.exceptions.ParseException;
 import seedu.address.model.employee.Employee;
 import seedu.address.model.employee.EmployeeId;
+import seedu.address.model.employee.EmployeeMatchesCriteriaPredicate;
 import seedu.address.model.employee.NameContainsKeywordsPredicate;
 import seedu.address.testutil.EditEmployeeDescriptorBuilder;
 import seedu.address.testutil.EmployeeBuilder;
@@ -35,6 +39,34 @@ import seedu.address.testutil.EmployeeUtil;
 public class AddressBookParserTest {
 
     private final AddressBookParser parser = new AddressBookParser();
+
+    @Test
+    public void parseCommand_historyCommands_acceptSurroundingSpacesAndTabs() throws Exception {
+        for (String padding : List.of("", "  ", "\t", " \t ")) {
+            assertTrue(parser.parseCommand(padding + "undo" + padding) instanceof UndoCommand);
+            assertTrue(parser.parseCommand(padding + "redo" + padding) instanceof RedoCommand);
+        }
+    }
+
+    @Test
+    public void parseCommand_historyArguments_rejectedWithExactUsage() {
+        for (String argument : List.of("2", "id/E0123", "now", "undo", "-1")) {
+            assertThrows(ParseException.class,
+                    "Invalid command format.\nundo: Reverts the most recent data-changing command.\n"
+                            + "Parameters: none\nExample: undo", () -> parser.parseCommand("undo \t" + argument));
+            assertThrows(ParseException.class,
+                    "Invalid command format.\nredo: Reapplies the most recently undone data-changing command.\n"
+                            + "Parameters: none\nExample: redo", () -> parser.parseCommand("redo \t" + argument));
+        }
+    }
+
+    @Test
+    public void parseCommand_historyAliases_preservesUnknownCommandWord() {
+        for (String word : List.of("UNDO", "Undo", "REDO", "u", "r", "undo2")) {
+            String expectedMessage = "Unknown command: " + word + "\nType help to see the available commands.";
+            assertThrows(ParseException.class, expectedMessage, () -> parser.parseCommand("  " + word + "  "));
+        }
+    }
 
     @Test
     public void parseCommand_add() throws Exception {
@@ -92,6 +124,14 @@ public class AddressBookParserTest {
     }
 
     @Test
+    public void parseCommand_filter() throws Exception {
+        FilterCommand command = (FilterCommand) parser.parseCommand(
+                FilterCommand.COMMAND_WORD + " d/Engineering r/Manager");
+        assertEquals(new FilterCommand(new EmployeeMatchesCriteriaPredicate(
+                List.of(), List.of(), List.of("Engineering"), List.of("Manager"))), command);
+    }
+
+    @Test
     public void parseCommand_find() throws Exception {
         List<String> keywords = List.of("foo", "bar", "baz");
         FindCommand command = (FindCommand) parser.parseCommand(
@@ -103,19 +143,6 @@ public class AddressBookParserTest {
     public void parseCommand_help() throws Exception {
         assertTrue(parser.parseCommand(HelpCommand.COMMAND_WORD) instanceof HelpCommand);
         assertTrue(parser.parseCommand(HelpCommand.COMMAND_WORD + " 3") instanceof HelpCommand);
-    }
-
-    @Test
-    public void parseCommand_backup() throws Exception {
-        assertTrue(parser.parseCommand(BackupCommand.COMMAND_WORD) instanceof BackupCommand);
-        assertTrue(parser.parseCommand("  " + BackupCommand.COMMAND_WORD + "  ") instanceof BackupCommand);
-    }
-
-    @Test
-    public void parseCommand_backupWithArguments_throwsParseException() {
-        assertThrows(ParseException.class,
-                String.format(MESSAGE_INVALID_COMMAND_FORMAT, BackupCommand.MESSAGE_USAGE), () ->
-                parser.parseCommand(BackupCommand.COMMAND_WORD + " now"));
     }
 
     @Test
@@ -150,5 +177,16 @@ public class AddressBookParserTest {
 
         assertThrows(ParseException.class, unknownCommandMessage, () -> parser.parseCommand(unknownCommand));
         assertThrows(ParseException.class, uppercaseCommandMessage, () -> parser.parseCommand("LIST"));
+    }
+
+    @Test
+    public void parseCommand_sort() throws Exception {
+        SortCommand command = (SortCommand) parser.parseCommand(SortCommand.COMMAND_WORD + " department");
+        assertEquals(new SortCommand(SortCommand.SortField.DEPARTMENT), command);
+
+        SortCommand descendingCommand = (SortCommand) parser.parseCommand(
+                SortCommand.COMMAND_WORD + " department desc");
+        assertEquals(new SortCommand(SortCommand.SortField.DEPARTMENT, SortCommand.SortOrder.DESC),
+                descendingCommand);
     }
 }

@@ -26,7 +26,10 @@ public class HelpCommand extends Command {
             AddCommand.COMMAND_WORD + " " + PREFIX_ID + "EMPLOYEE_ID " + PREFIX_NAME + "NAME " + PREFIX_PHONE
                     + "PHONE " + PREFIX_EMAIL + "EMAIL " + PREFIX_DEPARTMENT + "DEPARTMENT " + PREFIX_ROLE + "ROLE",
             ListCommand.COMMAND_WORD,
+            SortCommand.COMMAND_WORD + " FIELD [asc|desc]",
             FindCommand.COMMAND_WORD + " KEYWORD [MORE_KEYWORDS]",
+            FilterCommand.COMMAND_WORD + " [" + PREFIX_ID + "EMPLOYEE_ID] [" + PREFIX_NAME + "NAME] ["
+                    + PREFIX_DEPARTMENT + "DEPARTMENT] [" + PREFIX_ROLE + "ROLE]",
             EditCommand.COMMAND_WORD + " " + PREFIX_ID + "EMPLOYEE_ID [" + PREFIX_NAME + "NAME] [" + PREFIX_PHONE
                     + "PHONE] [" + PREFIX_EMAIL + "EMAIL] [" + PREFIX_DEPARTMENT + "DEPARTMENT] [" + PREFIX_ROLE
                     + "ROLE]",
@@ -35,7 +38,11 @@ public class HelpCommand extends Command {
             UnarchiveCommand.COMMAND_WORD + " " + PREFIX_ID + "EMPLOYEE_ID",
             ListCommand.COMMAND_WORD + " archived",
             ClearCommand.COMMAND_WORD,
+            ImportCommand.COMMAND_WORD + " FILE_PATH",
+            ExportCommand.COMMAND_WORD + " FILE_PATH",
             BackupCommand.COMMAND_WORD,
+            UndoCommand.COMMAND_WORD,
+            RedoCommand.COMMAND_WORD,
             COMMAND_WORD,
             ExitCommand.COMMAND_WORD);
 
