@@ -132,6 +132,32 @@
     -fx-text-fill: #d7dce8;
 }
 
+.list-cell .chip-manager {
+    -fx-background-color: rgba(143, 152, 173, 0.18);
+    -fx-text-fill: #b8c0d4;
+}
+
+.avatar {
+    -fx-min-width: 44;
+    -fx-min-height: 44;
+    -fx-max-width: 44;
+    -fx-max-height: 44;
+    -fx-background-radius: 22;
+    -fx-alignment: center;
+    -fx-font-family: "Segoe UI Semibold";
+    -fx-font-size: 16px;
+}
+
+.list-cell .employee-id {
+    -fx-font-family: "Menlo", "Consolas", "Monospaced";
+    -fx-font-size: 11px;
+    -fx-text-fill: #8f98ad;
+}
+
+.list-cell .label-muted {
+    -fx-text-fill: #9aa3b8;
+}
+
 .cell_big_label {
     -fx-font-family: "Segoe UI Semibold";
     -fx-font-size: 16px;
