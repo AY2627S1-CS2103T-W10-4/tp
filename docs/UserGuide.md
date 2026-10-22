@@ -33,11 +33,15 @@ HuntR is based on [AddressBook-Level3](https://github.com/se-edu/addressbook-lev
 
    * `list` : Lists all employees.
 
+   * `sort department` : Sorts the displayed employees by department, from A to Z.
+
    * `add id/E0123 n/John Tan p/91234567 e/johntan@example.com d/Engineering r/Software Engineer` : Adds an employee named `John Tan` to HuntR.
 
    * `edit id/E0123 p/92345678 r/Senior Software Engineer` : Updates the phone number and role of employee `E0123`.
 
    * `find Alex` : Finds employees whose names contain the word `Alex`.
+
+   * `filter d/Engineering r/Manager` : Shows only the employees in the Engineering department whose role contains `Manager`.
 
    * `delete id/E0123` : Deletes employee `E0123`, including when hidden by a search.
 
@@ -103,13 +107,15 @@ Examples:
 ### Listing all employees: `list`
 
 Shows all employees stored in HuntR as a numbered list. Each entry includes the employee's name, employee ID,
-phone number, email, department, and role.
+phone number, email, department, and role. Employees are shown in the order in which they were added, so `list` also undoes any `sort`.
 
 Format: `list`
 
 The command takes no parameters. Leading and trailing spaces are ignored, but additional text is rejected.
 
 If there are no employee records, HuntR displays an empty employee list and explains how to add an employee.
+
+Use `list` to show every employee again after a `find` or `filter`.
 
 ### Editing an employee: `edit`
 
@@ -152,6 +158,40 @@ Examples:
 * `find John` returns employees named `john` and `John Doe`
 * `find alex david` returns `Alex Yeoh`, `David Li`<br>
   ![result for 'find alex david'](images/findAlexDavidResult.png)
+
+### Filtering employees: `filter`
+
+Shows only the employees who match the employee ID, name, department and role that you give.
+
+Format: `filter [id/EMPLOYEE_ID] [n/NAME] [d/DEPARTMENT] [r/ROLE]`
+
+* At least one of `id/`, `n/`, `d/` or `r/` must be given. If you give several, an employee must match **all** of them (an `AND` search), so the list is narrowed further.
+* Matching is case-insensitive and uses whole words, like `find`. For example, `d/engineering` matches `Engineering`, and `d/Resources` matches `Human Resources`, but `d/Engineer` does not match `Engineering`.
+* Spaces and punctuation separate words. For example, `d/R&D` matches the department `R&D, Asia`, and `r/Backend` or `r/(Backend)` matches the role `Software Engineer (Backend)`. The symbols `&` and `'` stay part of a word.
+* If a value has several words, every word must appear in that field, in any order. For example, `r/Software Engineer` matches `Software Engineer` but not `Software Manager`.
+* An employee ID must be the whole ID, such as `id/E0123`. The ID is not case-sensitive.
+* To match any of several values of the same field (an `OR` search), repeat the prefix. For example, `d/Sales d/Finance` matches employees in `Sales` or in `Finance`. Each repeated value is a separate search, so `r/Manager r/Analyst` is not the same as `r/Manager Analyst`, which needs both words.
+* Filtering only changes what is shown. Your saved data is not changed. Archived employees are not shown. Use [`list`](#listing-all-employees-list) to show all employees again.
+* A filter with no matches is valid and shows an empty list with the message `0 employees listed!`.
+* Leading and trailing spaces are ignored, and the parameters can be in any order.
+
+Examples:
+* `filter d/Engineering` shows everyone in the Engineering department.
+* `filter r/Manager` shows employees whose role contains the word `Manager`, such as `Engineering Manager`.
+* `filter d/Engineering r/Manager` shows only the Engineering employees whose role contains `Manager`.
+* `filter n/John d/Sales` shows only the employees named `John` who are in Sales. Other people in Sales, and Johns in other departments, are not shown.
+* `filter d/Sales d/Finance r/Manager` shows the managers who are in Sales or in Finance.
+* `filter id/E0123` shows only the employee with the ID `E0123`.
+
+The following input errors leave the displayed list unchanged. Each message is followed by the usage of the command.
+
+| Input | Error message |
+| --- | --- |
+| `filter` or `filter Engineering` | `Invalid command format!` |
+| `filter e/john@example.com` or `filter x/foo` | `Unknown parameter: e/` (or the parameter given) |
+| `filter d/` or `filter n/` | `The value of d/ should contain at least one letter or digit.` (or `n/`, `r/`) |
+| `filter d/@@@` | `The value of d/ should contain at least one letter or digit.` |
+| `filter id/E 1` | The employee ID constraints message |
 
 ### Archiving employees: `archive`
 
@@ -225,6 +265,33 @@ Example: delete id/EMP-0042
 ```
 
 A valid ID that does not exist produces `No employee with ID EMP-0042 was found.` (using the entered ID), without the usage block. No records are changed. This also applies to deleting an employee twice or deleting from an empty roster.
+
+### Sorting employees: `sort`
+
+Sorts the displayed employees by one field, in ascending or descending order.
+
+Format: `sort FIELD [asc|desc]`
+
+* `FIELD` must be one of `id`, `name`, `department` or `role`. It is not case-sensitive, so `Department` also works.
+* The order is `asc` (A to Z) or `desc` (Z to A). It is not case-sensitive. If you leave it out, the order is ascending.
+* Letter case and accents are ignored, so `Émile` is sorted with the names that start with `E`. Otherwise text is compared character by character, so `E10` comes before `E2`.
+* Employees with the same value are always ordered by employee ID from A to Z, also when the order is `desc`.
+* Sorting only changes the order in which employees are shown. Your saved data is not changed.
+* The sorted order is kept when you use `find`, and when you add, edit or delete employees. An employee whose name, department or role is edited moves to the correct position.
+* Use [`list`](#listing-all-employees-list) to show the employees in the order in which they were added again.
+
+Examples:
+* `sort name` shows the employees in alphabetical order of their names.
+* `sort department desc` groups the employees by department, from `Sales` back to `Engineering`.
+* `sort role asc` sorts the employees by their role, from A to Z.
+
+The following input errors leave the displayed order unchanged. Each message is followed by the usage of the command.
+
+| Input | Error message |
+| --- | --- |
+| `sort` or `sort name asc desc` | `Invalid command format!` |
+| `sort salary` or `sort salary desc` | `Unknown sort field: salary. The field must be one of: id, name, department, role.` |
+| `sort name down` | `Unknown sort order: down. The order must be one of: asc, desc.` |
 
 ### Clearing active employees: `clear`
 
@@ -417,9 +484,11 @@ Action     | Format, Examples
 **Delete** | `delete id/EMPLOYEE_ID`<br> e.g., `delete id/EMP-0042`
 **Edit**   | `edit id/EMPLOYEE_ID [n/NAME] [p/PHONE] [e/EMAIL] [d/DEPARTMENT] [r/ROLE]`<br>e.g., `edit id/E0001 p/91234567 e/alex@example.com`
 **Find**   | `find KEYWORD [MORE_KEYWORDS]`<br> e.g., `find James Jake`
+**Filter** | `filter [id/EMPLOYEE_ID] [n/NAME] [d/DEPARTMENT] [r/ROLE]`<br> e.g., `filter n/John d/Sales`, `filter d/Sales d/Finance r/Manager`
 **List**   | `list` or `list archived`
 **Undo**   | `undo`
 **Redo**   | `redo`
 **Unarchive** | `unarchive id/EMPLOYEE_ID`
 **Help**   | `help`
+**Sort**   | `sort FIELD [asc\|desc]`<br> e.g., `sort department desc`
 **Exit**   | `exit`
