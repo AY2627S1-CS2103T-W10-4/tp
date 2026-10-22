@@ -2,6 +2,7 @@ package seedu.address.ui;
 
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
+import javafx.scene.control.Tooltip;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
 import seedu.address.model.employee.Employee;
@@ -30,11 +31,9 @@ public class EmployeeCard extends UiPart<Region> {
     @FXML
     private Label id;
     @FXML
-    private Label phone;
-    @FXML
     private Label employeeId;
     @FXML
-    private Label email;
+    private Label contact;
     @FXML
     private Label department;
     @FXML
@@ -43,6 +42,8 @@ public class EmployeeCard extends UiPart<Region> {
     private Label manager;
     @FXML
     private Label archivedBadge;
+    @FXML
+    private Label avatar;
 
     /**
      * Creates a {@code EmployeeCard} with the given {@code Employee} and index to display.
@@ -52,14 +53,25 @@ public class EmployeeCard extends UiPart<Region> {
         this.employee = employee;
         id.setText(displayedIndex + ". ");
         name.setText(employee.getName().fullName);
-        phone.setText("Phone: " + employee.getPhone().value);
-        employeeId.setText("ID: " + employee.getId().value);
-        email.setText("Email: " + employee.getEmail().value);
+        employeeId.setText(employee.getId().value);
+        contact.setText(employee.getPhone().value + "  \u00B7  " + employee.getEmail().value);
+        avatar.setText(Initials.of(employee.getName().fullName));
+        avatar.setStyle(DepartmentColour.chipStyle(employee.getDepartment().value));
         department.setText(employee.getDepartment().value);
         department.setStyle(DepartmentColour.chipStyle(employee.getDepartment().value));
         archivedBadge.setVisible(employee.isArchived());
         archivedBadge.setManaged(employee.isArchived());
-        role.setText("Role: " + employee.getRole().value);
-        manager.setText("Manager: " + employee.getManagerId().map(Object::toString).orElse("Unassigned"));
+        role.setText(employee.getRole().value);
+        // a value that is too long for the card is cut short, so the whole of it is shown in a tooltip
+        Tooltip.install(name, new Tooltip(employee.getName().fullName));
+        Tooltip.install(role, new Tooltip(employee.getRole().value));
+        Tooltip.install(contact, new Tooltip("Phone: " + employee.getPhone().value + "\nEmail: "
+                + employee.getEmail().value));
+        Tooltip.install(department, new Tooltip(employee.getDepartment().value));
+        employee.getManagerId().ifPresent(managerId -> {
+            manager.setText("Reports to " + managerId);
+            manager.setVisible(true);
+            manager.setManaged(true);
+        });
     }
 }

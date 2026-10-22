@@ -33,6 +33,12 @@ public class EmployeeListPanel extends UiPart<Region> {
      * Custom {@code ListCell} that displays the graphics of a {@code Employee} using a {@code EmployeeCard}.
      */
     class EmployeeListViewCell extends ListCell<Employee> {
+
+        EmployeeListViewCell() {
+            // the width of a cell does not depend on its card, so that a long value does not make the list scroll
+            setPrefWidth(0);
+        }
+
         @Override
         protected void updateItem(Employee employee, boolean empty) {
             super.updateItem(employee, empty);
@@ -41,7 +47,12 @@ public class EmployeeListPanel extends UiPart<Region> {
                 setGraphic(null);
                 setText(null);
             } else {
-                setGraphic(new EmployeeCard(employee, getIndex() + 1).getRoot());
+                Region card = new EmployeeCard(employee, getIndex() + 1).getRoot();
+                // as wide as the cell and no wider, so that long text is cut short instead
+                card.prefWidthProperty().bind(widthProperty());
+                card.setMinWidth(0);
+                card.setMaxWidth(Region.USE_PREF_SIZE);
+                setGraphic(card);
             }
         }
     }
