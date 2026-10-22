@@ -29,7 +29,14 @@
       <Label fx:id="employeeId" styleClass="cell_small_label" text="\$employeeId" />
       <Label fx:id="phone" styleClass="cell_small_label" text="\$phone" />
       <Label fx:id="email" styleClass="cell_small_label" text="\$email" />
-      <Label fx:id="department" styleClass="cell_small_label" text="\$department" />
+      <HBox spacing="6" alignment="CENTER_LEFT">
+        <padding>
+          <Insets top="2" bottom="2" />
+        </padding>
+        <Label fx:id="department" styleClass="chip" text="\$department" />
+        <Label fx:id="archivedBadge" styleClass="chip, chip-archived" text="Archived" visible="false"
+               managed="false" />
+      </HBox>
       <Label fx:id="manager" styleClass="cell_small_label" />
       <Label fx:id="role" styleClass="cell_small_label" text="\$role" />
     </VBox>

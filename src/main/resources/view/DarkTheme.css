@@ -120,6 +120,18 @@
     -fx-text-fill: white;
 }
 
+.chip {
+    -fx-font-family: "Segoe UI Semibold";
+    -fx-font-size: 11px;
+    -fx-background-radius: 10;
+    -fx-padding: 2 9 2 9;
+}
+
+.list-cell .chip-archived {
+    -fx-background-color: rgba(143, 152, 173, 0.30);
+    -fx-text-fill: #d7dce8;
+}
+
 .cell_big_label {
     -fx-font-family: "Segoe UI Semibold";
     -fx-font-size: 16px;
@@ -155,6 +167,17 @@
 
 .result-display .label {
     -fx-text-fill: black !important;
+}
+
+.result-success {
+    -fx-border-color: transparent transparent transparent #35d49a;
+    -fx-border-width: 0 0 0 4;
+}
+
+.result-error {
+    -fx-border-color: transparent transparent transparent #ff6b78;
+    -fx-border-width: 0 0 0 4;
+    -fx-text-fill: #ff9aa2;
 }
 
 .status-bar .label {

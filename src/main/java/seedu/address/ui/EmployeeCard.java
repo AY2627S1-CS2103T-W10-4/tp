@@ -41,6 +41,8 @@ public class EmployeeCard extends UiPart<Region> {
     private Label role;
     @FXML
     private Label manager;
+    @FXML
+    private Label archivedBadge;
 
     /**
      * Creates a {@code EmployeeCard} with the given {@code Employee} and index to display.
@@ -53,7 +55,10 @@ public class EmployeeCard extends UiPart<Region> {
         phone.setText("Phone: " + employee.getPhone().value);
         employeeId.setText("ID: " + employee.getId().value);
         email.setText("Email: " + employee.getEmail().value);
-        department.setText("Department: " + employee.getDepartment().value);
+        department.setText(employee.getDepartment().value);
+        department.setStyle(DepartmentColour.chipStyle(employee.getDepartment().value));
+        archivedBadge.setVisible(employee.isArchived());
+        archivedBadge.setManaged(employee.isArchived());
         role.setText("Role: " + employee.getRole().value);
         manager.setText("Manager: " + employee.getManagerId().map(Object::toString).orElse("Unassigned"));
     }
