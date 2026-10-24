@@ -351,6 +351,25 @@ When loading JSON, `JsonSerializableAddressBook#toModelType` converts and valida
 including IDs differing only in case, cause an `IllegalValueException`, rejecting the file rather than returning
 partially loaded data.
 
+### CSV import and export
+
+`ImportCommand` and `ExportCommand` extend the abstract `CsvFileCommand`, which holds the file path and the folder
+HuntR runs from. `ParserUtil.parseCsvFilePath` checks that the path is relative and ends in `.csv`, and
+`CsvFileCommand#resolveFilePath` rejects a path that leads outside that folder once symbolic links are followed.
+`CsvUtil` converts between a list of values and one CSV line, quoting values that contain commas or quotes.
+
+`ExportCommand` writes the header in `ExportCommand.CSV_HEADER`, then one line per employee in the complete stored
+roster, including archived employees. It creates missing parent folders and replaces an existing file.
+
+The sequence diagram below shows a successful `import staff.csv`. `ImportCommand` reads every line, checks the
+header against the three accepted column lists, and parses each non-blank row with the same `ParserUtil` methods as
+`add`. A row that is invalid, repeats an earlier ID or uses an existing ID stops the command with its row number.
+`ReportingStructure.validate` then checks the managers of the existing and imported employees together. Only after
+every check passes does the command change the model, so a failed import adds no one. It adds every employee without
+a manager first and then sets the managers, so a manager may appear later in the file than their reports.
+
+<puml src="diagrams/ImportSequenceDiagram.puml" alt="Interactions for importing employees from a CSV file" />
+
 ### Employee history and in-memory rollback
 
 `ModelManager` owns a `VersionedAddressBook`, which extends `AddressBook` and inherits its ordinary equality and
