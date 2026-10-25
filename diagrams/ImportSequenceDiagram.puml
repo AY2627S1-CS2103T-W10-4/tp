@@ -1,0 +1,108 @@
+@startuml
+!include style.puml
+skinparam ArrowFontStyle plain
+
+box Logic LOGIC_COLOR_T1
+participant ":LogicManager" as LogicManager LOGIC_COLOR
+participant ":AddressBookParser" as AddressBookParser LOGIC_COLOR
+participant ":ImportCommandParser" as ImportCommandParser LOGIC_COLOR
+participant "i:ImportCommand" as ImportCommand LOGIC_COLOR
+participant "r:CommandResult" as CommandResult LOGIC_COLOR
+end box
+
+participant "<<class>>\nCsvUtil" as CsvUtil #A9A9A9
+
+box Model MODEL_COLOR_T1
+participant "<<class>>\nReportingStructure" as ReportingStructure MODEL_COLOR
+participant "m:Model" as Model MODEL_COLOR
+end box
+
+[-> LogicManager : execute(\n"import staff.csv")
+activate LogicManager
+
+LogicManager -> AddressBookParser : parseCommand(\n"import staff.csv")
+activate AddressBookParser
+
+create ImportCommandParser
+AddressBookParser -> ImportCommandParser
+activate ImportCommandParser
+ImportCommandParser --> AddressBookParser
+deactivate ImportCommandParser
+
+AddressBookParser -> ImportCommandParser : parse(" staff.csv")
+activate ImportCommandParser
+
+create ImportCommand
+ImportCommandParser -> ImportCommand
+activate ImportCommand
+ImportCommand --> ImportCommandParser
+deactivate ImportCommand
+
+ImportCommandParser --> AddressBookParser : i
+deactivate ImportCommandParser
+'Hidden arrow to position the destroy marker below the end of the activation bar.
+ImportCommandParser -[hidden]-> AddressBookParser
+destroy ImportCommandParser
+
+AddressBookParser --> LogicManager : i
+deactivate AddressBookParser
+
+LogicManager -> ImportCommand : execute(m)
+activate ImportCommand
+
+ImportCommand -> ImportCommand : resolveFilePath()
+ImportCommand -> ImportCommand : readLines(path)
+
+ImportCommand -> CsvUtil : parseCsvLine(header)
+activate CsvUtil
+CsvUtil --> ImportCommand : columns
+deactivate CsvUtil
+
+loop each non-blank row
+    ImportCommand -> CsvUtil : parseCsvLine(row)
+    activate CsvUtil
+    CsvUtil --> ImportCommand : values
+    deactivate CsvUtil
+
+    ImportCommand -> Model : hasEmployee(employee)
+    activate Model
+    Model --> ImportCommand : false
+    deactivate Model
+end
+
+ImportCommand -> ReportingStructure : validate(combined)
+activate ReportingStructure
+ReportingStructure --> ImportCommand
+deactivate ReportingStructure
+
+loop each employee
+    ImportCommand -> Model : addEmployee(\nemployee without manager)
+    activate Model
+    Model --> ImportCommand
+    deactivate Model
+end
+
+loop each employee with a manager
+    ImportCommand -> Model : setEmployee(\nemployee without manager, employee)
+    activate Model
+    Model --> ImportCommand
+    deactivate Model
+end
+
+ImportCommand -> Model : updateFilteredEmployeeList(\nPREDICATE_SHOW_ALL_EMPLOYEES)
+activate Model
+Model --> ImportCommand
+deactivate Model
+
+create CommandResult
+ImportCommand -> CommandResult
+activate CommandResult
+CommandResult --> ImportCommand
+deactivate CommandResult
+
+ImportCommand --> LogicManager : r
+deactivate ImportCommand
+
+[<-- LogicManager
+deactivate LogicManager
+@enduml

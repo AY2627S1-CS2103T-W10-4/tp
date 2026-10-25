@@ -58,6 +58,7 @@
         "edit-an-employee-by-id": "Edit an employee by ID",
         "find-employees-by-name": "Find employees by name",
         "duplicate-employee-detection": "Duplicate employee detection",
+        "csv-import-and-export": "CSV import and export",
         "employee-history-and-in-memory-rollback": "Employee history and in-memory rollback",
         "proposed-data-archiving": "[Proposed] Data archiving",
         "documentation-logging-testing-dev-ops": "Documentation, logging, testing, dev-ops",
