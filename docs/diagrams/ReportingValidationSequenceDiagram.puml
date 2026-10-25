@@ -1,0 +1,60 @@
+@startuml
+!include style.puml
+skinparam ArrowFontStyle plain
+
+box Model MODEL_COLOR_T1
+participant "m:ModelManager" as Model MODEL_COLOR
+participant "ab:VersionedAddressBook" as AddressBook MODEL_COLOR
+participant "ReportingStructure" as ReportingStructure MODEL_COLOR
+participant "employees:UniqueEmployeeList" as Employees MODEL_COLOR
+end box
+
+[-> Model : setEmployee(target, editedEmployee)
+activate Model
+Model -> AddressBook : setEmployee(target, editedEmployee)
+activate AddressBook
+
+note over AddressBook
+Uses the inherited AddressBook implementation.
+Copy the full roster and replace the existing target
+in that candidate list; stored employees are unchanged.
+end note
+
+AddressBook -> ReportingStructure : validate(updated)
+activate ReportingStructure
+note right of ReportingStructure
+Follow manager IDs in the complete candidate roster.
+Reject missing managers, self-reporting and cycles.
+end note
+
+alt invalid reporting relationship
+    ReportingStructure --> AddressBook : throws IllegalArgumentException
+    AddressBook --> Model : propagates exception
+    [<-- Model : propagates exception
+    note over AddressBook, Employees
+    Validation fails before any stored employee is replaced.
+    end note
+else valid reporting relationship
+    ReportingStructure --> AddressBook : validation succeeds
+    deactivate ReportingStructure
+
+    AddressBook -> ReportingStructure : withCanonicalManager(updated, editedEmployee)
+    activate ReportingStructure
+    ReportingStructure --> AddressBook : canonicalEmployee
+    deactivate ReportingStructure
+    note over AddressBook
+    Resolve managerId to the stored ID spelling.
+    An absent manager remains unassigned.
+    end note
+
+    AddressBook -> Employees : setEmployee(target, canonicalEmployee)
+    activate Employees
+    Employees --> AddressBook
+    deactivate Employees
+    AddressBook --> Model
+    [<-- Model
+end
+
+deactivate AddressBook
+deactivate Model
+@enduml

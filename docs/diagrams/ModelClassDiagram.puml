@@ -1,6 +1,8 @@
 @startuml
 !include style.puml
 skinparam classBackgroundColor MODEL_COLOR
+skinparam classAttributeFontColor #FFFFFF
+skinparam classAttributeIconSize 0
 interface Model
 interface ReadOnlyAddressBook
 interface ReadOnlyUserPrefs
@@ -22,7 +24,17 @@ class ModelCheckpoint {
   - predicate : Predicate
 }
 class UniqueEmployeeList
-class "Employee (immutable)" as Employee
+class "Employee (immutable)" as Employee {
+  + getManagerId() : Optional<EmployeeId>
+  + withManager(managerId : EmployeeId) : Employee
+}
+class EmployeeId
+class ReportingStructure {
+  {static} + withCanonicalManager(roster, employee) : Employee
+  {static} + validate(employees)
+}
+show Employee methods
+show ReportingStructure methods
 class "FilteredList<Employee>" as FilteredList
 class "SortedList<Employee>" as SortedList
 class UserPrefs
@@ -37,6 +49,15 @@ ModelManager *-- UserPrefs
 ModelManager ..> ModelCheckpoint : capture / restore
 AddressBook *-- UniqueEmployeeList
 UniqueEmployeeList --> "*" Employee
+Employee --> "1" EmployeeId : id
+Employee --> "0..1" EmployeeId : managerId
+AddressBook ..> ReportingStructure : validates candidate roster
+ReportingStructure ..> Employee : queries manager links
+note bottom of EmployeeId
+IDs compare case-insensitively.
+managerId refers to an employee in the full roster,
+including archived employees.
+end note
 FilteredList --> UniqueEmployeeList : observes existing list
 SortedList --> FilteredList : orders by the current sort
 VersionedAddressBook --> "*" Employee : immutable snapshots
