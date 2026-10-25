@@ -1,0 +1,62 @@
+@startuml
+!include style.puml
+skinparam ArrowFontStyle plain
+
+box Logic LOGIC_COLOR_T1
+participant "s:StatsCommand" as StatsCommand LOGIC_COLOR
+participant "r:CommandResult" as CommandResult LOGIC_COLOR
+end box
+
+box Model MODEL_COLOR_T1
+participant "m:Model" as Model MODEL_COLOR
+participant "ab:ReadOnlyAddressBook" as AddressBook MODEL_COLOR
+end box
+
+[-> StatsCommand : execute(m)
+activate StatsCommand
+
+StatsCommand -> Model : getAddressBook()
+activate Model
+Model --> StatsCommand : ab
+deactivate Model
+
+StatsCommand -> AddressBook : getEmployeeList()
+activate AddressBook
+AddressBook --> StatsCommand : employeeList
+deactivate AddressBook
+
+note right of StatsCommand
+Keep only active employees from the full roster,
+independently of the current displayed filter.
+Start the summary with the active employee count.
+end note
+
+loop heading and classifier for department, then role
+    StatsCommand -> StatsCommand : appendBreakdown(\nsummary, heading, employees, classifier)
+    activate StatsCommand
+    note right of StatsCommand
+    Group active employees by the stored field value
+    and count the employees in each group.
+    end note
+
+    alt no active employees
+        note right of StatsCommand : Append the heading and "(none)".
+    else at least one active employee
+        note right of StatsCommand
+        Append the heading and group counts.
+        Sort by count descending, then stored label ascending.
+        end note
+    end
+    StatsCommand --> StatsCommand
+    deactivate StatsCommand
+end
+
+create CommandResult
+StatsCommand -> CommandResult : new CommandResult(summary.toString())
+activate CommandResult
+CommandResult --> StatsCommand
+deactivate CommandResult
+
+[<-- StatsCommand : r
+deactivate StatsCommand
+@enduml
