@@ -109,7 +109,7 @@ How the parsing works:
 ### Model component
 **API** : [`Model.java`](https://github.com/se-edu/addressbook-level3/tree/master/src/main/java/seedu/address/model/Model.java)
 
-<puml src="diagrams/ModelClassDiagram.puml" width="450" />
+<puml src="diagrams/ModelClassDiagram.puml" width="700" alt="Model structure including employee manager IDs and reporting validation" />
 
 
 The `Model` component,
@@ -242,6 +242,18 @@ unconnected reporting trees and employees without managers are valid.
 data and canonicalise manager references. A failed validation leaves the existing roster unchanged. Removing an
 employee clears only their direct reports' manager assignments, including archived reports. Clearing active
 employees retains archived employees and clears references to managers that were removed.
+
+The Model class diagram above shows that an employee holds an optional manager ID rather than a direct reference
+to another `Employee`. `AddressBook` delegates relationship checks to `ReportingStructure`.
+
+The following sequence diagram shows the model update for an existing employee during manager assignment.
+`ManagerCommand` first finds the employee in the full roster and creates a replacement using `withManager()`.
+The diagram starts at `ModelManager#setEmployee` and shows validation before the stored roster is changed.
+`ManagerCommand` converts a relationship validation failure into a `CommandException`. History commits, saving
+and checkpoint restoration are handled separately by `LogicManager`, as described in
+[Checkpoints and transaction boundary](#checkpoints-and-transaction-boundary).
+
+<puml src="diagrams/ReportingValidationSequenceDiagram.puml" alt="Validation before storing a manager assignment, including rejection of invalid reporting relationships" />
 
 #### Parsing and command execution
 
