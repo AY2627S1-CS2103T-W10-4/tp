@@ -292,6 +292,21 @@ sets their validated assignments, preserving CSV row order even when a manager a
 by `HelpCommand`. `ReportingCommandTest`, `ReportingCommandParserTest` and `ReportingStorageTest` cover command
 behaviour, strict input validation and persistence; manual scenarios are provided below.
 
+### Workforce statistics
+
+`StatsCommand` reads the complete roster through `Model#getAddressBook()` and
+`ReadOnlyAddressBook#getEmployeeList()`, then excludes archived employees. It reports the active employee count
+and calls `appendBreakdown` for department and role. Each breakdown groups by the stored field value and sorts
+by count descending, with ties ordered by the stored label ascending. An empty active roster shows a total of
+zero and `(none)` under each heading.
+
+The sequence diagram below focuses on `StatsCommand#execute` after parsing. The command does not modify employee
+records, the current filter, the sort order or undo/redo history. As with other successful commands,
+`LogicManager` still saves the employee state before returning the result to the UI; that shared saving flow
+is outside this diagram.
+
+<puml src="diagrams/StatsSequenceDiagram.puml" alt="Interactions for summarising the active workforce" />
+
 ### Employee archiving
 
 `Employee` has an immutable boolean archive status. Active and archived employees remain in the same
