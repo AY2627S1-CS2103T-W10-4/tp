@@ -24,6 +24,7 @@ class ModelCheckpoint {
 class UniqueEmployeeList
 class "Employee (immutable)" as Employee
 class "FilteredList<Employee>" as FilteredList
+class "SortedList<Employee>" as SortedList
 class UserPrefs
 ModelManager ..|> Model
 AddressBook ..|> ReadOnlyAddressBook
@@ -31,11 +32,13 @@ VersionedAddressBook --|> AddressBook
 UserPrefs ..|> ReadOnlyUserPrefs
 ModelManager *-- VersionedAddressBook
 ModelManager *-- FilteredList
+ModelManager *-- SortedList
 ModelManager *-- UserPrefs
 ModelManager ..> ModelCheckpoint : capture / restore
 AddressBook *-- UniqueEmployeeList
 UniqueEmployeeList --> "*" Employee
 FilteredList --> UniqueEmployeeList : observes existing list
+SortedList --> FilteredList : orders by the current sort
 VersionedAddressBook --> "*" Employee : immutable snapshots
 ModelCheckpoint --> "*" Employee : copied working container
 note bottom of ModelCheckpoint

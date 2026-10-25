@@ -71,6 +71,8 @@ The **API** of this component is specified in [`Ui.java`](https://github.com/se-
 
 The UI consists of a `MainWindow` and its parts, such as `CommandBox`, `ResultDisplay`, `EmployeeListPanel`, and `StatusBarFooter`. All of these, including `MainWindow`, inherit from the abstract `UiPart` class, which captures common behavior among classes that represent visible GUI parts.
 
+A few small classes keep the logic of the UI out of the JavaFX classes. `CommandBox` keeps a `CommandHistory` of the commands that were typed, for the <kbd>↑</kbd> and <kbd>↓</kbd> keys, and uses `CommandCompleter` to complete the command word for the <kbd>Tab</kbd> key. `EmployeeCard` uses `DepartmentColour` to give each department its colour and `Initials` to make the initials shown in the avatar. These four classes do not use JavaFX, so they are tested without a window.
+
 The `UI` component uses the JavaFX UI framework. The layouts of these UI parts are defined in matching `.fxml` files in `src/main/resources/view`. For example, [`MainWindow.fxml`](https://github.com/se-edu/addressbook-level3/tree/master/src/main/resources/view/MainWindow.fxml) specifies the layout of [`MainWindow`](https://github.com/se-edu/addressbook-level3/tree/master/src/main/java/seedu/address/ui/MainWindow.java).
 
 The `UI` component,
@@ -113,7 +115,7 @@ How the parsing works:
 The `Model` component,
 
 * stores working data in a `VersionedAddressBook` and its `UniqueEmployeeList`, with immutable history snapshots and a current-state pointer.
-* stores the `Employee` objects selected by the current filter, such as search results, in a separate _filtered_ list. It exposes this list as an unmodifiable `ObservableList<Employee>` that the UI can observe and bind to, so the UI updates when the list changes.
+* stores the `Employee` objects selected by the current filter, such as search results, in a separate _filtered_ list, and wraps it in a `SortedList` that puts the employees in the order of the current `sort`. Sorting only changes the comparator of this `SortedList`; the stored order does not change. It exposes the sorted list as an unmodifiable `ObservableList<Employee>` that the UI can observe and bind to, so the UI updates when the list changes.
 * stores a `UserPrefs` object that represents the user’s preferences (currently, just the GUI settings). This is exposed to the outside as a `ReadOnlyUserPrefs` object.
 * does not depend on any of the other three components (as the `Model` represents data entities of the domain, they should make sense on their own without depending on other components)
 
@@ -350,6 +352,25 @@ warning to the success message.
 When loading JSON, `JsonSerializableAddressBook#toModelType` converts and validates every employee. Duplicate IDs,
 including IDs differing only in case, cause an `IllegalValueException`, rejecting the file rather than returning
 partially loaded data.
+
+### CSV import and export
+
+`ImportCommand` and `ExportCommand` extend the abstract `CsvFileCommand`, which holds the file path and the folder
+HuntR runs from. `ParserUtil.parseCsvFilePath` checks that the path is relative and ends in `.csv`, and
+`CsvFileCommand#resolveFilePath` rejects a path that leads outside that folder once symbolic links are followed.
+`CsvUtil` converts between a list of values and one CSV line, quoting values that contain commas or quotes.
+
+`ExportCommand` writes the header in `ExportCommand.CSV_HEADER`, then one line per employee in the complete stored
+roster, including archived employees. It creates missing parent folders and replaces an existing file.
+
+The sequence diagram below shows a successful `import staff.csv`. `ImportCommand` reads every line, checks the
+header against the three accepted column lists, and parses each non-blank row with the same `ParserUtil` methods as
+`add`. A row that is invalid, repeats an earlier ID or uses an existing ID stops the command with its row number.
+`ReportingStructure.validate` then checks the managers of the existing and imported employees together. Only after
+every check passes does the command change the model, so a failed import adds no one. It adds every employee without
+a manager first and then sets the managers, so a manager may appear later in the file than their reports.
+
+<puml src="diagrams/ImportSequenceDiagram.puml" alt="Interactions for importing employees from a CSV file" />
 
 ### Employee history and in-memory rollback
 
