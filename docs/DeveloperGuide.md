@@ -71,6 +71,8 @@ The **API** of this component is specified in [`Ui.java`](https://github.com/se-
 
 The UI consists of a `MainWindow` and its parts, such as `CommandBox`, `ResultDisplay`, `EmployeeListPanel`, and `StatusBarFooter`. All of these, including `MainWindow`, inherit from the abstract `UiPart` class, which captures common behavior among classes that represent visible GUI parts.
 
+A few small classes keep the logic of the UI out of the JavaFX classes. `CommandBox` keeps a `CommandHistory` of the commands that were typed, for the <kbd>↑</kbd> and <kbd>↓</kbd> keys, and uses `CommandCompleter` to complete the command word for the <kbd>Tab</kbd> key. `EmployeeCard` uses `DepartmentColour` to give each department its colour and `Initials` to make the initials shown in the avatar. These four classes do not use JavaFX, so they are tested without a window.
+
 The `UI` component uses the JavaFX UI framework. The layouts of these UI parts are defined in matching `.fxml` files in `src/main/resources/view`. For example, [`MainWindow.fxml`](https://github.com/se-edu/addressbook-level3/tree/master/src/main/resources/view/MainWindow.fxml) specifies the layout of [`MainWindow`](https://github.com/se-edu/addressbook-level3/tree/master/src/main/java/seedu/address/ui/MainWindow.java).
 
 The `UI` component,
@@ -113,7 +115,7 @@ How the parsing works:
 The `Model` component,
 
 * stores working data in a `VersionedAddressBook` and its `UniqueEmployeeList`, with immutable history snapshots and a current-state pointer.
-* stores the `Employee` objects selected by the current filter, such as search results, in a separate _filtered_ list. It exposes this list as an unmodifiable `ObservableList<Employee>` that the UI can observe and bind to, so the UI updates when the list changes.
+* stores the `Employee` objects selected by the current filter, such as search results, in a separate _filtered_ list, and wraps it in a `SortedList` that puts the employees in the order of the current `sort`. Sorting only changes the comparator of this `SortedList`; the stored order does not change. It exposes the sorted list as an unmodifiable `ObservableList<Employee>` that the UI can observe and bind to, so the UI updates when the list changes.
 * stores a `UserPrefs` object that represents the user’s preferences (currently, just the GUI settings). This is exposed to the outside as a `ReadOnlyUserPrefs` object.
 * does not depend on any of the other three components (as the `Model` represents data entities of the domain, they should make sense on their own without depending on other components)
 
