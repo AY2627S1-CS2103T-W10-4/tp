@@ -113,6 +113,9 @@ hyphens and underscores. Employee IDs are compared case-insensitively, so `E0123
 same employee. For example, if `E0123` is already in use, HuntR displays
 `An employee with Employee ID E0123 already exists.` and does not add the employee.
 
+Repeated spaces inside a department or role are reduced to one space, so `d/Human  Resources` is saved as
+`Human Resources`. This also applies to `edit`.
+
 Parameters can be supplied in any order. Optional `m/MANAGER_ID` assigns an existing employee as the manager.
 Manager IDs are matched case-insensitively and saved using the spelling of the existing employee's ID.
 An empty `m/`, unknown manager or self-assignment is rejected without changing the roster.
