@@ -152,6 +152,8 @@ Format: `edit id/EMPLOYEE_ID [n/NAME] [p/PHONE] [e/EMAIL] [d/DEPARTMENT] [r/ROLE
 * Existing values will be updated to the input values.
 * Use `m/MANAGER_ID` to change the manager, or an empty `m/` to remove the manager. Omitting `m/` preserves it.
 * For example, `edit id/E0002 m/E0001` assigns manager `E0001`, and `edit id/E0002 m/` removes that assignment.
+* The result message ends with `; Manager: MANAGER_ID` when the edited employee has a manager, so you can confirm
+  a manager change without looking at the list.
 * The manager must exist in the complete roster. Self-reporting and reporting cycles are rejected without changes.
 * Editing an archived employee preserves their archived status.
 * The `id/` parameter identifies the employee to edit. The employee ID itself cannot be changed.
