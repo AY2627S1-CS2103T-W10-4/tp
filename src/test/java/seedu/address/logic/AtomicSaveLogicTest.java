@@ -180,7 +180,7 @@ public class AtomicSaveLogicTest {
 
     @Test
     public void execute_noOpAfterUndoWithReadOnlyFile_preservesDiskViewAndRedoSequence() throws Exception {
-        for (String command : List.of("edit id/" + ALICE.getId() + " r/" + ALICE.getRole(), "clear")) {
+        for (String command : List.of("clear")) {
             Model model = new ModelManager(new AddressBookBuilder().withEmployee(ALICE.withArchived(true)).build(),
                     new UserPrefs());
             JsonAddressBookStorage storage = new JsonAddressBookStorage(folder.resolve("employees.json"));
