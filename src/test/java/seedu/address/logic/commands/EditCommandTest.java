@@ -87,7 +87,8 @@ public class EditCommandTest {
         Employee employee = model.getFilteredEmployeeList().get(0);
         EditEmployeeDescriptor descriptor = new EditEmployeeDescriptorBuilder().withName(employee.getName().fullName)
                 .withPhone(employee.getPhone().value).build();
-        EditCommand editCommand = new EditCommand(new EmployeeId(employee.getId().value.toLowerCase(Locale.ROOT)), descriptor);
+        EmployeeId lowerCaseId = new EmployeeId(employee.getId().value.toLowerCase(Locale.ROOT));
+        EditCommand editCommand = new EditCommand(lowerCaseId, descriptor);
 
         assertCommandFailure(editCommand, model, String.format(EditCommand.MESSAGE_NO_CHANGES, employee.getId()));
     }
