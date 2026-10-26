@@ -83,6 +83,15 @@ public class StatsCommandTest {
                 + "\nBy role:\nManager: 1\nmanager: 1", new StatsCommand().execute(model).getFeedbackToUser());
     }
 
+    @Test
+    public void execute_tiesWithMixedCase_sortedAlphabeticallyIgnoringCase() {
+        Model model = modelWith(employee("E1", "Human Resources", "Zebra"), employee("E2", "apple", "analyst"),
+                employee("E3", "Banana", "Manager"));
+        assertEquals("Total active employees: 3\nBy department:\napple: 1\nBanana: 1\nHuman Resources: 1"
+                + "\nBy role:\nanalyst: 1\nManager: 1\nZebra: 1",
+                new StatsCommand().execute(model).getFeedbackToUser());
+    }
+
     private Employee employee(String id, String department, String role) {
         return new EmployeeBuilder().withId(id).withDepartment(department).withRole(role).build();
     }

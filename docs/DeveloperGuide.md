@@ -310,7 +310,7 @@ behaviour, strict input validation and persistence; manual scenarios are provide
 `StatsCommand` reads the complete roster through `Model#getAddressBook()` and
 `ReadOnlyAddressBook#getEmployeeList()`, then excludes archived employees. It reports the active employee count
 and calls `appendBreakdown` for department and role. Each breakdown groups by the stored field value and sorts
-by count descending, with ties ordered by the stored label ascending. An empty active roster shows a total of
+by count descending, with ties ordered alphabetically by label, ignoring case. An empty active roster shows a total of
 zero and `(none)` under each heading.
 
 The sequence diagram below focuses on `StatsCommand#execute` after parsing. The command does not modify employee

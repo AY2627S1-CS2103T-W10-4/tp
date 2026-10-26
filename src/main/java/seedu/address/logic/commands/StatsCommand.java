@@ -28,7 +28,10 @@ public class StatsCommand extends Command {
         return new CommandResult(summary.toString());
     }
 
-    /** Appends counts in descending order, breaking ties by the stored label. */
+    /**
+     * Appends counts in descending order, breaking ties by the label in alphabetical order that ignores letter case.
+     * Labels that differ only in case are ordered case-sensitively so that the output stays deterministic.
+     */
     private void appendBreakdown(StringBuilder summary, String heading, List<Employee> employees,
             Function<Employee, String> classifier) {
         summary.append("\n").append(heading);
@@ -40,6 +43,7 @@ public class StatsCommand extends Command {
         }
         counts.entrySet().stream()
                 .sorted(Map.Entry.<String, Long>comparingByValue(Comparator.reverseOrder())
+                        .thenComparing(Map.Entry.comparingByKey(String.CASE_INSENSITIVE_ORDER))
                         .thenComparing(Map.Entry.comparingByKey()))
                 .forEach(entry -> summary.append("\n").append(entry.getKey()).append(": ").append(entry.getValue()));
     }
