@@ -24,6 +24,7 @@ import seedu.address.storage.JsonAddressBookStorage;
 import seedu.address.storage.JsonUserPrefsStorage;
 import seedu.address.storage.Storage;
 import seedu.address.storage.StorageManager;
+import seedu.address.storage.UnreadableDataFile;
 import seedu.address.ui.Ui;
 import seedu.address.ui.UiManager;
 
@@ -43,6 +44,8 @@ public class MainApp extends Application {
     protected Storage storage;
     protected Model model;
 
+    private String startupWarning = "";
+
     @Override
     public void init() throws Exception {
         logger.info("================================[ Initializing HuntR ]===============================");
@@ -57,13 +60,14 @@ public class MainApp extends Application {
 
         logic = new LogicManager(model, storage);
 
-        ui = new UiManager(logic, storage.getAddressBookFilePath());
+        ui = new UiManager(logic, storage.getAddressBookFilePath(), startupWarning);
     }
 
     /**
      * Returns a {@code ModelManager} with the data from {@code storage}'s address book and {@code userPrefs}. <br>
      * The data from the sample address book will be used instead if {@code storage}'s address book is not found,
      * or an empty address book will be used instead if errors occur when reading {@code storage}'s address book.
+     * In that case, a copy of the unreadable file is kept and a warning is prepared for the UI.
      */
     private Model initModelManager(Storage storage, ReadOnlyUserPrefs userPrefs) {
         logger.info("Using data file : " + storage.getAddressBookFilePath());
@@ -80,6 +84,7 @@ public class MainApp extends Application {
         } catch (DataLoadingException e) {
             logger.warning("Data file at " + storage.getAddressBookFilePath() + " could not be loaded."
                     + " Will be starting with empty employee records.");
+            startupWarning = UnreadableDataFile.keepCopy(storage.getAddressBookFilePath());
             initialData = new AddressBook();
         }
 
