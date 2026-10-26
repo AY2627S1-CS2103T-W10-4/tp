@@ -15,6 +15,8 @@ import static seedu.address.testutil.TypicalEmployees.BENSON;
 import static seedu.address.testutil.TypicalEmployees.getTypicalAddressBook;
 import static seedu.address.testutil.TypicalIndexes.INDEX_FIRST_EMPLOYEE;
 
+import java.util.Locale;
+
 import org.junit.jupiter.api.Test;
 
 import seedu.address.logic.Messages;
@@ -85,7 +87,7 @@ public class EditCommandTest {
         Employee employee = model.getFilteredEmployeeList().get(0);
         EditEmployeeDescriptor descriptor = new EditEmployeeDescriptorBuilder().withName(employee.getName().fullName)
                 .withPhone(employee.getPhone().value).build();
-        EditCommand editCommand = new EditCommand(new EmployeeId(employee.getId().value.toLowerCase()), descriptor);
+        EditCommand editCommand = new EditCommand(new EmployeeId(employee.getId().value.toLowerCase(Locale.ROOT)), descriptor);
 
         assertCommandFailure(editCommand, model, String.format(EditCommand.MESSAGE_NO_CHANGES, employee.getId()));
     }
