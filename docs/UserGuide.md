@@ -414,6 +414,17 @@ Example: `archive id/E0123`
 The ID is matched case-insensitively. An unknown ID produces `No employee with ID E0123 was found.` Archiving an
 already archived employee produces `Employee with ID E0123 is already archived.` No data changes on either error.
 
+Archiving a manager preserves their reporting relationships. If active employees still report directly to that
+manager, the success message gives their count and suggests a command to review their assignments, for example:
+
+```text
+1 active employee still reports to this archived manager.
+Use team id/E0123 to review their assignments.
+```
+
+The count excludes archived employees and indirect reports. No notice appears when there are no active direct
+reports. Unarchiving the manager or undoing the archive preserves the same reporting relationships.
+
 ### Unarchiving employees: `unarchive`
 
 Restores an archived employee to the active roster.

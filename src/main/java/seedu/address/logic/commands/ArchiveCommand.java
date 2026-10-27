@@ -16,6 +16,9 @@ public class ArchiveCommand extends Command {
             + "Example: archive id/E0123";
     public static final String MESSAGE_SUCCESS = "Archived employee: %1$s";
     public static final String MESSAGE_ALREADY_ARCHIVED = "Employee with ID %1$s is already archived.";
+    public static final String MESSAGE_ACTIVE_REPORT = "1 active employee still reports to this archived manager.";
+    public static final String MESSAGE_ACTIVE_REPORTS = "%d active employees still report to this archived manager.";
+    public static final String MESSAGE_REVIEW_TEAM = "Use team id/%s to review their assignments.";
 
     private final EmployeeId targetId;
 
@@ -37,7 +40,17 @@ public class ArchiveCommand extends Command {
             throw new CommandException(String.format(MESSAGE_ALREADY_ARCHIVED, targetId));
         }
         model.archiveEmployee(employee);
-        return new CommandResult(String.format(MESSAGE_SUCCESS, Messages.format(employee)));
+        String message = String.format(MESSAGE_SUCCESS, Messages.format(employee));
+        long activeReports = model.getAddressBook().getEmployeeList().stream()
+                .filter(candidate -> !candidate.isArchived())
+                .filter(candidate -> candidate.getManagerId().filter(employee.getId()::equals).isPresent())
+                .count();
+        if (activeReports > 0) {
+            String notice = activeReports == 1 ? MESSAGE_ACTIVE_REPORT
+                    : String.format(MESSAGE_ACTIVE_REPORTS, activeReports);
+            message += "\n" + notice + "\n" + String.format(MESSAGE_REVIEW_TEAM, employee.getId());
+        }
+        return new CommandResult(message);
     }
 
     @Override
