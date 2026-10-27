@@ -480,7 +480,7 @@ Format: `sort FIELD [asc|desc]`
 
 * `FIELD` must be one of `id`, `name`, `department` or `role`. It is not case-sensitive, so `Department` also works.
 * The order is `asc` (A to Z) or `desc` (Z to A). It is not case-sensitive. If you leave it out, the order is ascending.
-* Letter case and accents are ignored, so `Émile` is sorted with the names that start with `E`. Otherwise text is compared character by character, so `E10` comes before `E2`.
+* Letter case and accents are ignored, so `Émile` is sorted with the names that start with `E`. A number inside a value is compared by its value, so `E2` comes before `E10`, and `Level 2` comes before `Level 10`; leading zeros do not change this, so `E0002` comes before `E10`. Otherwise text is compared character by character.
 * Employees with the same value are always ordered by employee ID from A to Z, also when the order is `desc`.
 * Sorting only changes the order in which employees are shown. Your saved data is not changed.
 * The sorted order is kept when you use `find`, and when you add, edit or delete employees. An employee whose name, department or role is edited moves to the correct position.
