@@ -104,6 +104,13 @@ public class SortCommand extends Command {
         DEPARTMENT(employee -> employee.getDepartment().value),
         ROLE(employee -> employee.getRole().value);
 
+        /**
+         * Orders values the way {@code sort} does: ignoring letter case and accents, and comparing a number inside
+         * a value by its value.
+         */
+        public static final Comparator<String> VALUE_ORDER =
+                Comparator.comparing(SortField::removeAccents, NaturalOrderComparator.INSTANCE);
+
         private static final Pattern COMBINING_MARKS = Pattern.compile("\\p{M}+");
 
         private final Function<Employee, String> keyExtractor;
@@ -120,8 +127,7 @@ public class SortCommand extends Command {
          */
         public Comparator<Employee> getComparator(SortOrder order) {
             requireNonNull(order);
-            Comparator<Employee> byKey = Comparator.comparing(
-                    keyExtractor.andThen(SortField::removeAccents), NaturalOrderComparator.INSTANCE);
+            Comparator<Employee> byKey = Comparator.comparing(keyExtractor, VALUE_ORDER);
             Comparator<Employee> byId = Comparator.comparing(
                     employee -> employee.getId().value, NaturalOrderComparator.INSTANCE);
             return (order == SortOrder.DESC ? byKey.reversed() : byKey).thenComparing(byId);
