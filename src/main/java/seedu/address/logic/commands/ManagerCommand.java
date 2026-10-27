@@ -32,7 +32,7 @@ public class ManagerCommand extends Command {
     @Override
     public CommandResult execute(Model model) throws CommandException {
         requireNonNull(model);
-        Employee employee = ReportingCommandSupport.find(model, employeeId);
+        Employee employee = EmployeeCommandSupport.find(model, employeeId);
         try {
             Employee updated = ReportingStructure.withCanonicalManager(model.getAddressBook().getEmployeeList(),
                     employee.withManager(managerId));

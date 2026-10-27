@@ -81,9 +81,18 @@ public class CheckCommandTest {
     }
 
     @Test
-    public void execute_contactsDifferOnlyInFormattingOrCase_usesExactMatching() {
-        assertNoIssues(modelWith(employee("E1", "Alice", "91234567", "Alice@example.com"),
-                employee("E2", "Bob", "9123 4567", "alice@example.com")));
+    public void execute_phonesDifferOnlyInFormatting_usesExactMatching() {
+        assertNoIssues(modelWith(employee("E1", "Alice", "91234567", "alice@example.com"),
+                employee("E2", "Bob", "9123 4567", "bob@example.com")));
+    }
+
+    @Test
+    public void execute_emailsDifferOnlyInCase_reportsBothWithStoredEmails() {
+        Model model = modelWith(employee("E1", "Alice", "111", "Alice@example.com"),
+                employee("E2", "Bob", "222", "alice@EXAMPLE.com"));
+        assertEquals("Found 2 active employee(s) with data-quality issues:\n"
+                + "E1 (Alice): shared email Alice@example.com\nE2 (Bob): shared email alice@EXAMPLE.com",
+                new CheckCommand().execute(model).getFeedbackToUser());
     }
 
     @Test

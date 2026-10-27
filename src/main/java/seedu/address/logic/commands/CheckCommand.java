@@ -5,6 +5,7 @@ import static java.util.Objects.requireNonNull;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -12,7 +13,10 @@ import java.util.stream.Collectors;
 import seedu.address.model.Model;
 import seedu.address.model.employee.Employee;
 
-/** Reports active employees who share an exact phone number or email, without modifying records or the view. */
+/**
+ * Reports active employees who share an exact phone number or an email that differs only in letter case,
+ * without modifying records or the view.
+ */
 public class CheckCommand extends Command {
 
     public static final String COMMAND_WORD = "check";
@@ -25,11 +29,11 @@ public class CheckCommand extends Command {
         List<Employee> employees = model.getAddressBook().getEmployeeList().stream()
                 .filter(employee -> !employee.isArchived()).toList();
         Map<String, Long> phoneCounts = countValues(employees, employee -> employee.getPhone().value);
-        Map<String, Long> emailCounts = countValues(employees, employee -> employee.getEmail().value);
+        Map<String, Long> emailCounts = countValues(employees, CheckCommand::emailKey);
         List<String> issues = employees.stream()
                 .sorted(Comparator.comparing(employee -> employee.getId().value, String.CASE_INSENSITIVE_ORDER))
                 .filter(employee -> phoneCounts.get(employee.getPhone().value) > 1
-                        || emailCounts.get(employee.getEmail().value) > 1)
+                        || emailCounts.get(emailKey(employee)) > 1)
                 .map(employee -> formatIssue(employee, phoneCounts, emailCounts)).toList();
         if (issues.isEmpty()) {
             return new CommandResult(MESSAGE_NO_ISSUES);
@@ -48,9 +52,14 @@ public class CheckCommand extends Command {
         if (phoneCounts.get(employee.getPhone().value) > 1) {
             reasons.add("shared phone " + employee.getPhone().value);
         }
-        if (emailCounts.get(employee.getEmail().value) > 1) {
+        if (emailCounts.get(emailKey(employee)) > 1) {
             reasons.add("shared email " + employee.getEmail().value);
         }
         return employee.getId() + " (" + employee.getName() + "): " + String.join("; ", reasons);
+    }
+
+    /** Returns the employee's email in lower case, since emails that differ only in case reach the same inbox. */
+    private static String emailKey(Employee employee) {
+        return employee.getEmail().value.toLowerCase(Locale.ROOT);
     }
 }
