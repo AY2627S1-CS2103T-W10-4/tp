@@ -411,7 +411,14 @@ a manager first and then sets the managers, so a manager may appear later in the
 `ModelManager` owns a `VersionedAddressBook`, which extends `AddressBook` and inherits its ordinary equality and
 hash-code behavior. `ModelManager` equality also remains unchanged: history is not compared.
 Construction copies the supplied data and records exactly one initial snapshot with pointer zero.
-History has no explicit capacity limit and lasts only for the session.
+History lasts only for the session. The JVM property `huntr.maxUndoHistory` configures the maximum undo steps;
+`VersionedAddressBook(initialState, maxUndoHistory)` also accepts the limit explicitly. The default, `-1`, preserves
+unlimited history pending team agreement on a finite default. Non-negative values retain at most the limit plus one
+snapshots (including the current state); zero disables undo. Invalid values are rejected at construction.
+After a changed commit removes the redo tail and appends a snapshot, excess oldest states are removed and the pointer
+is adjusted. No-op commits never evict snapshots or discard redo. Checkpoints retain the pre-command history so a
+failed command can restore snapshots evicted by a tentative commit. Snapshots still share immutable employee objects;
+the limit bounds retained states, not bytes, and does not limit the size of the employee roster itself.
 
 `addressBookStateList` contains complete immutable `List<Employee>` snapshots. Containers cannot be changed;
 immutable employee objects are shared. Every stored field, raw ID spelling, archive status and employee order is

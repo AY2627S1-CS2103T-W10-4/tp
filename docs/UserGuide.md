@@ -602,7 +602,11 @@ active-roster clear creates no history entry, preserves redo, and retains its ex
 to the active view. Failed commands and `list`, `list archived`, `find`, `help`, `export`, `backup` and `exit` preserve
 redo. Exported and backup files are outside employee history. Header-only imports remain errors.
 
-History has no explicit capacity limit and exists only for this session. Starting HuntR loads the saved employee
+History is unlimited by default and exists only for this session. To limit memory used by history, launch HuntR with
+`java -Dhuntr.maxUndoHistory=100 -jar huntr.jar` to retain up to 100 undo steps. Once that limit is exceeded, the oldest
+states are discarded and cannot be restored with undo. Use `0` to disable undo history, or `-1` for unlimited history.
+The setting must be an integer from `-1` to `2147483647`; invalid values prevent startup. Restart to change the limit.
+Starting HuntR loads the saved employee
 state as one initial snapshot; neither undo nor redo is available until you make changes in that session.
 
 ### Exiting the program: `exit`
