@@ -23,11 +23,6 @@ public class DeleteCommand extends Command {
             + "Example: " + COMMAND_WORD + " id/EMP-0042";
 
     public static final String MESSAGE_DELETE_EMPLOYEE_SUCCESS = "Deleted employee: %1$s";
-    public static final String MESSAGE_MISSING_ID = "Missing parameter: id/EMPLOYEE_ID.";
-    public static final String MESSAGE_BLANK_ID = "Employee ID cannot be blank.";
-    public static final String MESSAGE_UNKNOWN_PARAMETER = "Unknown parameter: %1$s. Only id/ is supported.";
-    public static final String MESSAGE_UNEXPECTED_ARGUMENTS =
-            "Unexpected arguments. Specify exactly one employee ID using id/EMPLOYEE_ID.";
 
     private final EmployeeId targetId;
 
@@ -74,6 +69,11 @@ public class DeleteCommand extends Command {
         }
 
         return targetId.equals(otherDeleteCommand.targetId);
+    }
+
+    @Override
+    public int hashCode() {
+        return targetId.hashCode();
     }
 
     @Override

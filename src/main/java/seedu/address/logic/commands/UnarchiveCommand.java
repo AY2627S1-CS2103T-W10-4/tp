@@ -43,4 +43,9 @@ public class UnarchiveCommand extends Command {
         return other == this || other instanceof UnarchiveCommand otherCommand
                 && targetId.equals(otherCommand.targetId);
     }
+
+    @Override
+    public int hashCode() {
+        return targetId.hashCode();
+    }
 }

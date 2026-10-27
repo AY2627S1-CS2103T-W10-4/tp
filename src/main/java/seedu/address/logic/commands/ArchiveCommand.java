@@ -50,4 +50,9 @@ public class ArchiveCommand extends Command {
         }
         return targetId.equals(otherCommand.targetId);
     }
+
+    @Override
+    public int hashCode() {
+        return targetId.hashCode();
+    }
 }
