@@ -87,7 +87,7 @@ public class AddCommand extends Command {
             if (employee.getName().isSimilarTo(toAdd.getName())) {
                 similarEmployeeCount++;
                 if (similarEmployeeIds.size() < MAX_SIMILAR_EMPLOYEE_IDS) {
-                    similarEmployeeIds.add(employee.getId().toString());
+                    similarEmployeeIds.add(employee.getId() + (employee.isArchived() ? " (archived)" : ""));
                 }
             }
         }

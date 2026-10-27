@@ -42,7 +42,7 @@ public class AddCommandPerformanceTest {
 
         assertEquals(String.format(AddCommand.MESSAGE_SUCCESS, Messages.format(TO_ADD)) + "\n"
                 + String.format(AddCommand.MESSAGE_MANY_SIMILAR_NAMES_WARNING, LARGE_ROSTER_SIZE, 5,
-                        "PERF-0, PERF-1, PERF-2, PERF-3, PERF-4"), feedback);
+                        "PERF-0 (archived), PERF-1, PERF-2 (archived), PERF-3, PERF-4 (archived)"), feedback);
         assertFalse(feedback.contains("PERF-5"));
         assertAddedWithoutChangingExistingEmployees(model);
     }
@@ -57,7 +57,7 @@ public class AddCommandPerformanceTest {
 
         assertEquals(String.format(AddCommand.MESSAGE_SUCCESS, Messages.format(TO_ADD)) + "\n"
                 + String.format(AddCommand.MESSAGE_MANY_SIMILAR_NAMES_WARNING, 6, 5,
-                        "PERF-0, PERF-1, PERF-2, PERF-3, PERF-4"), feedback);
+                        "PERF-0 (archived), PERF-1, PERF-2 (archived), PERF-3, PERF-4 (archived)"), feedback);
         assertAddedWithoutChangingExistingEmployees(model);
     }
 
@@ -68,7 +68,7 @@ public class AddCommandPerformanceTest {
 
         assertEquals(String.format(AddCommand.MESSAGE_SUCCESS, Messages.format(TO_ADD)) + "\n"
                 + String.format(AddCommand.MESSAGE_SIMILAR_NAME_WARNING,
-                        "PERF-0, PERF-1, PERF-2, PERF-3, PERF-4"), feedback);
+                        "PERF-0 (archived), PERF-1, PERF-2 (archived), PERF-3, PERF-4 (archived)"), feedback);
         assertEquals(6, model.getAddressBook().getEmployeeList().size());
     }
 

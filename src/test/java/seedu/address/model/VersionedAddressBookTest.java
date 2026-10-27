@@ -126,6 +126,25 @@ public class VersionedAddressBookTest {
     }
 
     @Test
+    public void checkpoint_sharedHistory_evictionPreservesCapturedIndex() {
+        VersionedAddressBook book = new VersionedAddressBook(new AddressBook(), 1);
+        commitState(book, 1);
+        ModelCheckpoint checkpoint = book.createCheckpoint(employee -> true);
+        commitState(book, 2);
+        commitState(book, 3);
+
+        assertEquals(2, checkpoint.getHistory().size());
+        assertTrue(checkpoint.getHistory().getFirst().isEmpty());
+        assertEquals(List.of(employee(1)), checkpoint.getHistory().getLast());
+        book.restoreCheckpoint(checkpoint);
+        assertState(book, 1);
+        book.undo();
+        assertTrue(book.getEmployeeList().isEmpty());
+        book.redo();
+        assertState(book, 1);
+    }
+
+    @Test
     public void commit_longHistory_retainsBoundedSnapshotsAndCorrectUndoRedo() {
         VersionedAddressBook book = new VersionedAddressBook(new AddressBook(), 25);
         for (int i = 1; i <= 10000; i++) {

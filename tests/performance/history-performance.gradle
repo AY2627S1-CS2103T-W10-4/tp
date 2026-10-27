@@ -24,5 +24,10 @@ allprojects {
             classpath = files(acceptanceClasses) + sourceSets.main.runtimeClasspath
             mainClass = 'seedu.address.logic.commands.AddPerformance'
         }
+        tasks.register('checkpointPerformance', JavaExec) {
+            dependsOn tasks.named('compileHistoryPerformance')
+            classpath = files(acceptanceClasses) + sourceSets.main.runtimeClasspath
+            mainClass = 'seedu.address.model.CheckpointPerformance'
+        }
     }
 }
