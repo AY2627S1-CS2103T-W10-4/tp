@@ -326,6 +326,10 @@ is outside this diagram.
 `archive id/EMPLOYEE_ID` and `unarchive id/EMPLOYEE_ID` replace the target with an otherwise identical employee whose
 status is changed. They reject unknown IDs and redundant status changes without modifying the model.
 
+Both operations preserve the installed filter predicate and sort comparator. Updating the existing observable
+employee list lets the changed employee enter or leave the current view naturally, including empty search results
+and archived-only views. `UnarchiveCommand` adds a `list` hint when the restored employee is outside the current view.
+
 `ModelManager#updateFilteredEmployeeList` combines normal predicates with an active-status check, so `list` and `find`
 never expose archived employees. `list archived` calls `Model#showArchivedEmployees` to select only archived employees
 in the same existing employee panel. `edit` preserves the target's archive status, while `delete` searches the complete

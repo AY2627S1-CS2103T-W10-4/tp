@@ -397,11 +397,15 @@ The following input errors leave the displayed list unchanged. Each message is f
 ### Archiving employees: `archive`
 
 Marks an employee as archived. Archived employees remain stored but are hidden from normal `list` and `find` results.
-After a successful archive, HuntR displays the full active employee list.
+The current list, search or filter and sort order are preserved. The employee disappears from active-only views;
+other matching employees stay visible. Use `list archived` to see the archived record.
 
 Format: `archive id/EMPLOYEE_ID`
 
 Example: `archive id/E0123`
+
+If you run `find Alice` and then archive one matching employee, the remaining Alice records stay visible.
+If that was the last match, the search remains active with an empty result.
 
 The ID is matched case-insensitively. An unknown ID produces `No employee with ID E0123 was found.` Archiving an
 already archived employee produces `Employee with ID E0123 is already archived.` No data changes on either error.
@@ -409,11 +413,16 @@ already archived employee produces `Employee with ID E0123 is already archived.`
 ### Unarchiving employees: `unarchive`
 
 Restores an archived employee to the active roster.
-After a successful unarchive, HuntR displays the full active employee list, including the restored employee.
+The current list, search or filter and sort order are preserved. A restored employee appears only if they match
+that view. When they are outside the view, the success message suggests `list` to see them.
 
 Format: `unarchive id/EMPLOYEE_ID`
 
 Example: `unarchive id/E0123`
+
+If you run `list archived` and then `unarchive id/E0123`, the remaining archived records stay visible so you can
+continue restoring employees. Restoring the last archived record leaves an empty archive view. Use `list` to view
+the restored employees.
 
 An unknown ID produces the usual employee-not-found error. Attempting to unarchive an active employee produces
 `Employee with ID E0123 is already active.`
