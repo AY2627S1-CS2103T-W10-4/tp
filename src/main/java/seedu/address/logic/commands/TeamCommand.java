@@ -28,14 +28,14 @@ public class TeamCommand extends Command {
     @Override
     public CommandResult execute(Model model) throws CommandException {
         requireNonNull(model);
-        Employee employee = ReportingCommandSupport.find(model, employeeId);
+        Employee employee = EmployeeCommandSupport.find(model, employeeId);
         List<Employee> roster = model.getAddressBook().getEmployeeList();
         List<Employee> reports = ReportingStructure.reports(roster, employee.getId(), false);
         List<Employee> selected = new ArrayList<>(reports);
         selected.add(employee);
         String manager = "None";
         if (employee.getManagerId().isPresent()) {
-            Employee supervisor = ReportingCommandSupport.find(model, employee.getManagerId().orElseThrow());
+            Employee supervisor = EmployeeCommandSupport.find(model, employee.getManagerId().orElseThrow());
             selected.add(supervisor);
             manager = ReportingCommandSupport.label(supervisor);
         }
