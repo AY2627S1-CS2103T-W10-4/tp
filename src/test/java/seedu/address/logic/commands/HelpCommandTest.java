@@ -1,5 +1,6 @@
 package seedu.address.logic.commands;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.logic.commands.CommandTestUtil.assertCommandSuccess;
 import static seedu.address.logic.commands.HelpCommand.COMMAND_SUMMARY;
@@ -46,6 +47,8 @@ public class HelpCommandTest {
         assertTrue(COMMAND_SUMMARY.contains("archive id/EMPLOYEE_ID"));
         assertTrue(COMMAND_SUMMARY.contains("unarchive id/EMPLOYEE_ID"));
         assertTrue(COMMAND_SUMMARY.lines().anyMatch("list archived"::equals));
+        assertTrue(COMMAND_SUMMARY.lines().anyMatch("org id/EMPLOYEE_ID (full team)"::equals));
+        assertFalse(COMMAND_SUMMARY.contains("org id/MANAGER_ID"));
     }
 
     @Test

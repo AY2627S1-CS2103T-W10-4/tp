@@ -278,8 +278,9 @@ removes it. An empty manager value on `add` or `manager` is rejected.
 `ReportingStructure.reports()` scans the roster for each visited manager; recursive queries take O(nk) time for
 n employees and k visited managers. `chain()` builds an ID lookup and follows manager links in O(n + h) time for
 a chain of height h. Both traversals track visited IDs. Result messages retain traversal order, while
-`ReportingCommandSupport.show()` installs an ID-membership predicate without resetting the `SortedList` comparator.
-Employee cards therefore preserve the current sort order, or roster order when no sort is active.
+`ReportingCommandSupport.show()` installs a refreshable reporting-query predicate without resetting the `SortedList`
+comparator. Relationship changes, deletion, undo and redo recompute its ID membership against the current roster.
+Employee cards therefore stay current while preserving the current sort order, or roster order when no sort is active.
 These queries replace the current filter without modifying employee records. `Model#updateReportingEmployeeList`
 applies the membership predicate without the normal active-only restriction, so both messages and cards include
 related archived employees. Normal `list` and `find` continue to exclude archived employees.

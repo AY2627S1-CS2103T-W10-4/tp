@@ -65,11 +65,11 @@ public class EmployeeCard extends UiPart<Region> {
         Tooltip.install(contact, new Tooltip("Phone: " + employee.getPhone().value + "\nEmail: "
                 + employee.getEmail().value));
         Tooltip.install(department, new Tooltip(employee.getDepartment().value));
-        employee.getManagerId().ifPresent(managerId -> {
-            manager.setText("Reports to " + managerId);
-            manager.setTooltip(new Tooltip(manager.getText()));
-            manager.setVisible(true);
-            manager.setManaged(true);
-        });
+        manager.setText(getManagerText(employee));
+        manager.setTooltip(new Tooltip(manager.getText()));
+    }
+
+    static String getManagerText(Employee employee) {
+        return employee.getManagerId().map(managerId -> "Reports to " + managerId).orElse("Unassigned");
     }
 }
