@@ -479,9 +479,10 @@ Format: `delete id/EMPLOYEE_ID`
 * ID matching ignores letter case: `e0123` identifies the same employee as `E0123`. The success message shows the ID as stored.
 * Supply exactly one `id/` parameter. Surrounding spaces and tabs are accepted; spaces within an ID, repeated `id/` parameters and other parameters are rejected.
 * The command searches all employee records, including archived employees and employees hidden by `find`.
-* The current search filter and the order of remaining employees are preserved.
+* The current list, search or filter and sort order are preserved, including an archived-only view. Deleting the last matching employee leaves that view empty; use `list` to see all active employees.
 * Deleting a manager removes the manager assignment from their direct reports, including archived reports. The success message gives the number affected. Other reporting relationships are preserved.
-* Deletion is immediate, with no confirmation. Use `undo` to restore it during the same session. The final employee can be deleted, and a deleted ID can be reused.
+* Deletion is immediate, with no confirmation. Use `undo` to restore the record and any manager assignments removed by that deletion during the same session. A restored archived employee remains archived. Use `redo` to apply the deletion again.
+* The final employee can be deleted, and a deleted ID can be reused. Successful deletions are saved automatically and remain deleted after restarting HuntR; undo history is not retained across restarts.
 
 Examples, assuming the target employee exists:
 
@@ -490,6 +491,9 @@ Examples, assuming the target employee exists:
 * `find Betsy` followed by `delete id/EMP-0042` deletes `EMP-0042` even when hidden by that search. The Betsy search remains active.
 
 On success, the message starts with `Deleted employee:` and includes the deleted employee's ID, name, phone, email, department and role.
+
+If the employee has direct reports, the message also includes their count, for example
+`2 direct report(s) now have no manager.` Those employees remain in the roster with their other details unchanged.
 
 The following input errors leave the records unchanged. Each message is followed by the usage block below.
 
@@ -737,7 +741,7 @@ Action     | Format, Examples
 **Backup** | `backup`
 **Check**  | `check`
 **Clear**  | `clear`
-**Delete** | `delete id/EMPLOYEE_ID`<br> e.g., `delete id/EMP-0042`
+**[Delete](#deleting-an-employee-delete)** | `delete id/EMPLOYEE_ID`<br> e.g., `delete id/EMP-0042`<br>Deletes one active or archived employee by ID.
 **Edit**   | `edit id/EMPLOYEE_ID [n/NAME] [p/PHONE] [e/EMAIL] [d/DEPARTMENT] [r/ROLE] [m/MANAGER_ID]`<br>e.g., `edit id/E0001 p/91234567 e/alex@example.com`
 **Find**   | `find KEYWORD [MORE_KEYWORDS]`<br> e.g., `find James Jake`
 **Filter** | `filter [id/EMPLOYEE_ID] [n/NAME] [d/DEPARTMENT] [r/ROLE]`<br> e.g., `filter n/John d/Sales`, `filter d/Sales d/Finance r/Manager`

@@ -341,11 +341,35 @@ employees and preserves archived entries in the same list.
 
 ### Delete an employee by ID
 
-`DeleteCommandParser` accepts `delete id/EMPLOYEE_ID` with exactly one `id/` parameter. It distinguishes unknown parameters, a missing parameter, a blank ID, an invalid ID format and duplicate parameters. A preamble before `id/` is rejected as unexpected arguments. Parsing errors include the command usage; see the [User Guide](UserGuide.md#deleting-an-employee-delete) for messages and examples.
+`AddressBookParser` routes `delete` to `DeleteCommandParser`, which delegates argument validation to
+`SingleIdCommandParser`. It accepts exactly one `id/` parameter and distinguishes unknown parameters, a missing
+parameter, a blank ID, an invalid ID format and duplicate parameters. A preamble before `id/` is rejected as
+unexpected arguments. Parsing errors include the command usage; see the
+[User Guide](UserGuide.md#deleting-an-employee-delete) for messages and examples.
 
 ID validation uses `ParserUtil.parseEmployeeId` and the existing `EmployeeId` rules: 1 to 20 letters, digits, hyphens or underscores, with no spaces. IDs retain their original casing and compare case-insensitively.
 
-`DeleteCommand` searches `model.getAddressBook().getEmployeeList()` for the matching `EmployeeId`, so a target can be deleted even when hidden by the current filter. It deletes that stored employee and returns all their details. The filter and remaining roster order are preserved. An absent ID produces `No employee with ID X was found.` without usage, where `X` is the entered ID. This command uses the existing saving flow.
+`DeleteCommand` calls `EmployeeCommandSupport.find(model, targetId)`, which searches the complete stored roster
+using case-insensitive `EmployeeId` equality. The target may be active, archived or hidden by the current view.
+An absent ID produces `No employee with ID X was found.` without usage, where `X` is the entered ID.
+
+Before deletion, the command counts all direct reports, including archived employees. `ModelManager#deleteEmployee`
+delegates to `AddressBook#removeEmployee`, which removes the target and replaces each direct report with
+`employee.withManager(null)`. Other employee fields and relationships remain unchanged. The command returns
+`Deleted employee:` followed by the employee's details, adding `N direct report(s) now have no manager.` when
+the count is non-zero. There is no confirmation step.
+
+The installed filter predicate and sort comparator remain in place, including an archived-only or empty view.
+The diagram below focuses on successful command execution after parsing. It omits the shared transaction wrapper:
+`DeleteCommand#getHistoryAction()` returns `COMMIT`, so `LogicManager` captures a checkpoint before execution,
+commits the whole deletion (including cleared manager assignments) as one history step, and saves before returning
+success. Execution or save failure restores the checkpoint. See
+[Employee history and in-memory rollback](#employee-history-and-in-memory-rollback) for the complete transaction.
+Undo restores the employee's original fields, archive status, roster position and affected reporting relationships
+during the same session; it preserves the view in effect when undo is run. Restart retains the saved deletion but
+starts a new history.
+
+<puml src="diagrams/DeleteSequenceDiagram.puml" alt="Deleting an employee and clearing direct reports' manager assignments" />
 
 ### Edit an employee by ID
 
@@ -674,12 +698,13 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 | `* *` | Long-time user | Filter employees by search criteria | Gather specific organisation-wide data efficiently |
 | `* * *` | Basic user | Add an employee's information | the app reflects my company's workforce |
 | `* * *` | Basic user | List all employees | see the full roster in one place |
-| `* * *` | Basic user | Delete an employee's record | my workforce records remain current |
+| `* * *` | Basic user | Delete an active or archived employee by ID, even when hidden by a search | Remove the intended record without changing my view |
+| `* *` | Careful user | Undo a deletion and its reporting changes during the same session | Recover a mistakenly deleted employee and their relationships |
 | `* * *` | Basic user | Find an employee by name | quickly retrieve their information without browsing the whole list |
 | `* * *` | Basic user | Have my data saved automatically after every change | I don't lose records if the app closes unexpectedly |
 | `* * *` | Basic user | Exit the application with a command | close it safely knowing my data is saved |
 | `* *` | Basic user | Edit an employee's details | keep records accurate when someone's role or contact info changes |
-| `* *` | Careful user | Be asked to confirm before a record is deleted | avoid losing a record to a mistyped command |
+| `* *` | Careful user | **Coming soon:** Be asked to confirm before a record is deleted | avoid losing a record to a mistyped command |
 | `* *` | Busy user | Filter employees using multiple criteria at once (e.g. department and role) | narrow down results faster than one field at a time |
 | `* *` | Busy user | View an entire team's roster with one command | prepare for a team meeting without assembling the list myself |
 | `*` | Busy user | Sort employees by a chosen field (e.g. name or department) | scan records in the order that's useful to me |
@@ -900,7 +925,7 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 
 1. User requests to delete an employee using `delete id/EMPLOYEE_ID`.
 2. HuntR validates the ID and finds the employee in the complete roster, comparing IDs case-insensitively.
-3. HuntR deletes the specified employee record and saves the updated records, preserving the current search filter.
+3. HuntR immediately deletes the specified employee record and saves the updated records, preserving the current view and sort order.
 4. HuntR displays the deleted employee's details as confirmation.
 
     Use case ends.
@@ -919,11 +944,24 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 
     Use case ends.
 
-* 3a. The employee is hidden by the current search.
+* 3a. The employee is archived or hidden by the current search or filter.
 
-  * 3a1. HuntR deletes that employee from the complete roster while retaining the search filter.
+  * 3a1. HuntR deletes that employee from the complete roster while retaining the current view, even if it becomes empty.
 
     Use case resumes at step 4.
+
+* 3b. The employee has direct reports.
+
+  * 3b1. HuntR clears those employees' manager assignments, including archived reports, as part of the same change.
+  * 3b2. HuntR adds the affected direct-report count to the deletion confirmation.
+
+    Use case ends.
+
+* 3c. Saving the deletion fails before the data file is replaced.
+
+  * 3c1. HuntR restores the employee records, reporting relationships, history and view and displays the save error.
+
+    Use case ends.
 
 *{More to be added}*
 
@@ -1145,6 +1183,18 @@ Engineering department, `E0003` is in Finance and `E0006` is in Sales.
    Expected: HuntR displays `No employee with ID E9999 was found.` No usage text is appended and no record is changed.
 6. Delete the last remaining employee, enter `exit`, and relaunch HuntR.<br>
    Expected: The roster remains empty after relaunch. The deleted ID can be used again in a new `add` command.
+7. Enter `archive id/EMP-0042`, `list archived`, then `delete id/emp-0042`.<br>
+   Expected: The archived employee is deleted, and the archived-only view remains selected. Enter `undo`:<br>
+   Expected: The employee reappears with its original ID spelling and archived status. Enter `redo` to delete it again.
+8. Enter `manager id/E0123 m/EMP-0042` and `manager id/abc m/EMP-0042`, then archive `abc`.
+   Enter `delete id/EMP-0042`.<br>
+   Expected: Both reports remain, with no manager; `abc` remains archived. The result includes
+   `2 direct report(s) now have no manager.` Enter `undo`, then `team id/EMP-0042`:<br>
+   Expected: The manager and both reports appear with their original assignments. Enter `redo`:<br>
+   Expected: The manager is deleted again and both assignments are cleared.
+9. Enter `filter id/E0123`, `sort id desc`, then `delete id/EMP-0042`.<br>
+   Expected: `E0123` stays visible and the filter and descending ID sort remain selected. Enter `delete id/E0123`:<br>
+   Expected: The view becomes empty. Enter `undo` to restore `E0123` into the same filtered view.
 
 
 ### Reporting relationships and team structure

@@ -1,0 +1,49 @@
+@startuml
+!include style.puml
+skinparam ArrowFontStyle plain
+
+participant ":LogicManager" as Logic LOGIC_COLOR
+participant ":DeleteCommand" as Command LOGIC_COLOR
+participant "EmployeeCommandSupport" as Support LOGIC_COLOR
+participant ":ModelManager" as Model MODEL_COLOR
+participant ":VersionedAddressBook" as Book MODEL_COLOR
+
+Logic -> Command : execute(model)
+activate Command
+Command -> Support : find(model, targetId)
+Support -> Model : getAddressBook()
+Model --> Support : addressBook
+Support -> Book : getEmployeeList()
+Book --> Support : complete roster
+Support --> Command : employeeToDelete
+note over Support, Book
+Lookup includes active, archived and hidden employees.
+An unknown ID throws CommandException before mutation.
+end note
+Command -> Model : getAddressBook()
+Model --> Command : addressBook
+Command -> Book : getEmployeeList()
+Book --> Command : complete roster
+Command -> Command : count all direct reports
+Command -> Model : deleteEmployee(employeeToDelete)
+Model -> Book : removeEmployee(employeeToDelete)
+activate Book
+note right of Book
+Remove the target.
+Clear every direct report's manager assignment,
+including archived reports.
+Keep the remaining employees' order and other fields.
+end note
+Book --> Model
+deactivate Book
+Model --> Command
+note over Command, Model
+The existing view predicate and sort comparator remain installed.
+end note
+Command --> Logic : CommandResult(details and affected-report count)
+deactivate Command
+note over Logic, Book
+LogicManager handles checkpoint, history commit and saving.
+See CommandTransaction for success and rollback paths.
+end note
+@enduml
