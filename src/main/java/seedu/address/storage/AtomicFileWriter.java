@@ -7,6 +7,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.NoSuchFileException;
@@ -51,18 +52,33 @@ class AtomicFileWriter {
         this.files = requireNonNull(files);
     }
 
+    /** Writes a new file, refusing to replace any existing file or symbolic link. */
+    void writeNew(Path destination, byte[] contents) throws IOException {
+        write(destination, contents, true);
+    }
+
     /**
      * Writes all contents before atomically replacing the resolved destination. Replacement is the commit point.
      */
     void write(Path destination, byte[] contents) throws IOException {
+        write(destination, contents, false);
+    }
+
+    private void write(Path destination, byte[] contents, boolean shouldCreateNew) throws IOException {
         requireNonNull(destination);
         requireNonNull(contents);
-        Path target = resolve(destination.toAbsolutePath());
+        Path absolute = destination.toAbsolutePath();
+        Path target = shouldCreateNew
+                ? resolve(absolute.getParent()).resolve(absolute.getFileName()) : resolve(absolute);
+        if (shouldCreateNew && Files.exists(target, LinkOption.NOFOLLOW_LINKS)) {
+            throw new FileAlreadyExistsException(target.toString());
+        }
         Protection protection = inspect(target);
         Files.createDirectories(target.getParent());
         Path parent = target.getParent().toRealPath();
         target = parent.resolve(target.getFileName());
         Path temporary = null;
+        boolean hasReservedTarget = false;
         try {
             temporary = files.createTemporary(parent, protection.creationAttributes());
             protection.restrict(temporary);
@@ -74,6 +90,11 @@ class AtomicFileWriter {
                 output.force();
             }
             protection.prepare(temporary);
+            if (shouldCreateNew) {
+                // CREATE_NEW is the collision check even if another backup appeared after inspection.
+                files.createNew(target, protection.creationAttributes());
+                hasReservedTarget = true;
+            }
             try {
                 files.replace(temporary, target);
             } catch (AtomicMoveNotSupportedException e) {
@@ -83,6 +104,13 @@ class AtomicFileWriter {
             if (temporary != null) {
                 try {
                     files.delete(temporary);
+                } catch (IOException | RuntimeException cleanupFailure) {
+                    failure.addSuppressed(cleanupFailure);
+                }
+            }
+            if (hasReservedTarget) {
+                try {
+                    files.delete(target);
                 } catch (IOException | RuntimeException cleanupFailure) {
                     failure.addSuppressed(cleanupFailure);
                 }
@@ -277,6 +305,10 @@ class AtomicFileWriter {
 
     /** Provides the small file-operation seam used to exercise failures around the commit point. */
     static class FileOperations {
+        void createNew(Path destination, FileAttribute<?>... attributes) throws IOException {
+            Files.createFile(destination, attributes);
+        }
+
         Path createTemporary(Path parent, FileAttribute<?>... attributes) throws IOException {
             try {
                 return Files.createTempFile(parent, ".huntr-", ".tmp", attributes);

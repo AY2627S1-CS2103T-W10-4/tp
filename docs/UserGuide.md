@@ -635,7 +635,10 @@ existing UI does not provide ordinary command-box handling for those exceptions.
 Read-only commands retain their existing behavior on automatic-save failure: for example, a changed view stays
 changed. Export/backup files already created remain on disk.
 
-JSON backups use the same safer writer and keep their existing location and naming. A backup write failure,
+JSON backups use the same safer writer and are saved in `data/backups` as `huntr-yyyyMMdd-HHmmss.json`.
+If a filename is already taken, a numeric suffix is added, such as `huntr-yyyyMMdd-HHmmss-1.json`.
+Existing backup snapshots are never overwritten, including when multiple backups are created within the same second.
+A backup write failure,
 including unsupported atomic movement or protection, keeps its backup-specific message:
 
 ```text

@@ -13,6 +13,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
@@ -52,6 +53,68 @@ public class AtomicFileWriterTest {
         writer.write(destination, UPDATED);
         assertArrayEquals(UPDATED, Files.readAllBytes(destination));
         assertOnlyDestination(destination);
+    }
+
+    @Test
+    public void writeNew_existingSnapshot_preservesOriginalBytes() throws Exception {
+        Path destination = folder.resolve("backup.json");
+        AtomicFileWriter writer = new AtomicFileWriter();
+        writer.writeNew(destination, ORIGINAL);
+        assertRestricted(destination);
+
+        assertThrows(FileAlreadyExistsException.class, () -> writer.writeNew(destination, UPDATED));
+
+        assertArrayEquals(ORIGINAL, Files.readAllBytes(destination));
+        assertOnlyDestination(destination);
+    }
+
+    @Test
+    public void writeNew_destinationAppearsBeforeReservation_preservesOtherSnapshot() throws Exception {
+        Path destination = folder.resolve("backup.json");
+        AtomicFileWriter.FileOperations files = new AtomicFileWriter.FileOperations() {
+            @Override
+            void createNew(Path target, FileAttribute<?>... attributes) throws IOException {
+                Files.write(target, ORIGINAL);
+                super.createNew(target, attributes);
+            }
+        };
+
+        assertThrows(FileAlreadyExistsException.class, () ->
+                new AtomicFileWriter(files).writeNew(destination, UPDATED));
+
+        assertArrayEquals(ORIGINAL, Files.readAllBytes(destination));
+        assertOnlyDestination(destination);
+    }
+
+    @Test
+    public void writeNew_eachPreReplacementFault_removesTemporaryAndReservation() throws Exception {
+        for (Fault fault : Fault.values()) {
+            if (fault == Fault.NONE) {
+                continue;
+            }
+            Path destination = newDestination("newBackup" + fault.name(), false);
+            FaultyFiles files = new FaultyFiles(fault);
+
+            assertThrows(IOException.class, () -> new AtomicFileWriter(files).writeNew(destination, UPDATED));
+
+            assertTrue(Files.notExists(destination));
+            assertTrue(files.temporary == null || Files.notExists(files.temporary));
+        }
+    }
+
+    @Test
+    public void writeNew_existingLeafLinks_preservesLinksAndTargets() throws Exception {
+        for (boolean existingTarget : List.of(false, true)) {
+            Path target = newDestination("linkTarget" + existingTarget, existingTarget);
+            Path link = createLink(folder.resolve("backup" + existingTarget + ".json"), target);
+
+            assertThrows(FileAlreadyExistsException.class, () ->
+                    new AtomicFileWriter().writeNew(link, UPDATED));
+
+            assertTrue(Files.isSymbolicLink(link));
+            assertEquals(target, Files.readSymbolicLink(link));
+            assertDestination(target, existingTarget);
+        }
     }
 
     @Test

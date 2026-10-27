@@ -138,6 +138,11 @@ serializes using `JsonUtil.toJsonString()` and encodes UTF-8 **before** invoking
 `AtomicFileWriter.write(Path, byte[])`. The generic JSON/file utilities, preferences and CSV writers are unchanged.
 JSON backups already use this storage class and therefore share its atomic writer.
 
+Backups use `saveNewAddressBook`, which refuses existing destination files or symbolic links.
+After preparing the protected temporary file, the writer atomically reserves the destination with `CREATE_NEW`
+before replacing that empty reservation. A handled failure removes the reservation and temporary file.
+`BackupCommand` retries occupied names with numeric suffixes, preserving snapshots created within the same second.
+
 The writer resolves the destination and inspects its supported access attributes, creates missing parent
 directories, then creates a uniquely named sibling `.huntr-*.tmp` file. It establishes and verifies restricted
 temporary access before writing any employee bytes, handles short writes until the entire buffer is consumed,

@@ -4,6 +4,9 @@ import static java.util.Objects.requireNonNull;
 import static seedu.address.commons.util.CollectionUtil.requireAllNonNull;
 
 import java.io.IOException;
+import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Clock;
@@ -67,7 +70,19 @@ public class BackupCommand extends Command {
         Path backupPath = backupFolder.resolve(String.format(FILE_NAME_FORMAT, timestamp));
 
         try {
-            createStorage(backupPath).saveAddressBook(addressBook);
+            int suffix = 0;
+            while (true) {
+                try {
+                    createStorage(backupPath).saveNewAddressBook(addressBook);
+                    break;
+                } catch (FileAlreadyExistsException collision) {
+                    if (!Files.exists(backupPath, LinkOption.NOFOLLOW_LINKS)) {
+                        throw collision;
+                    }
+                    suffix++;
+                    backupPath = backupFolder.resolve(String.format(FILE_NAME_FORMAT, timestamp + "-" + suffix));
+                }
+            }
         } catch (IOException ioe) {
             logger.warning("Failed to save backup to " + backupPath + ": " + ioe);
             throw new CommandException(String.format(MESSAGE_WRITE_FAILED, backupPath), ioe);

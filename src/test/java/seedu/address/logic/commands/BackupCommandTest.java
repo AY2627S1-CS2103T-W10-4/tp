@@ -1,5 +1,6 @@
 package seedu.address.logic.commands;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -89,6 +90,41 @@ public class BackupCommandTest {
     }
 
     @Test
+    public void execute_sameTimestampDifferentStates_preservesBothSnapshots() throws Exception {
+        BackupCommand command = new BackupCommand(testFolder, FIXED_CLOCK);
+        Path firstPath = testFolder.resolve(EXPECTED_FILE_NAME);
+        Path secondPath = testFolder.resolve("huntr-20261020-153005-1.json");
+        AddressBook original = new AddressBook(model.getAddressBook());
+
+        command.execute(model);
+        byte[] firstContents = Files.readAllBytes(firstPath);
+        model.setAddressBook(new AddressBook());
+        CommandResult secondResult = command.execute(model);
+
+        assertEquals(String.format(BackupCommand.MESSAGE_SUCCESS, 0, secondPath), secondResult.getFeedbackToUser());
+        assertArrayEquals(firstContents, Files.readAllBytes(firstPath));
+        assertEquals(original, new JsonAddressBookStorage(firstPath).readAddressBook().orElseThrow());
+        assertEquals(new AddressBook(), new JsonAddressBookStorage(secondPath).readAddressBook().orElseThrow());
+        try (var backups = Files.list(testFolder)) {
+            assertEquals(2, backups.count());
+        }
+    }
+
+    @Test
+    public void execute_existingBackupAndSuffix_skipsOccupiedNamesAcrossCommandInstances() throws Exception {
+        new BackupCommand(testFolder, FIXED_CLOCK).execute(model);
+        Path occupiedSuffix = Files.createDirectory(testFolder.resolve("huntr-20261020-153005-1.json"));
+        Path backupPath = testFolder.resolve("huntr-20261020-153005-2.json");
+
+        CommandResult result = new BackupCommand(testFolder, FIXED_CLOCK).execute(model);
+
+        assertEquals(String.format(BackupCommand.MESSAGE_SUCCESS,
+                model.getAddressBook().getEmployeeList().size(), backupPath), result.getFeedbackToUser());
+        assertEquals(model.getAddressBook(), new JsonAddressBookStorage(backupPath).readAddressBook().orElseThrow());
+        assertTrue(Files.isDirectory(occupiedSuffix));
+    }
+
+    @Test
     public void execute_backupFolderIsFile_throwsCommandException() throws Exception {
         Path notAFolder = Files.createFile(testFolder.resolve("backups"));
 
@@ -111,7 +147,7 @@ public class BackupCommandTest {
                     assertEquals(backupPath, path);
                     return new JsonAddressBookStorage(path) {
                         @Override
-                        public void saveAddressBook(ReadOnlyAddressBook addressBook) throws IOException {
+                        public void saveNewAddressBook(ReadOnlyAddressBook addressBook) throws IOException {
                             throw failure;
                         }
                     };
