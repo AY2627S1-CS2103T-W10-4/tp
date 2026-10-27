@@ -32,9 +32,7 @@ public class ArchiveCommand extends Command {
     @Override
     public CommandResult execute(Model model) throws CommandException {
         requireNonNull(model);
-        Employee employee = model.getAddressBook().getEmployeeList().stream()
-                .filter(candidate -> candidate.getId().equals(targetId)).findFirst()
-                .orElseThrow(() -> new CommandException(String.format(Messages.MESSAGE_EMPLOYEE_NOT_FOUND, targetId)));
+        Employee employee = EmployeeCommandSupport.find(model, targetId);
         if (employee.isArchived()) {
             throw new CommandException(String.format(MESSAGE_ALREADY_ARCHIVED, targetId));
         }

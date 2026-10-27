@@ -50,10 +50,7 @@ public class DeleteCommand extends Command {
     @Override
     public CommandResult execute(Model model) throws CommandException {
         requireNonNull(model);
-        Employee employeeToDelete = model.getAddressBook().getEmployeeList().stream()
-                .filter(employee -> employee.getId().equals(targetId))
-                .findFirst()
-                .orElseThrow(() -> new CommandException(String.format(Messages.MESSAGE_EMPLOYEE_NOT_FOUND, targetId)));
+        Employee employeeToDelete = EmployeeCommandSupport.find(model, targetId);
         long reports = model.getAddressBook().getEmployeeList().stream()
                 .filter(employee -> employee.getManagerId().filter(employeeToDelete.getId()::equals).isPresent())
                 .count();
