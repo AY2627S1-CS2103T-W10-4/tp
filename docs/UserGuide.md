@@ -113,6 +113,10 @@ hyphens and underscores. Employee IDs are compared case-insensitively, so `E0123
 same employee. For example, if `E0123` is already in use, HuntR displays
 `An employee with Employee ID E0123 already exists.` and does not add the employee.
 
+The department and the role must start with a letter or a digit, and may contain letters (also with accents, such as
+`Soporte técnico`), digits, spaces and the symbols `&` `'` `(` `)` `,` `.` `-`, up to 100 characters. The name may
+contain letters (also with accents), digits, spaces and the symbols `'` `.` `,` `/` `-`.
+
 Parameters can be supplied in any order. Optional `m/MANAGER_ID` assigns an existing employee as the manager.
 Manager IDs are matched case-insensitively and saved using the spelling of the existing employee's ID.
 An empty `m/`, unknown manager or self-assignment is rejected without changing the roster.
