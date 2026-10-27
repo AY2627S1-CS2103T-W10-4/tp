@@ -285,6 +285,11 @@ six-column format and seven-column format ending in `archived`, treating those r
 A manager may appear later in the file or already exist in HuntR. Invalid IDs, missing managers, self-reporting
 and cycles reject the import without adding any employees. Existing employee IDs are rejected rather than overwritten.
 
+Quoted CSV fields may span multiple physical lines, including files using LF or CRLF line endings. For example,
+a quoted name containing `Alice` and `Smith` on separate lines is normalised to `Alice Smith`. Complete field values
+still follow the usual validation rules. An actually unclosed quoted field is rejected. Import errors identify the
+physical line where the record starts, counting the header as line 1; a multiline record counts as one employee.
+
 ### Finding employees by name: `find`
 
 Finds employees whose names contain any of the given keywords and displays them in the employee list.
