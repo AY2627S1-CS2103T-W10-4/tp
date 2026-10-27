@@ -11,7 +11,9 @@ import static seedu.address.testutil.TypicalEmployees.CARL;
 import static seedu.address.testutil.TypicalEmployees.FIONA;
 import static seedu.address.testutil.TypicalEmployees.getTypicalAddressBook;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
@@ -59,6 +61,24 @@ public class FilterCommandTest {
 
         // different predicate -> returns false
         assertFalse(filterFirstCommand.equals(filterSecondCommand));
+    }
+
+    @Test
+    public void hashCode_equalCommands_sameHashCodeAndFoundInHashSet() {
+        FilterCommand filterFirstCommand = new FilterCommand(predicateOf(List.of("first"), List.of()));
+        // the case of a word is ignored, so this command is equal
+        FilterCommand sameCommand = new FilterCommand(predicateOf(List.of("First"), List.of()));
+        FilterCommand filterSecondCommand = new FilterCommand(predicateOf(List.of("second"), List.of()));
+        assertEquals(filterFirstCommand, sameCommand);
+
+        assertEquals(filterFirstCommand.hashCode(), sameCommand.hashCode());
+
+        Set<FilterCommand> commands = new HashSet<>(List.of(filterFirstCommand));
+        assertTrue(commands.contains(sameCommand));
+        commands.add(sameCommand);
+        assertEquals(1, commands.size());
+        commands.add(filterSecondCommand);
+        assertEquals(2, commands.size());
     }
 
     @Test

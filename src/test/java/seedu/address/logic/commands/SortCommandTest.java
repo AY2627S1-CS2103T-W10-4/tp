@@ -13,9 +13,11 @@ import static seedu.address.testutil.TypicalEmployees.FIONA;
 import static seedu.address.testutil.TypicalEmployees.GEORGE;
 import static seedu.address.testutil.TypicalEmployees.getTypicalAddressBook;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
@@ -74,6 +76,24 @@ public class SortCommandTest {
 
         // ascending is the default order -> returns true
         assertTrue(sortByName.equals(new SortCommand(SortField.NAME, SortOrder.ASC)));
+    }
+
+    @Test
+    public void hashCode_equalCommands_sameHashCodeAndFoundInHashSet() {
+        SortCommand sortByName = new SortCommand(SortField.NAME);
+        // ascending is the default order, so this command is equal
+        SortCommand sameCommand = new SortCommand(SortField.NAME, SortOrder.ASC);
+        assertEquals(sortByName, sameCommand);
+
+        assertEquals(sortByName.hashCode(), sameCommand.hashCode());
+
+        Set<SortCommand> commands = new HashSet<>(List.of(sortByName));
+        assertTrue(commands.contains(sameCommand));
+        commands.add(sameCommand);
+        assertEquals(1, commands.size());
+        commands.add(new SortCommand(SortField.NAME, SortOrder.DESC));
+        commands.add(new SortCommand(SortField.ROLE));
+        assertEquals(3, commands.size());
     }
 
     @Test
