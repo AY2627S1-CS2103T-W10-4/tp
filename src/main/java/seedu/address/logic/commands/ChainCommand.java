@@ -28,7 +28,7 @@ public class ChainCommand extends Command {
     @Override
     public CommandResult execute(Model model) throws CommandException {
         requireNonNull(model);
-        Employee employee = ReportingCommandSupport.find(model, employeeId);
+        Employee employee = EmployeeCommandSupport.find(model, employeeId);
         List<Employee> result = ReportingStructure.chain(model.getAddressBook().getEmployeeList(), employee);
         ReportingCommandSupport.show(model, result);
         return new CommandResult("Reporting chain of " + ReportingCommandSupport.label(employee) + ": "
