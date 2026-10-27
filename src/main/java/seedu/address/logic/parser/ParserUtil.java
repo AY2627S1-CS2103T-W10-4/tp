@@ -1,6 +1,7 @@
 package seedu.address.logic.parser;
 
 import static java.util.Objects.requireNonNull;
+import static seedu.address.logic.parser.CliSyntax.PREFIX_FILE;
 
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
@@ -34,6 +35,25 @@ public class ParserUtil {
     public static final String MESSAGE_FILE_PATH_OUTSIDE_APP_FOLDER = "File path should be relative to the "
             + "folder HuntR runs from and stay inside it, for example exports/staff.csv.";
     public static final String MESSAGE_INVALID_FILE_PATH = "File path contains characters that are not allowed.";
+    public static final String MESSAGE_BLANK_FILE_PATH = "File path cannot be blank.";
+
+    /**
+     * Parses the file/ argument shared by import and export. Positional paths remain supported for compatibility.
+     * Use ./file/ for a positional path whose first directory is literally named file.
+     */
+    public static Path parseCsvFileArgument(String args) throws ParseException {
+        requireNonNull(args);
+        String pathText = args.trim();
+        if (pathText.startsWith(PREFIX_FILE.getPrefix())) {
+            ArgumentMultimap arguments = ArgumentTokenizer.tokenize(" " + pathText, PREFIX_FILE);
+            arguments.verifyNoDuplicatePrefixesFor(PREFIX_FILE);
+            pathText = arguments.getValue(PREFIX_FILE).orElse("");
+        }
+        if (pathText.isBlank()) {
+            throw new ParseException(MESSAGE_BLANK_FILE_PATH);
+        }
+        return parseCsvFilePath(pathText);
+    }
 
     /**
      * Parses {@code oneBasedIndex} into an {@code Index} and returns it. Leading and trailing whitespaces will be

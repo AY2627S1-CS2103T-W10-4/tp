@@ -383,14 +383,16 @@ partially loaded data.
 ### CSV import and export
 
 `ImportCommand` and `ExportCommand` extend the abstract `CsvFileCommand`, which holds the file path and the folder
-HuntR runs from. `ParserUtil.parseCsvFilePath` checks that the path is relative and ends in `.csv`, and
+HuntR runs from. Both parsers use `ParserUtil.parseCsvFileArgument` to remove the `file/` parameter prefix and
+reject blank or repeated prefixed paths. Positional paths remain supported; `./file/staff.csv` explicitly addresses
+a directory named `file`. `ParserUtil.parseCsvFilePath` then checks that the path is relative and ends in `.csv`, and
 `CsvFileCommand#resolveFilePath` rejects a path that leads outside that folder once symbolic links are followed.
 `CsvUtil` converts between a list of values and one CSV line, quoting values that contain commas or quotes.
 
 `ExportCommand` writes the header in `ExportCommand.CSV_HEADER`, then one line per employee in the complete stored
 roster, including archived employees. It creates missing parent folders and replaces an existing file.
 
-The sequence diagram below shows a successful `import staff.csv`. `ImportCommand` reads every line, checks the
+The sequence diagram below shows a successful `import file/staff.csv`. `ImportCommand` reads every line, checks the
 header against the three accepted column lists, and parses each non-blank row with the same `ParserUtil` methods as
 `add`. A row that is invalid, repeats an earlier ID or uses an existing ID stops the command with its row number.
 `ReportingStructure.validate` then checks the managers of the existing and imported employees together. Only after

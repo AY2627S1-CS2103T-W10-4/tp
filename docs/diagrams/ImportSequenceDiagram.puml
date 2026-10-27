@@ -17,10 +17,10 @@ participant "<<class>>\nReportingStructure" as ReportingStructure MODEL_COLOR
 participant "m:Model" as Model MODEL_COLOR
 end box
 
-[-> LogicManager : execute(\n"import staff.csv")
+[-> LogicManager : execute(\n"import file/staff.csv")
 activate LogicManager
 
-LogicManager -> AddressBookParser : parseCommand(\n"import staff.csv")
+LogicManager -> AddressBookParser : parseCommand(\n"import file/staff.csv")
 activate AddressBookParser
 
 create ImportCommandParser

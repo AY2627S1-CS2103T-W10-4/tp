@@ -33,10 +33,10 @@ public class ImportCommand extends CsvFileCommand {
 
     public static final String MESSAGE_USAGE = COMMAND_WORD + ": Adds every employee in a CSV file. "
             + "If any row is invalid, no employee is added.\n"
-            + "Parameters: FILE_PATH (relative to the folder HuntR runs from, ending in .csv)\n"
+            + "Parameters: file/FILE_PATH (relative to the folder HuntR runs from, ending in .csv)\n"
             + "The file must start with the header " + ExportCommand.CSV_HEADER
             + " (legacy six-column files and seven-column files ending in archived are also accepted)\n"
-            + "Example: " + COMMAND_WORD + " exports/staff.csv";
+            + "Example: " + COMMAND_WORD + " file/exports/staff.csv";
 
     public static final String MESSAGE_SUCCESS = "Imported %1$d employee(s) from %2$s";
     public static final String MESSAGE_FILE_NOT_FOUND = "File not found: %1$s";
