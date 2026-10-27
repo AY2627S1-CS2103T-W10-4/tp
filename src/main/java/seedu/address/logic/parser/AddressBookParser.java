@@ -1,8 +1,11 @@
 package seedu.address.logic.parser;
 
+import static seedu.address.logic.Messages.MESSAGE_COMMAND_WORDS_ARE_LOWERCASE;
+import static seedu.address.logic.Messages.MESSAGE_DID_YOU_MEAN;
 import static seedu.address.logic.Messages.MESSAGE_INVALID_COMMAND_FORMAT;
 import static seedu.address.logic.Messages.MESSAGE_UNKNOWN_COMMAND;
 
+import java.util.Optional;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -137,9 +140,26 @@ public class AddressBookParser {
             case SortCommand.COMMAND_WORD -> new SortCommandParser().parse(arguments);
             default -> {
                 logger.finer("This user input caused a ParseException: " + userInput);
-                throw new ParseException(String.format(MESSAGE_UNKNOWN_COMMAND, commandWord));
+                throw new ParseException(getUnknownCommandMessage(commandWord));
             }
         };
+    }
+
+    /**
+     * Returns the message for an unknown {@code commandWord}. If a command is close to the word, the message says
+     * which one, and if the word only differs in letter case, it says that command words are in lowercase.
+     */
+    private static String getUnknownCommandMessage(String commandWord) {
+        String message = String.format(MESSAGE_UNKNOWN_COMMAND, commandWord);
+        Optional<String> suggestion = CommandWords.closestTo(commandWord);
+        if (suggestion.isEmpty()) {
+            return message;
+        }
+        String hint = String.format(MESSAGE_DID_YOU_MEAN, suggestion.get());
+        if (suggestion.get().equalsIgnoreCase(commandWord)) {
+            hint += MESSAGE_COMMAND_WORDS_ARE_LOWERCASE;
+        }
+        return message + "\n" + hint;
     }
 
 }
