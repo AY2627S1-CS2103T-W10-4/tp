@@ -1046,9 +1046,11 @@ testers are expected to do more *exploratory* testing.
    Expected: HuntR reports that an employee with ID `e1001` already exists. No employee is added because employee IDs are compared case-insensitively.
 3. Enter `add id/E1002 n/  mary-ann   o'brien  p/81234567 e/mary2@example.com d/Finance r/Analyst`.<br>
    Expected: HuntR adds `E1002`, normalises repeated spaces in the name, and displays a warning that an employee with the same or a very similar name already exists. `E1001` remains unchanged.
-4. Enter `add id/E1003 n/Test User p/12 e/test@example.com d/QA r/Tester`.<br>
+4. Add six employees named `Jose Tan` with IDs `E1101` through `E1106`, each with a distinct valid phone number and email. Then enter `add id/E1107 n/ JOSE   tan p/91231107 e/jose7@example.com d/Finance r/Analyst`.<br>
+   Expected: HuntR adds `E1107` and warns that `6 employees with the same or a very similar name already exist`, showing only the first five matching employee IDs. The warning points to `find NAME` and `list archived` for the remaining matches.
+5. Enter `add id/E1003 n/Test User p/12 e/test@example.com d/QA r/Tester`.<br>
    Expected: HuntR reports that phone numbers must contain at least 3 digits. No employee is added.
-5. Enter `add id/E1003 n/Test User p/91234567 e/test@example.com d/QA`.<br>
+6. Enter `add id/E1003 n/Test User p/91234567 e/test@example.com d/QA`.<br>
    Expected: HuntR reports an invalid command format and shows the `add` command usage because the required `r/` field is missing. No employee is added.
 
 ### Listing employees

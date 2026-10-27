@@ -49,7 +49,7 @@ public class AddCommand extends Command {
             + "name already exists (Employee ID %1$s). Please check that this is not a duplicate.";
     public static final String MESSAGE_MANY_SIMILAR_NAMES_WARNING = "Warning: %1$d employees with the same or a very "
             + "similar name already exist (showing first %2$d Employee IDs: %3$s). "
-            + "Please check that this is not a duplicate.";
+            + "Please check that this is not a duplicate. Use `find NAME` and `list archived` to see them all.";
 
     private static final int MAX_SIMILAR_EMPLOYEE_IDS = 5;
 
