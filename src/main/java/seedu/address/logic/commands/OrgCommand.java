@@ -27,10 +27,10 @@ public class OrgCommand extends Command {
     @Override
     public CommandResult execute(Model model) throws CommandException {
         requireNonNull(model);
-        Employee employee = ReportingCommandSupport.find(model, employeeId);
+        Employee employee = EmployeeCommandSupport.find(model, employeeId);
         List<Employee> result = ReportingStructure.reports(model.getAddressBook().getEmployeeList(),
                 employee.getId(), true);
-        ReportingCommandSupport.show(model, result);
+        ReportingCommandSupport.show(model, () -> ReportingCommandSupport.org(model, employeeId));
         return new CommandResult("Full team under " + ReportingCommandSupport.label(employee) + ": "
                 + ReportingCommandSupport.describe(result, ", "));
     }

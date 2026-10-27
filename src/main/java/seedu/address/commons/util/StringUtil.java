@@ -5,6 +5,7 @@ import static seedu.address.commons.util.AppUtil.checkArgument;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.text.Normalizer;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
@@ -17,6 +18,9 @@ public class StringUtil {
 
     /** Anything that is not a letter, a mark that belongs to a letter, a digit, {@code &} or {@code '}. */
     private static final Pattern NOT_PART_OF_SEARCH_WORD = Pattern.compile("[^\\p{L}\\p{M}\\p{N}&']+");
+
+    /** The accents (combining diacritical marks) that are put on a letter, such as the acute accent of É. */
+    private static final Pattern ACCENT = Pattern.compile("[\\u0300-\\u036F]");
 
     private static final Pattern WHITESPACE_RUN = Pattern.compile("\\s+");
 
@@ -37,16 +41,21 @@ public class StringUtil {
     /**
      * Returns the lower-case words of {@code text}, to be matched whole against other words.
      * Words are separated by spaces and punctuation, except for {@code &} and {@code '} which stay in a word.
+     * Accents on letters are left out, so {@code É} and {@code E} are the same, whether the accent is a part
+     * of the letter or a separate mark after it.
      *   <br>examples:<pre>
      *       getSearchWords("R&amp;D, Asia") == ["r&amp;d", "asia"]
      *       getSearchWords("Engineer (Backend)") == ["engineer", "backend"]
+     *       getSearchWords("Tan, Ah Kow") == ["tan", "ah", "kow"]
+     *       getSearchWords("Émile") == ["emile"]
      *       getSearchWords("@@@") == []
      *       </pre>
      * @param text cannot be null
      */
     public static List<String> getSearchWords(String text) {
         requireNonNull(text);
-        return NOT_PART_OF_SEARCH_WORD.splitAsStream(text.toLowerCase(Locale.ROOT))
+        String withoutAccents = ACCENT.matcher(Normalizer.normalize(text, Normalizer.Form.NFD)).replaceAll("");
+        return NOT_PART_OF_SEARCH_WORD.splitAsStream(withoutAccents.toLowerCase(Locale.ROOT))
                 .filter(word -> !word.isEmpty())
                 .toList();
     }

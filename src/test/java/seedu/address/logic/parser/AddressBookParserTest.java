@@ -2,6 +2,8 @@ package seedu.address.logic.parser;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static seedu.address.logic.Messages.MESSAGE_COMMAND_WORDS_ARE_LOWERCASE;
+import static seedu.address.logic.Messages.MESSAGE_DID_YOU_MEAN;
 import static seedu.address.logic.Messages.MESSAGE_INVALID_COMMAND_FORMAT;
 import static seedu.address.logic.Messages.MESSAGE_UNKNOWN_COMMAND;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_ID;
@@ -65,10 +67,45 @@ public class AddressBookParserTest {
 
     @Test
     public void parseCommand_historyAliases_preservesUnknownCommandWord() {
-        for (String word : List.of("UNDO", "Undo", "REDO", "u", "r", "undo2")) {
-            String expectedMessage = "Unknown command: " + word + "\nType help to see the available commands.";
+        String lowercaseHint = "\nDid you mean %s? Command words are written in lowercase.";
+        for (String[] wordAndHint : new String[][] {{"UNDO", String.format(lowercaseHint, "undo")},
+            {"Undo", String.format(lowercaseHint, "undo")}, {"REDO", String.format(lowercaseHint, "redo")},
+            {"u", ""}, {"r", ""}, {"undo2", "\nDid you mean undo?"}}) {
+            String word = wordAndHint[0];
+            String expectedMessage = "Unknown command: " + word + "\nType help to see the available commands."
+                    + wordAndHint[1];
             assertThrows(ParseException.class, expectedMessage, () -> parser.parseCommand("  " + word + "  "));
         }
+    }
+
+    @Test
+    public void parseCommand_commandWordWithOtherLetterCase_saysThatCommandWordsAreLowercase() {
+        String lowercaseHint = "\nDid you mean %s? Command words are written in lowercase.";
+        String listMessage = "Unknown command: List\nType help to see the available commands."
+                + String.format(lowercaseHint, "list");
+        assertThrows(ParseException.class, listMessage, () -> parser.parseCommand("List"));
+        assertThrows(ParseException.class, listMessage, () -> parser.parseCommand("List archived"));
+
+        String findMessage = "Unknown command: Find\nType help to see the available commands."
+                + String.format(lowercaseHint, "find");
+        assertThrows(ParseException.class, findMessage, () -> parser.parseCommand("Find alex"));
+    }
+
+    @Test
+    public void parseCommand_mistypedCommandWord_suggestsTheClosestCommand() {
+        String filterMessage = "Unknown command: fliter\nType help to see the available commands.\n"
+                + "Did you mean filter?";
+        assertThrows(ParseException.class, filterMessage, () -> parser.parseCommand("fliter d/Sales"));
+
+        String sortMessage = "Unknown command: sortt\nType help to see the available commands.\n"
+                + "Did you mean sort?";
+        assertThrows(ParseException.class, sortMessage, () -> parser.parseCommand("sortt name"));
+    }
+
+    @Test
+    public void parseCommand_commandWordNotCloseToAnyCommand_hasNoSuggestion() {
+        String message = "Unknown command: xyz\nType help to see the available commands.";
+        assertThrows(ParseException.class, message, () -> parser.parseCommand("xyz 123"));
     }
 
     @Test
@@ -209,7 +246,9 @@ public class AddressBookParserTest {
     public void parseCommand_unknownCommand_throwsParseException() {
         String unknownCommand = "unknownCommand";
         String unknownCommandMessage = String.format(MESSAGE_UNKNOWN_COMMAND, unknownCommand);
-        String uppercaseCommandMessage = String.format(MESSAGE_UNKNOWN_COMMAND, "LIST");
+        // the command words are in lowercase, and the message says which command was meant
+        String uppercaseCommandMessage = String.format(MESSAGE_UNKNOWN_COMMAND, "LIST") + "\n"
+                + String.format(MESSAGE_DID_YOU_MEAN, "list") + MESSAGE_COMMAND_WORDS_ARE_LOWERCASE;
 
         assertThrows(ParseException.class, unknownCommandMessage, () -> parser.parseCommand(unknownCommand));
         assertThrows(ParseException.class, uppercaseCommandMessage, () -> parser.parseCommand("LIST"));
