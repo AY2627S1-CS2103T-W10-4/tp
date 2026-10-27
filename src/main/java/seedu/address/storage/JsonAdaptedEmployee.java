@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import seedu.address.commons.exceptions.IllegalValueException;
-import seedu.address.commons.util.StringUtil;
 import seedu.address.model.employee.Department;
 import seedu.address.model.employee.Email;
 import seedu.address.model.employee.Employee;
@@ -120,7 +119,7 @@ class JsonAdaptedEmployee {
             throw new IllegalValueException(
                     String.format(MISSING_FIELD_MESSAGE_FORMAT, Department.class.getSimpleName()));
         }
-        String normalisedDepartment = StringUtil.collapseWhitespace(department);
+        String normalisedDepartment = Department.normalise(department);
         if (!Department.isValidDepartment(normalisedDepartment)) {
             throw new IllegalValueException(Department.MESSAGE_CONSTRAINTS);
         }
@@ -129,7 +128,7 @@ class JsonAdaptedEmployee {
         if (role == null) {
             throw new IllegalValueException(String.format(MISSING_FIELD_MESSAGE_FORMAT, Role.class.getSimpleName()));
         }
-        String normalisedRole = StringUtil.collapseWhitespace(role);
+        String normalisedRole = Role.normalise(role);
         if (!Role.isValidRole(normalisedRole)) {
             throw new IllegalValueException(Role.MESSAGE_CONSTRAINTS);
         }

@@ -115,7 +115,7 @@ public class ParserUtil {
      */
     public static Department parseDepartment(String department) throws ParseException {
         requireNonNull(department);
-        String normalisedDepartment = StringUtil.collapseWhitespace(department);
+        String normalisedDepartment = Department.normalise(department);
         if (normalisedDepartment.isEmpty()) {
             throw new ParseException(Department.MESSAGE_BLANK);
         }
@@ -135,7 +135,7 @@ public class ParserUtil {
      */
     public static Role parseRole(String role) throws ParseException {
         requireNonNull(role);
-        String normalisedRole = StringUtil.collapseWhitespace(role);
+        String normalisedRole = Role.normalise(role);
         if (normalisedRole.isEmpty()) {
             throw new ParseException(Role.MESSAGE_BLANK);
         }
