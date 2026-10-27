@@ -280,12 +280,13 @@ public class HistoryTransactionTest {
 
     @Test
     public void execute_noOpsAndReadOnlyCommands_preserveRedoAndStillSave() throws Exception {
-        logic.execute("edit id/" + ALICE.getId() + " r/First edit");
+        assertThrows(CommandException.class, () -> logic.execute("edit id/" + ALICE.getId() + " r/First edit"));
+        assertTrue(model.canRedoAddressBook());
         for (String command : List.of("list", "list archived", "find Nobody", "help", "exit")) {
             logic.execute(command);
             assertTrue(model.canRedoAddressBook());
         }
-        assertEquals(6, storage.saves);
+        assertEquals(5, storage.saves);
         Path exported = temporaryFolder.resolve("export.csv");
         logicFor(new ExportCommand(temporaryFolder, Path.of("export.csv"))).execute("export");
         logicFor(new BackupCommand(temporaryFolder.resolve("backups"), Clock.systemUTC())).execute("backup");
