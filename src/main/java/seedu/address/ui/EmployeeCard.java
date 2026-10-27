@@ -22,8 +22,6 @@ public class EmployeeCard extends UiPart<Region> {
      * @see <a href="https://github.com/se-edu/addressbook-level4/issues/336">The issue on AddressBook level 4</a>
      */
 
-    public final Employee employee;
-
     @FXML
     private HBox cardPane;
     @FXML
@@ -50,7 +48,6 @@ public class EmployeeCard extends UiPart<Region> {
      */
     public EmployeeCard(Employee employee, int displayedIndex) {
         super(FXML);
-        this.employee = employee;
         id.setText(displayedIndex + ". ");
         name.setText(employee.getName().fullName);
         employeeId.setText(employee.getId().value);
