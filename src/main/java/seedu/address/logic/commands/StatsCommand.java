@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import seedu.address.logic.commands.SortCommand.SortField;
 import seedu.address.model.Model;
 import seedu.address.model.employee.Employee;
 
@@ -29,8 +30,9 @@ public class StatsCommand extends Command {
     }
 
     /**
-     * Appends counts in descending order, breaking ties by the label in alphabetical order that ignores letter case.
-     * Labels that differ only in case are ordered case-sensitively so that the output stays deterministic.
+     * Appends counts in descending order, breaking ties by the label in the same order as {@code sort}.
+     * Labels that differ only in case or accents are ordered by their characters so that the output stays
+     * deterministic.
      */
     private void appendBreakdown(StringBuilder summary, String heading, List<Employee> employees,
             Function<Employee, String> classifier) {
@@ -43,7 +45,7 @@ public class StatsCommand extends Command {
         }
         counts.entrySet().stream()
                 .sorted(Map.Entry.<String, Long>comparingByValue(Comparator.reverseOrder())
-                        .thenComparing(Map.Entry.comparingByKey(String.CASE_INSENSITIVE_ORDER))
+                        .thenComparing(Map.Entry.comparingByKey(SortField.VALUE_ORDER))
                         .thenComparing(Map.Entry.comparingByKey()))
                 .forEach(entry -> summary.append("\n").append(entry.getKey()).append(": ").append(entry.getValue()));
     }

@@ -330,9 +330,10 @@ Format: `stats`
 
 * Counts cover all active employees, including employees hidden by a search. Archived employees are excluded,
   even when `list archived` is currently displayed.
-* Each breakdown is sorted by count, largest first. Ties are sorted by department or role name in alphabetical
-  order, ignoring letter case: `apple`, `Banana`, `Human Resources`. Names that differ only in case, such as `Ops`
-  and `ops`, list the uppercase one first.
+* Each breakdown is sorted by count, largest first. Ties are sorted by department or role name in the same order
+  as `sort`: alphabetical, ignoring letter case and accents, with numbers compared by value (`apple`, `Banana`,
+  `Émile`, `Level 2`, `Level 10`). Names that differ only in case, such as `Ops` and `ops`, list the uppercase one
+  first.
 * Department and role names are grouped exactly as stored: `Ops` and `ops` are separate groups.
 * The employee records and current employee list view are unchanged.
 * If there are no active employees, the total is `0` and both breakdowns display `(none)`.

@@ -92,6 +92,15 @@ public class StatsCommandTest {
                 new StatsCommand().execute(model).getFeedbackToUser());
     }
 
+    @Test
+    public void execute_tiesWithAccentsAndNumbers_sortedLikeSort() {
+        Model model = modelWith(employee("E1", "Zebra", "Level 10"), employee("E2", "\u00C9mile", "Level 2"),
+                employee("E3", "Delta", "Level 1"));
+        assertEquals("Total active employees: 3\nBy department:\nDelta: 1\n\u00C9mile: 1\nZebra: 1"
+                + "\nBy role:\nLevel 1: 1\nLevel 2: 1\nLevel 10: 1",
+                new StatsCommand().execute(model).getFeedbackToUser());
+    }
+
     private Employee employee(String id, String department, String role) {
         return new EmployeeBuilder().withId(id).withDepartment(department).withRole(role).build();
     }
