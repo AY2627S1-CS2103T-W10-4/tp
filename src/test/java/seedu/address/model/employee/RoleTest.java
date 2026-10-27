@@ -61,6 +61,19 @@ public class RoleTest {
     }
 
     @Test
+    public void constructor_repeatedSpaces_storedWithOneSpace() {
+        Role role = new Role("HR   Executive");
+
+        assertEquals("HR Executive", role.value);
+        assertEquals(new Role("HR Executive"), role);
+    }
+
+    @Test
+    public void normalise_outerAndRepeatedWhitespace_collapsedToOneSpace() {
+        assertEquals("HR Executive", Role.normalise("  HR\t  Executive "));
+    }
+
+    @Test
     public void equals() {
         Role role = new Role("Engineering");
 

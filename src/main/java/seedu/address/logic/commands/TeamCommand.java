@@ -2,7 +2,6 @@ package seedu.address.logic.commands;
 
 import static java.util.Objects.requireNonNull;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import seedu.address.logic.commands.exceptions.CommandException;
@@ -29,17 +28,14 @@ public class TeamCommand extends Command {
     public CommandResult execute(Model model) throws CommandException {
         requireNonNull(model);
         Employee employee = EmployeeCommandSupport.find(model, employeeId);
-        List<Employee> roster = model.getAddressBook().getEmployeeList();
-        List<Employee> reports = ReportingStructure.reports(roster, employee.getId(), false);
-        List<Employee> selected = new ArrayList<>(reports);
-        selected.add(employee);
+        List<Employee> reports = ReportingStructure.reports(model.getAddressBook().getEmployeeList(),
+                employee.getId(), false);
         String manager = "None";
         if (employee.getManagerId().isPresent()) {
             Employee supervisor = EmployeeCommandSupport.find(model, employee.getManagerId().orElseThrow());
-            selected.add(supervisor);
             manager = ReportingCommandSupport.label(supervisor);
         }
-        ReportingCommandSupport.show(model, selected);
+        ReportingCommandSupport.show(model, () -> ReportingCommandSupport.team(model, employeeId));
         return new CommandResult("Team of " + ReportingCommandSupport.label(employee) + ": Manager: " + manager
                 + "; Direct reports: " + reports.size() + ". " + ReportingCommandSupport.describe(reports, ", "));
     }

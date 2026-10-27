@@ -22,6 +22,7 @@ public class FindCommand extends Command {
 
     public static final String MESSAGE_KEYWORD_CONSTRAINTS = "Keywords should start with a letter or digit and may "
             + "only contain letters, digits and the symbols ' . , / -.";
+    public static final String MESSAGE_INVALID_KEYWORD = "Invalid keyword: %1$s\n" + MESSAGE_KEYWORD_CONSTRAINTS;
 
     private final NameContainsKeywordsPredicate predicate;
 

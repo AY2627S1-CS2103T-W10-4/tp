@@ -172,6 +172,12 @@ public class ParserUtilTest {
     }
 
     @Test
+    public void parseDepartmentAndRole_repeatedInnerWhitespace_collapsedToOneSpace() throws Exception {
+        assertEquals(new Department("Human Resources"), ParserUtil.parseDepartment("Human  \t Resources"));
+        assertEquals(new Role("HR Executive"), ParserUtil.parseRole("HR   Executive"));
+    }
+
+    @Test
     public void parseEmployeeId_differentCase_returnsEqualId() throws Exception {
         assertEquals(ParserUtil.parseEmployeeId("e0123"), ParserUtil.parseEmployeeId("E0123"));
     }

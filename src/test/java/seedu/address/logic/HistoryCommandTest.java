@@ -98,6 +98,25 @@ public class HistoryCommandTest {
     }
 
     @Test
+    public void execute_reportingView_refreshesAfterUndoAndRedo() throws Exception {
+        ModelManager model = new ModelManager(new AddressBookBuilder()
+                .withEmployee(ALICE).withEmployee(BENSON).build(), new UserPrefs());
+        LogicManager logic = new LogicManager(model, new StorageManager(
+                new JsonAddressBookStorage(temporaryFolder.resolve("employees.json")),
+                new JsonUserPrefsStorage(temporaryFolder.resolve("preferences.json"))));
+        logic.execute("manager id/" + BENSON.getId() + " m/" + ALICE.getId());
+        logic.execute("chain id/" + BENSON.getId());
+        assertEquals(List.of(ALICE), model.getFilteredEmployeeList());
+
+        logic.execute("unassign-manager id/" + BENSON.getId());
+        assertEquals(List.of(), model.getFilteredEmployeeList());
+        logic.execute("undo");
+        assertEquals(List.of(ALICE), model.getFilteredEmployeeList());
+        logic.execute("redo");
+        assertEquals(List.of(), model.getFilteredEmployeeList());
+    }
+
+    @Test
     public void execute_allModifyingCommands_commitOnceAndTraverseEveryState() throws Exception {
         Path csv = temporaryFolder.resolve("staff.csv");
         Files.writeString(csv, "id,name,phone,email,department,role,archived\n"
