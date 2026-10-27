@@ -74,6 +74,9 @@ HuntR is based on [AddressBook-Level3](https://github.com/se-edu/addressbook-lev
   For example, `help 123` is interpreted as `help`. The `backup` and `exit` commands also take no parameters but reject extra text, so `backup now` and `exit now` show an error. Likewise, `list` accepts only `archived` after it, so `list 1` shows an error.
   The `stats` and `check` commands take no parameters and reject extra text too.
 
+* When `add`, `edit`, `delete`, `archive` or `unarchive` succeeds, the result message shows the employee's details.
+  It ends with `; Manager: MANAGER_ID` if the employee has a manager.
+
 * If you are using a PDF version of this document, be careful when copying and pasting commands that span multiple lines as space characters surrounding line-breaks may be omitted when copied over to the application.
 </box>
 
@@ -156,6 +159,8 @@ Format: `edit id/EMPLOYEE_ID [n/NAME] [p/PHONE] [e/EMAIL] [d/DEPARTMENT] [r/ROLE
 * Existing values will be updated to the input values.
 * Use `m/MANAGER_ID` to change the manager, or an empty `m/` to remove the manager. Omitting `m/` preserves it.
 * For example, `edit id/E0002 m/E0001` assigns manager `E0001`, and `edit id/E0002 m/` removes that assignment.
+* The result message ends with `; Manager: MANAGER_ID` when the edited employee has a manager, so you can confirm
+  a manager change without looking at the list.
 * The manager must exist in the complete roster. Self-reporting and reporting cycles are rejected without changes.
 * Editing an archived employee preserves their archived status.
 * The `id/` parameter identifies the employee to edit. The employee ID itself cannot be changed.
@@ -497,7 +502,7 @@ Examples, assuming the target employee exists:
 * `delete id/e0123` deletes employee `E0123`.
 * `find Betsy` followed by `delete id/EMP-0042` deletes `EMP-0042` even when hidden by that search. The Betsy search remains active.
 
-On success, the message starts with `Deleted employee:` and includes the deleted employee's ID, name, phone, email, department and role.
+On success, the message starts with `Deleted employee:` and includes the deleted employee's ID, name, phone, email, department and role, and their manager's ID if they have one.
 
 The following input errors leave the records unchanged. Each message is followed by the usage block below.
 
