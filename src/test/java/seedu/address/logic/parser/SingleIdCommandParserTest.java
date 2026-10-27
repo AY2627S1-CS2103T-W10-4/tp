@@ -25,9 +25,9 @@ public class SingleIdCommandParserTest {
     @Test
     public void parse_equivalentMalformedInput_usesConsistentValidationMessages() {
         List<MalformedInput> malformedInputs = List.of(
-                new MalformedInput("", DeleteCommand.MESSAGE_MISSING_ID),
-                new MalformedInput(" id/", DeleteCommand.MESSAGE_BLANK_ID),
-                new MalformedInput(" x/1", String.format(DeleteCommand.MESSAGE_UNKNOWN_PARAMETER, "x/")),
+                new MalformedInput("", Messages.MESSAGE_MISSING_ID),
+                new MalformedInput(" id/", Messages.MESSAGE_BLANK_ID),
+                new MalformedInput(" x/1", String.format(Messages.MESSAGE_UNKNOWN_PARAMETER, "x/")),
                 new MalformedInput(" id/E0001 id/E0002",
                         Messages.getErrorMessageForDuplicatePrefixes(CliSyntax.PREFIX_ID)),
                 new MalformedInput(" id/E0001 unexpectedText", EmployeeId.MESSAGE_CONSTRAINTS));

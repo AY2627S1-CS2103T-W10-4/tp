@@ -29,7 +29,7 @@ public class UnassignManagerCommand extends Command {
     @Override
     public CommandResult execute(Model model) throws CommandException {
         requireNonNull(model);
-        Employee employee = ReportingCommandSupport.find(model, employeeId);
+        Employee employee = EmployeeCommandSupport.find(model, employeeId);
         model.setEmployee(employee, employee.withManager(null));
         return new CommandResult("Manager of " + employee.getId() + " unassigned.");
     }

@@ -37,6 +37,7 @@ import seedu.address.model.Model;
 import seedu.address.model.ModelManager;
 import seedu.address.model.ReadOnlyAddressBook;
 import seedu.address.model.UserPrefs;
+import seedu.address.model.employee.Employee;
 import seedu.address.storage.JsonAddressBookStorage;
 import seedu.address.storage.JsonUserPrefsStorage;
 import seedu.address.storage.StorageManager;
@@ -96,7 +97,7 @@ public class LogicManagerTest {
     }
 
     @Test
-    public void execute_findThenArchive_showsFullActiveRosterWithoutArchivedEmployee() throws Exception {
+    public void execute_findThenArchive_preservesEmptySearch() throws Exception {
         logic.execute("add" + ID_DESC_AMY + NAME_DESC_AMY + PHONE_DESC_AMY + EMAIL_DESC_AMY
                 + DEPARTMENT_DESC_AMY + ROLE_DESC_AMY);
         logic.execute("add" + ID_DESC_BOB + NAME_DESC_BOB + PHONE_DESC_BOB + EMAIL_DESC_BOB
@@ -109,17 +110,21 @@ public class LogicManagerTest {
         assertEquals(String.format(ArchiveCommand.MESSAGE_SUCCESS, Messages.format(AMY)),
                 archiveResult.getFeedbackToUser());
         assertEquals(AMY.withArchived(true), model.getAddressBook().getEmployeeList().getFirst());
-        assertEquals(List.of(BOB), logic.getFilteredEmployeeList());
+        assertEquals(List.of(), logic.getFilteredEmployeeList());
 
-        assertCommandException("add" + ID_DESC_AMY + NAME_DESC_AMY + PHONE_DESC_AMY + EMAIL_DESC_AMY
-                + DEPARTMENT_DESC_AMY + ROLE_DESC_AMY,
-                String.format(AddCommand.MESSAGE_DUPLICATE_ARCHIVED_EMPLOYEE, AMY.getId()));
+        List<Employee> storedEmployees = List.copyOf(model.getAddressBook().getEmployeeList());
+        assertThrows(CommandException.class,
+                String.format(AddCommand.MESSAGE_DUPLICATE_ARCHIVED_EMPLOYEE, AMY.getId()), () ->
+                logic.execute("add" + ID_DESC_AMY + NAME_DESC_AMY + PHONE_DESC_AMY + EMAIL_DESC_AMY
+                        + DEPARTMENT_DESC_AMY + ROLE_DESC_AMY));
+        assertEquals(storedEmployees, model.getAddressBook().getEmployeeList());
+        assertEquals(List.of(), logic.getFilteredEmployeeList());
         CommandResult findResult = logic.execute("find Amy");
         assertEquals("0 employees listed!", findResult.getFeedbackToUser());
     }
 
     @Test
-    public void execute_listArchivedThenUnarchive_showsFullActiveRosterWithRestoredEmployee() throws Exception {
+    public void execute_listArchivedThenUnarchive_preservesEmptyArchiveView() throws Exception {
         logic.execute("add" + ID_DESC_AMY + NAME_DESC_AMY + PHONE_DESC_AMY + EMAIL_DESC_AMY
                 + DEPARTMENT_DESC_AMY + ROLE_DESC_AMY);
         logic.execute("add" + ID_DESC_BOB + NAME_DESC_BOB + PHONE_DESC_BOB + EMAIL_DESC_BOB
@@ -132,6 +137,9 @@ public class LogicManagerTest {
 
         logic.execute("unarchive id/e1001");
         assertEquals(AMY, model.getAddressBook().getEmployeeList().getFirst());
+        assertEquals(List.of(), logic.getFilteredEmployeeList());
+
+        logic.execute("list");
         assertEquals(List.of(AMY, BOB), logic.getFilteredEmployeeList());
     }
 

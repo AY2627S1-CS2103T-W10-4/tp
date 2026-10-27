@@ -9,7 +9,7 @@ import java.util.stream.Collectors;
 import seedu.address.commons.exceptions.IllegalValueException;
 
 /**
- * Converts between a list of values and one line of comma-separated values (CSV).
+ * Splits CSV text into records and converts between records and lists of values.
  * A value that contains a comma, a double quote or a line break is wrapped in double quotes, and any double quote
  * inside it is doubled, as spreadsheet programs such as Excel do.
  */
@@ -23,6 +23,49 @@ public class CsvUtil {
     private static final char QUOTE = '"';
     private static final String ESCAPED_QUOTE = "\"\"";
     private static final String CHARACTERS_NEEDING_QUOTES = ",\"\r\n";
+
+    /** A complete CSV record and its starting physical line number, counting from 1. */
+    public record CsvRecord(String text, int lineNumber) {}
+
+    /**
+     * Splits CSV text at line endings outside quoted values, retaining line endings inside quoted values.
+     * LF, CRLF and CR line endings are supported. Blank records are retained for accurate error locations.
+     * Each record must still be validated with {@link #parseCsvLine(String)}, including an unclosed final record.
+     */
+    public static List<CsvRecord> splitCsvRecords(String text) {
+        requireNonNull(text);
+        List<CsvRecord> records = new ArrayList<>();
+        boolean isInQuotes = false;
+        int recordStart = 0;
+        int recordLine = 1;
+        int lineNumber = 1;
+        for (int position = 0; position < text.length(); position++) {
+            char character = text.charAt(position);
+            if (character == QUOTE) {
+                if (isInQuotes && text.startsWith(ESCAPED_QUOTE, position)) {
+                    position++;
+                } else {
+                    isInQuotes = !isInQuotes;
+                }
+            } else if (character == '\r' || character == '\n') {
+                int nextPosition = position + 1;
+                if (character == '\r' && nextPosition < text.length() && text.charAt(nextPosition) == '\n') {
+                    nextPosition++;
+                }
+                if (!isInQuotes) {
+                    records.add(new CsvRecord(text.substring(recordStart, position), recordLine));
+                    recordStart = nextPosition;
+                    recordLine = lineNumber + 1;
+                }
+                lineNumber++;
+                position = nextPosition - 1;
+            }
+        }
+        if (recordStart < text.length()) {
+            records.add(new CsvRecord(text.substring(recordStart), recordLine));
+        }
+        return records;
+    }
 
     /**
      * Returns {@code values} joined into one CSV line, with values quoted where needed.
@@ -43,7 +86,8 @@ public class CsvUtil {
     }
 
     /**
-     * Returns the values in one CSV {@code line}, with surrounding quotes removed and doubled quotes restored.
+     * Returns the values in one complete CSV record, with quotes removed and doubled quotes restored.
+     * The {@code line} may contain line endings inside quoted values.
      * A double quote may only open a value at its start, close it just before a comma or the end of the line,
      * or appear doubled inside a quoted value.
      *
