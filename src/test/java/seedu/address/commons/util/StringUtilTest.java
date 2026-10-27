@@ -204,6 +204,18 @@ public class StringUtilTest {
     }
 
     @Test
+    public void collapseWhitespace_nullGiven_throwsNullPointerException() {
+        assertThrows(NullPointerException.class, () -> StringUtil.collapseWhitespace(null));
+    }
+
+    @Test
+    public void collapseWhitespace_repeatedAndOuterWhitespace_collapsedToOneSpace() {
+        assertEquals("Human Resources", StringUtil.collapseWhitespace("  Human   Resources "));
+        assertEquals("HR Executive", StringUtil.collapseWhitespace("HR\tExecutive"));
+        assertEquals("", StringUtil.collapseWhitespace("   "));
+    }
+
+    @Test
     public void getDetails_exceptionGiven() {
         assertTrue(StringUtil.getDetails(new FileNotFoundException("file not found"))
             .contains("java.io.FileNotFoundException: file not found"));

@@ -5,6 +5,8 @@ import static seedu.address.commons.util.AppUtil.checkArgument;
 
 import java.text.Normalizer;
 
+import seedu.address.commons.util.StringUtil;
+
 /**
  * Represents an Employee's role in the address book.
  * Guarantees: immutable; is valid as declared in {@link #isValidRole(String)}
@@ -39,7 +41,16 @@ public class Role {
     public Role(String role) {
         requireNonNull(role);
         checkArgument(isValidRole(role), MESSAGE_CONSTRAINTS);
-        value = Normalizer.normalize(role, Normalizer.Form.NFC);
+        value = normalise(role);
+    }
+
+    /**
+     * Returns {@code role} with leading and trailing spaces removed, runs of whitespace replaced by one space,
+     * and characters composed into their standard Unicode form, so that values that look the same are the same
+     * role.
+     */
+    public static String normalise(String role) {
+        return Normalizer.normalize(StringUtil.collapseWhitespace(role), Normalizer.Form.NFC);
     }
 
     /**

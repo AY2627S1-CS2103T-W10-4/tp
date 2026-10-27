@@ -119,6 +119,10 @@ The department and the role must start with a letter or a digit, and may contain
 `Soporte técnico`), digits, spaces and the symbols `&` `'` `(` `)` `,` `.` `-`, up to 100 characters. The name may
 contain letters (also with accents), digits, spaces and the symbols `'` `.` `,` `/` `-`.
 
+Repeated spaces inside a department or role are reduced to one space, so `d/Human  Resources` is saved as
+`Human Resources`. This also applies to `edit`, `import` and departments or roles already in the data file,
+which are tidied up when HuntR starts.
+
 Parameters can be supplied in any order. Optional `m/MANAGER_ID` assigns an existing employee as the manager.
 Manager IDs are matched case-insensitively and saved using the spelling of the existing employee's ID.
 An empty `m/`, unknown manager or self-assignment is rejected without changing the roster.
@@ -712,7 +716,7 @@ whole file to be rejected.
 <box type="warning" seamless>
 
 **Caution:**
-If your changes make the data file invalid, HuntR rejects the whole file (it does not load only the valid employees) and starts with an empty employee list at the next run. The invalid file remains on disk until you run a command (HuntR saves after every command, which then overwrites it). Therefore, always back up the file before editing it.<br>
+If your changes make the data file invalid, HuntR rejects the whole file (it does not load only the valid employees) and starts with an empty employee list at the next run. Before your next command overwrites the invalid file, HuntR keeps a copy of it as `data/unreadable-addressbook.json` (replacing any earlier copy) and shows a warning in the result box. To restore your employees, close HuntR, fix the copy and use it to replace `data/addressbook.json`. If the copy cannot be made, the warning asks you to close HuntR and back up the file yourself. Even so, always back up the file before editing it.<br>
 Furthermore, certain edits can cause HuntR to behave in unexpected ways (e.g., if a value entered is outside of the acceptable range). Therefore, edit the data file only if you are confident that you can update it correctly.
 </box>
 
