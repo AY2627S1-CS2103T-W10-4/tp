@@ -23,6 +23,8 @@ public class DeleteCommand extends Command {
             + "Example: " + COMMAND_WORD + " id/EMP-0042";
 
     public static final String MESSAGE_DELETE_EMPLOYEE_SUCCESS = "Deleted employee: %1$s";
+    public static final String MESSAGE_ONE_REPORT_UNASSIGNED = "1 direct report now has no manager.";
+    public static final String MESSAGE_MULTIPLE_REPORTS_UNASSIGNED = "%1$d direct reports now have no manager.";
 
     private final EmployeeId targetId;
 
@@ -51,8 +53,10 @@ public class DeleteCommand extends Command {
                 .count();
         model.deleteEmployee(employeeToDelete);
         String message = String.format(MESSAGE_DELETE_EMPLOYEE_SUCCESS, Messages.format(employeeToDelete));
-        if (reports > 0) {
-            message += "\n" + reports + " direct report(s) now have no manager.";
+        if (reports == 1) {
+            message += "\n" + MESSAGE_ONE_REPORT_UNASSIGNED;
+        } else if (reports > 1) {
+            message += "\n" + String.format(MESSAGE_MULTIPLE_REPORTS_UNASSIGNED, reports);
         }
         return new CommandResult(message);
     }

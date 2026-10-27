@@ -277,7 +277,9 @@ list unchanged.
 
 Reporting queries replace the current search filter and leave records unchanged. They query relationships across
 the complete stored roster. Related archived employees are included in both the messages and employee cards,
-so report counts and named managers agree with the displayed results. The current sort order is preserved.
+so report counts and named managers agree with the displayed results. The current sort order is preserved. While a
+reporting result remains displayed, relationship changes, deletion, undo and redo refresh it to match the current
+reporting structure.
 Use `list` to return to all active employees, or `list archived` to show only archived employees.
 
 Reporting relationships are also preserved by CSV export and import. `export FILE_PATH` writes the header
