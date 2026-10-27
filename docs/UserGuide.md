@@ -284,21 +284,25 @@ Finds employees whose names contain any of the given keywords and displays them 
 
 Format: `find KEYWORD [MORE_KEYWORDS]`
 
-* The search is case-insensitive; for example, `hans` matches `Hans`.
+* The search is case-insensitive and ignores accents; for example, `hans` matches `Hans`, and `emile` matches `Émile`.
 * Keyword order does not matter; for example, `Hans Bo` matches `Bo Hans`.
 * The search considers only names.
 * Only full words match; for example, `Han` does not match `Hans`.
+* Spaces and punctuation separate the words of a name, so `Tan` matches `Tan, Ah Kow` and `Dr. John Tan Jr.`, `Mary` and `Ann` match `Mary-Ann O'Brien`, and `s/o` matches `Ravi s/o Kumar`. The apostrophe is part of a word, so use `O'Brien`; `Brien` does not match `O'Brien`.
+* A keyword that contains punctuation, such as `Mary-Ann`, matches when all of its words are in the name. A comma after a keyword is ignored, so `find Ah, Mary-Ann` is the same as `find Ah Mary-Ann`.
 * Employees matching at least one keyword are returned (an `OR` search); for example, `Hans Bo` returns `Hans Gruber` and `Bo Yang`.
 * At least one non-blank keyword must be provided.
 * Each keyword must start with a letter or digit. Apostrophes, full stops, commas, slashes and hyphens are allowed
-  after the first character.
+  after the first character. If a keyword is not valid, the message names it, for example `Invalid keyword: @bo`.
 * An argument beginning with `/` is rejected as an invalid command format.
 * A search with no matching name is still valid.
-* Leading and trailing spaces are ignored, and multiple spaces between keywords are treated as separators.
+* Leading and trailing spaces are ignored, and multiple spaces between keywords are treated as separators. Any kind of
+  space separates keywords, including the non-breaking space that is copied from a web page.
 * A search with no matches is successful and displays an empty employee list.
 
 Examples:
 * `find John` returns employees named `john` and `John Doe`
+* `find Tan` returns `Tan, Ah Kow` and `Dr. John Tan Jr.`
 * `find alex david` returns `Alex Yeoh`, `David Li`<br>
   ![result for 'find alex david'](images/findAlexDavidResult.png)
 
