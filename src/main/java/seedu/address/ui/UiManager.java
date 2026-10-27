@@ -1,6 +1,7 @@
 package seedu.address.ui;
 
 import java.nio.file.Path;
+import java.util.Optional;
 import java.util.logging.Logger;
 
 import javafx.application.Platform;
@@ -25,14 +26,14 @@ public class UiManager implements Ui {
 
     private Logic logic;
     private Path dataFilePath;
-    private String startupWarning;
+    private Optional<String> startupWarning;
     private MainWindow mainWindow;
 
     /**
      * Creates a {@code UiManager} with the given {@code Logic}, the data file path
-     * to show in the status bar, and a warning to show at startup, or an empty string if there is none.
+     * to show in the status bar, and a warning to show at startup, if any.
      */
-    public UiManager(Logic logic, Path dataFilePath, String startupWarning) {
+    public UiManager(Logic logic, Path dataFilePath, Optional<String> startupWarning) {
         this.logic = logic;
         this.dataFilePath = dataFilePath;
         this.startupWarning = startupWarning;

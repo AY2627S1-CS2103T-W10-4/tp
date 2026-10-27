@@ -1,6 +1,7 @@
 package seedu.address.ui;
 
 import java.nio.file.Path;
+import java.util.Optional;
 import java.util.logging.Logger;
 
 import javafx.event.ActionEvent;
@@ -111,18 +112,15 @@ public class MainWindow extends UiPart<Stage> {
     }
 
     /**
-     * Fills up all the placeholders of this window, and shows {@code startupWarning} in the result box
-     * unless it is empty.
+     * Fills up all the placeholders of this window, and shows {@code startupWarning} in the result box if present.
      */
-    void fillInnerParts(String startupWarning) {
+    void fillInnerParts(Optional<String> startupWarning) {
         employeeListPanel = new EmployeeListPanel(logic.getFilteredEmployeeList());
         employeeListPanelPlaceholder.getChildren().add(employeeListPanel.getRoot());
 
         resultDisplay = new ResultDisplay();
         resultDisplayPlaceholder.getChildren().add(resultDisplay.getRoot());
-        if (!startupWarning.isEmpty()) {
-            resultDisplay.setErrorToUser(startupWarning);
-        }
+        startupWarning.ifPresent(resultDisplay::setErrorToUser);
 
         StatusBarFooter statusBarFooter = new StatusBarFooter(dataFilePath);
         statusbarPlaceholder.getChildren().add(statusBarFooter.getRoot());
