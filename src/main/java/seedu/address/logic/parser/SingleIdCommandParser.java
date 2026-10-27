@@ -7,7 +7,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import seedu.address.logic.Messages;
-import seedu.address.logic.commands.DeleteCommand;
 import seedu.address.logic.parser.exceptions.ParseException;
 import seedu.address.model.employee.EmployeeId;
 
@@ -25,24 +24,24 @@ final class SingleIdCommandParser {
         while (prefixMatcher.find()) {
             String prefix = prefixMatcher.group(1);
             if (!PREFIX_ID.toString().equals(prefix)) {
-                throw withUsage(String.format(DeleteCommand.MESSAGE_UNKNOWN_PARAMETER, prefix), usage);
+                throw withUsage(String.format(Messages.MESSAGE_UNKNOWN_PARAMETER, prefix), usage);
             }
             idPrefixCount++;
         }
 
         if (idPrefixCount == 0) {
-            throw withUsage(DeleteCommand.MESSAGE_MISSING_ID, usage);
+            throw withUsage(Messages.MESSAGE_MISSING_ID, usage);
         }
         if (idPrefixCount > 1) {
             throw withUsage(Messages.getErrorMessageForDuplicatePrefixes(PREFIX_ID), usage);
         }
         if (!trimmedArgs.startsWith(PREFIX_ID.toString())) {
-            throw withUsage(DeleteCommand.MESSAGE_UNEXPECTED_ARGUMENTS, usage);
+            throw withUsage(Messages.MESSAGE_UNEXPECTED_ARGUMENTS, usage);
         }
 
         String value = trimmedArgs.substring(PREFIX_ID.toString().length()).trim();
         if (value.isEmpty()) {
-            throw withUsage(DeleteCommand.MESSAGE_BLANK_ID, usage);
+            throw withUsage(Messages.MESSAGE_BLANK_ID, usage);
         }
 
         try {
