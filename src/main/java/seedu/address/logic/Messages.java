@@ -14,6 +14,8 @@ public class Messages {
 
     public static final String MESSAGE_UNKNOWN_COMMAND =
             "Unknown command: %1$s\nType help to see the available commands.";
+    public static final String MESSAGE_DID_YOU_MEAN = "Did you mean %1$s?";
+    public static final String MESSAGE_COMMAND_WORDS_ARE_LOWERCASE = " Command words are written in lowercase.";
     public static final String MESSAGE_INVALID_COMMAND_FORMAT = "Invalid command format.\n%1$s";
     public static final String MESSAGE_INVALID_EMPLOYEE_DISPLAYED_INDEX = "The employee index provided is invalid.";
     public static final String MESSAGE_EMPLOYEE_NOT_FOUND = "No employee with ID %1$s was found.";
