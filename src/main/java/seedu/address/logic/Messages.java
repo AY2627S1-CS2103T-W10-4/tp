@@ -14,6 +14,8 @@ public class Messages {
 
     public static final String MESSAGE_UNKNOWN_COMMAND =
             "Unknown command: %1$s\nType help to see the available commands.";
+    public static final String MESSAGE_DID_YOU_MEAN = "Did you mean %1$s?";
+    public static final String MESSAGE_COMMAND_WORDS_ARE_LOWERCASE = " Command words are written in lowercase.";
     public static final String MESSAGE_INVALID_COMMAND_FORMAT = "Invalid command format.\n%1$s";
     public static final String MESSAGE_INVALID_EMPLOYEE_DISPLAYED_INDEX = "The employee index provided is invalid.";
     public static final String MESSAGE_EMPLOYEE_NOT_FOUND = "No employee with ID %1$s was found.";
@@ -50,7 +52,7 @@ public class Messages {
     }
 
     /**
-     * Formats the {@code employee} for display to the user.
+     * Formats the {@code employee} for display to the user, including the manager only if the employee has one.
      */
     public static String format(Employee employee) {
         final StringBuilder builder = new StringBuilder();
@@ -66,6 +68,7 @@ public class Messages {
                 .append(employee.getDepartment())
                 .append("; Role: ")
                 .append(employee.getRole());
+        employee.getManagerId().ifPresent(managerId -> builder.append("; Manager: ").append(managerId));
         return builder.toString();
     }
 
