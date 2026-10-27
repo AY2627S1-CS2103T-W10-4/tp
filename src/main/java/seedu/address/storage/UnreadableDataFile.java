@@ -17,11 +17,12 @@ public class UnreadableDataFile {
 
     public static final String COPY_PREFIX = "unreadable-";
     public static final String MESSAGE_COPY_KEPT = "Warning: %1$s could not be loaded, so HuntR started with no "
-            + "employees. Your next command will overwrite it.\nA copy was kept at %2$s. To restore your employees, "
+            + "employees. Your next successful data-changing command will overwrite it.\nA copy was kept at %2$s. "
+            + "To restore your employees, "
             + "close HuntR, fix the copy and use it to replace %1$s.";
     public static final String MESSAGE_COPY_FAILED = "Warning: %1$s could not be loaded, so HuntR started with no "
             + "employees, and a copy of it could not be made.\nClose HuntR now and back up %1$s, because your next "
-            + "command will overwrite it.";
+            + "successful data-changing command will overwrite it.";
 
     private static final Logger logger = LogsCenter.getLogger(UnreadableDataFile.class);
 

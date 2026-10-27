@@ -109,7 +109,9 @@ Format: `help`
 
 ### Adding an employee: `add`
 
-Adds an employee to HuntR.
+Adds an employee to HuntR. If another employee has the same name apart from letter case or spacing, HuntR
+adds the new record and displays a warning listing the matching IDs. Archived matches are marked `(archived)`,
+including when the current view hides them. The existing records are unchanged.
 
 Format: `add id/EMPLOYEE_ID n/NAME p/PHONE e/EMAIL d/DEPARTMENT r/ROLE [m/MANAGER_ID]`
 
@@ -633,7 +635,7 @@ state as one initial snapshot; neither undo nor redo is available until you make
 
 ### Exiting the program: `exit`
 
-Closes HuntR after saving the current employee state. Session undo/redo history is discarded when HuntR closes.
+Closes HuntR. Successful employee changes have already been saved. Session undo/redo history is discarded on exit.
 
 Format: `exit`
 
@@ -641,9 +643,10 @@ The command takes no parameters, and extra text such as `exit now` is rejected.
 
 ### Saving the data
 
-HuntR automatically saves employee data after every successfully executed command, including commands such as
-`list` and `help`, and commands that change nothing. You do not need to save manually. History and view filters
-are never written to JSON.
+HuntR automatically saves employee data after successful data-changing commands, including undo/redo and
+no-op mutations such as clearing an already empty active roster. Read-only commands such as `list`, `find`,
+`help`, `stats`, `check` and `exit` do not rewrite the employee file. Export and backup write only their requested
+output files. You do not need to save manually. History and view filters are never written to JSON.
 
 HuntR writes the complete JSON to a protected temporary file beside the data file, then replaces the data file
 atomically. If a handled failure occurs before replacement, the last stored file keeps its original bytes. If no
@@ -693,8 +696,8 @@ text, rather than just the configured destination path. These normal errors reta
 error styling. Unexpected runtime failures also restore in-memory state for data-changing commands, but the
 existing UI does not provide ordinary command-box handling for those exceptions.
 
-Read-only commands retain their existing behavior on automatic-save failure: for example, a changed view stays
-changed. Export/backup files already created remain on disk.
+Read-only commands do not attempt an automatic employee-file save, so an unwritable employee file does not prevent
+view changes, searches or help. Export and backup still require write access to their own output destinations.
 
 JSON backups use the same safer writer and keep their existing location and naming. A backup write failure,
 including unsupported atomic movement or protection, keeps its backup-specific message:
@@ -703,8 +706,8 @@ including unsupported atomic movement or protection, keeps its backup-specific m
 Could not save the backup to <backup-path>. Check that you are allowed to write to that folder.
 ```
 
-Successful backups still report `Backed up <count> employee(s) to <backup-path>`. If the backup is created but the
-following automatic save fails, the backup remains and the final result is the automatic-save error above.
+Successful backups report `Backed up <count> employee(s) to <backup-path>` without an additional automatic
+employee-file save.
 CSV exports and preference saving are unchanged.
 
 ### Editing the data file
@@ -721,7 +724,7 @@ whole file to be rejected.
 <box type="warning" seamless>
 
 **Caution:**
-If your changes make the data file invalid, HuntR rejects the whole file (it does not load only the valid employees) and starts with an empty employee list at the next run. Before your next command overwrites the invalid file, HuntR keeps a copy of it as `data/unreadable-addressbook.json` (replacing any earlier copy) and shows a warning in the result box. To restore your employees, close HuntR, fix the copy and use it to replace `data/addressbook.json`. If the copy cannot be made, the warning asks you to close HuntR and back up the file yourself. Even so, always back up the file before editing it.<br>
+If your changes make the data file invalid, HuntR rejects the whole file (it does not load only the valid employees) and starts with an empty employee list at the next run. Before your next successful data-changing command overwrites the invalid file, HuntR keeps a copy of it as `data/unreadable-addressbook.json` (replacing any earlier copy) and shows a warning in the result box. To restore your employees, close HuntR, fix the copy and use it to replace `data/addressbook.json`. If the copy cannot be made, the warning asks you to close HuntR and back up the file yourself. Even so, always back up the file before editing it.<br>
 Furthermore, certain edits can cause HuntR to behave in unexpected ways (e.g., if a value entered is outside of the acceptable range). Therefore, edit the data file only if you are confident that you can update it correctly.
 </box>
 
@@ -730,7 +733,7 @@ Furthermore, certain edits can cause HuntR to behave in unexpected ways (e.g., i
 ## FAQ
 
 **Q**: How do I transfer my data to another computer?<br>
-**A**: Install the app on the other computer, run it, enter any command (such as `list`) so that the data file is created, and exit. Then overwrite that data file (`data/addressbook.json`) with the data file from your previous HuntR home folder.
+**A**: Install the app on the other computer, run it, and exit. Create the `data` folder beside the JAR if it does not exist. Then overwrite that data file (`data/addressbook.json`) with the data file from your previous HuntR home folder.
 
 --------------------------------------------------------------------------------------------------------------------
 

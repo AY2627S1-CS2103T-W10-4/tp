@@ -7,7 +7,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-
+import java.util.Optional;
 import javax.imageio.ImageIO;
 
 import javafx.application.Platform;
@@ -83,7 +83,7 @@ public class HistoryPerformance {
                     new JsonUserPrefsStorage(output.resolve("preferences.json"))));
             stage = new Stage();
             MainWindow window = new MainWindow(stage, logic, storage.getAddressBookFilePath());
-            window.fillInnerParts();
+            window.fillInnerParts(Optional.empty());
             window.show();
             scene = stage.getScene();
             commandBox = (TextField) scene.lookup("#commandTextField");
