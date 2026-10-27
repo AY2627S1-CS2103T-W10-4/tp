@@ -115,7 +115,9 @@ public class ListCommandTest {
 
     @Test
     public void toStringMethod() {
-        assertEquals(ListCommand.class.getCanonicalName() + "{listArchived=false}", new ListCommand().toString());
-        assertEquals(ListCommand.class.getCanonicalName() + "{listArchived=true}", new ListCommand(true).toString());
+        assertEquals(ListCommand.class.getCanonicalName() + "{shouldListArchived=false}",
+                new ListCommand().toString());
+        assertEquals(ListCommand.class.getCanonicalName() + "{shouldListArchived=true}",
+                new ListCommand(true).toString());
     }
 }
