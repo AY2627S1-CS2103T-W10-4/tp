@@ -24,6 +24,7 @@ import seedu.address.storage.JsonAddressBookStorage;
 import seedu.address.storage.JsonUserPrefsStorage;
 import seedu.address.storage.Storage;
 import seedu.address.storage.StorageManager;
+import seedu.address.storage.UnreadableDataFile;
 import seedu.address.ui.Ui;
 import seedu.address.ui.UiManager;
 
@@ -53,19 +54,22 @@ public class MainApp extends Application {
         JsonAddressBookStorage addressBookStorage = new JsonAddressBookStorage(ADDRESS_BOOK_FILE_PATH);
         storage = new StorageManager(addressBookStorage, userPrefsStorage);
 
-        model = initModelManager(storage, userPrefs);
+        StartupData startupData = initModelManager(storage, userPrefs);
+        model = startupData.model();
 
         logic = new LogicManager(model, storage);
 
-        ui = new UiManager(logic, storage.getAddressBookFilePath());
+        ui = new UiManager(logic, storage.getAddressBookFilePath(), startupData.warning());
     }
 
     /**
-     * Returns a {@code ModelManager} with the data from {@code storage}'s address book and {@code userPrefs}. <br>
+     * Returns a {@code ModelManager} with the data from {@code storage}'s address book and {@code userPrefs},
+     * together with a warning to show at startup, if any. <br>
      * The data from the sample address book will be used instead if {@code storage}'s address book is not found,
      * or an empty address book will be used instead if errors occur when reading {@code storage}'s address book.
+     * In that case, a copy of the unreadable file is kept and the warning says where it is.
      */
-    private Model initModelManager(Storage storage, ReadOnlyUserPrefs userPrefs) {
+    private StartupData initModelManager(Storage storage, ReadOnlyUserPrefs userPrefs) {
         logger.info("Using data file : " + storage.getAddressBookFilePath());
 
         Optional<ReadOnlyAddressBook> addressBookOptional;
@@ -80,10 +84,11 @@ public class MainApp extends Application {
         } catch (DataLoadingException e) {
             logger.warning("Data file at " + storage.getAddressBookFilePath() + " could not be loaded."
                     + " Will be starting with empty employee records.");
-            initialData = new AddressBook();
+            String warning = UnreadableDataFile.keepCopy(storage.getAddressBookFilePath());
+            return new StartupData(new ModelManager(new AddressBook(), userPrefs), Optional.of(warning));
         }
 
-        return new ModelManager(initialData, userPrefs);
+        return new StartupData(new ModelManager(initialData, userPrefs), Optional.empty());
     }
 
     /**
@@ -133,4 +138,9 @@ public class MainApp extends Application {
             logger.severe("Failed to save preferences " + StringUtil.getDetails(e));
         }
     }
+
+    /**
+     * The model that HuntR starts with, and a warning to show the user at startup, if any.
+     */
+    private record StartupData(Model model, Optional<String> warning) {}
 }
