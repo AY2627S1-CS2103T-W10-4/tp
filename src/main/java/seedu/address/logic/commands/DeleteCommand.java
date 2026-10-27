@@ -80,6 +80,11 @@ public class DeleteCommand extends Command {
     }
 
     @Override
+    public int hashCode() {
+        return targetId.hashCode();
+    }
+
+    @Override
     public String toString() {
         return new ToStringBuilder(this)
                 .add("targetId", targetId)
