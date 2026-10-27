@@ -44,8 +44,8 @@ Run from the repository root with Java 25:
 | Real atomic-save rejection after undo preserves disk bytes, effective predicate, records and the entire history for new changes, undo and redo | `AtomicSaveLogicTest.execute_changeUndoAndRedoWithReadOnlyFile_preservesDiskViewAndEntireHistory`; traverses every restored state and reloads the last successful file without history |
 | Failed identical edit and empty clear after undo restore the prior view and complete redo sequence | `AtomicSaveLogicTest.execute_noOpAfterUndoWithReadOnlyFile_preservesDiskViewAndRedoSequence`; uses the real writer and read-only destination |
 | Every backup IOException keeps its distinct presentation; successful naming/location and output remain unchanged | `BackupCommandTest`, including its failure matrix and real successful backups |
-| Successful backup followed by failed automatic save retains readable backup and presents the automatic-save error | `AtomicSaveLogicTest.execute_backupThenAutomaticSaveFails_keepsBackupAndPresentsAutomaticSaveError` |
-| Exact clear/missing-ID/header-only-import output alongside successful `undo`; successful read-only/no-op commands still save | Remaining `AtomicSaveLogicTest` tests; path rendering follows the existing platform behavior |
+| Successful backup remains readable and reports success even if primary employee storage is unavailable | `AtomicSaveLogicTest.execute_backupWithUnavailablePrimaryStorage_reportsSuccess` |
+| Exact clear/missing-ID/header-only-import output alongside successful `undo`; read-only commands skip saving while no-op mutations still save | Remaining `AtomicSaveLogicTest` tests; path rendering follows the existing platform behavior |
 
 The filesystem seam stays inside `AtomicFileWriter`; production delegates to ordinary JDK operations.
 Package-private injection points in JSON storage, logic and backup construction isolate tests without changing
@@ -73,7 +73,7 @@ utilities are unchanged. JUnit uses the repository's existing sequential configu
 | `setAddressBook()` is uncommitted, preserves view, and neither commits nor resets history | `ModelHistoryTest.setAddressBook_replacesOnlyWorkingData` |
 | Stable checkpoints after subsequent changes and redo truncation; repeated restoration; immutable containers and shared snapshots | `ModelHistoryTest` checkpoint tests |
 | Save/reload after undo and redo yields the correct current data and one initial snapshot with no available history | `HistoryTransactionTest.execute_undoAndRedoSaveReload_startsNewSessionWithoutHistory` |
-| Read-only commands still save and keep view changes on save failure; export/backup files survive undo and save failure | `HistoryTransactionTest` read-only tests |
+| Read-only commands skip employee-file saving; view changes and export/backup succeed with unavailable primary storage | `HistoryTransactionTest` read-only tests |
 | Ordinary address book/model equality excludes history | `ModelHistoryTest.equals_differentHistoriesPreservesExistingEquality` and existing equality tests |
 | Existing JSON validation, legacy missing `archived`, ID uniqueness, seven-column CSV export and legacy six-column import | Existing storage, employee, import/export and parser suites (existing formats) |
 | Help summary lists all 15 supported command words, including import/export/backup and archive/unarchive, with file and employee-ID formats | `HelpCommandTest.commandSummary_listsEveryCommand`, `commandSummary_showsFileCommandFormats` and `commandSummary_showsEmployeeIdFormats` |
