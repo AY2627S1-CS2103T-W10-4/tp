@@ -391,7 +391,9 @@ Format: `filter [id/EMPLOYEE_ID] [n/NAME] [d/DEPARTMENT] [r/ROLE]`
 * If a value has several words, every word must appear in that field, in any order. For example, `r/Software Engineer` matches `Software Engineer` but not `Software Manager`.
 * An employee ID must be the whole ID, such as `id/E0123`. The ID is not case-sensitive.
 * To match any of several values of the same field (an `OR` search), repeat the prefix. For example, `d/Sales d/Finance` matches employees in `Sales` or in `Finance`. Each repeated value is a separate search, so `r/Manager r/Analyst` is not the same as `r/Manager Analyst`, which needs both words.
+* A new `filter` replaces the earlier `find` or `filter`. They are not combined, so to narrow the list further, put all the fields in one `filter`.
 * Filtering only changes what is shown. Your saved data is not changed. Archived employees are not shown. Use [`list`](#listing-all-employees-list) to show all employees again.
+* The order set by [`sort`](#sorting-employees-sort) is kept, so you can filter and sort in any order.
 * A filter with no matches is valid and shows an empty list with the message `0 employees listed!`.
 * Leading and trailing spaces are ignored, and the parameters can be in any order.
 
@@ -403,12 +405,14 @@ Examples:
 * `filter d/Sales d/Finance r/Manager` shows the managers who are in Sales or in Finance.
 * `filter id/E0123` shows only the employee with the ID `E0123`.
 
+Tip: `filter d/Engineering` followed by `sort name` shows the Engineering employees in alphabetical order.
+
 The following input errors leave the displayed list unchanged. Each message is followed by the usage of the command.
 
 | Input | Error message |
 | --- | --- |
-| `filter` or `filter Engineering` | `Invalid command format!` |
-| `filter e/john@example.com` or `filter x/foo` | `Unknown parameter: e/` (or the parameter given) |
+| `filter` or `filter Engineering` | `Invalid command format.` |
+| `filter e/john@example.com` or `filter x/foo` | `Invalid command format.` followed by `Unknown parameter: e/` (or the parameter given) |
 | `filter d/` or `filter n/` | `The value of d/ should contain at least one letter or digit.` (or `n/`, `r/`) |
 | `filter d/@@@` | `The value of d/ should contain at least one letter or digit.` |
 | `filter id/E 1` | The employee ID constraints message |
@@ -518,7 +522,8 @@ Format: `sort FIELD [asc|desc]`
 * Letter case and accents are ignored, so `Émile` is sorted with the names that start with `E`. A number inside a value is compared by its value, so `E2` comes before `E10`, and `Level 2` comes before `Level 10`; leading zeros do not change this, so `E0002` comes before `E10`. Otherwise text is compared character by character.
 * Employees with the same value are always ordered by employee ID from A to Z, also when the order is `desc`.
 * Sorting only changes the order in which employees are shown. Your saved data is not changed.
-* The sorted order is kept when you use `find`, and when you add, edit or delete employees. An employee whose name, department or role is edited moves to the correct position.
+* The sorted order is kept when you use `find` or `filter`, and when you add, edit or delete employees. An employee whose name, department or role is edited moves to the correct position.
+* HuntR does not remember the sorted order after you close it. The employees are shown in the order in which they were added.
 * Use [`list`](#listing-all-employees-list) to show the employees in the order in which they were added again.
 
 Examples:
@@ -530,7 +535,7 @@ The following input errors leave the displayed order unchanged. Each message is 
 
 | Input | Error message |
 | --- | --- |
-| `sort` or `sort name asc desc` | `Invalid command format!` |
+| `sort` or `sort name asc desc` | `Invalid command format.` |
 | `sort salary` or `sort salary desc` | `Unknown sort field: salary. The field must be one of: id, name, department, role.` |
 | `sort name down` | `Unknown sort order: down. The order must be one of: asc, desc.` |
 

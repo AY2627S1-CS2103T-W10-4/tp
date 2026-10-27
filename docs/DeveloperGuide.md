@@ -386,6 +386,104 @@ When loading JSON, `JsonSerializableAddressBook#toModelType` converts and valida
 including IDs differing only in case, cause an `IllegalValueException`, rejecting the file rather than returning
 partially loaded data.
 
+### Filter employees by multiple criteria
+
+`FilterCommandParser` first hides the slash in name words such as `s/o` and `d/o`, so that they are not read as
+prefixes, and rejects any prefix other than `id/`, `n/`, `d/` and `r/` with `Unknown parameter`. It then tokenizes
+the arguments and collects every value of each prefix. Text before the first prefix, or no prefix at all, produces
+`Invalid command format.` followed by the usage. Each `id/` value must be a valid `EmployeeId`. Each `n/`, `d/` and `r/`
+value is a search value, not a complete name, department or role, so it is not checked against the rules for those
+fields. It only needs one word to search for, as given by `StringUtil#getSearchWords`; otherwise the parser reports
+`The value of d/ should contain at least one letter or digit.` (or `n/`, `r/`) followed by the usage. The parser
+passes the values to `EmployeeMatchesCriteriaPredicate` and returns a `FilterCommand`.
+
+`EmployeeMatchesCriteriaPredicate` joins the criteria with `AND` and the values of one criterion with `OR`, which is
+why a prefix that is repeated widens the search while a new prefix narrows it:
+
+* An `id/` value is met when it equals the employee ID. `EmployeeId` equality ignores letter case.
+* An `n/`, `d/` or `r/` value is met when every word of the value is a whole word of that field. Words are the
+  lowercase runs of letters, digits, `&` and `'` in the text, so `d/Resources` matches `Human Resources` but
+  `d/Engineer` does not match `Engineering`. The words of a value may be in any order.
+* A criterion without values is not applied. The constructor asserts that at least one criterion has a value.
+
+The sequence diagram below shows `filter d/Sales d/Finance r/Manager`, which is met by the managers who work in Sales
+or in Finance.
+
+<puml src="diagrams/FilterSequenceDiagram.puml" alt="Interactions for filtering employees" />
+
+`FilterCommand#execute` calls `model.updateFilteredEmployeeList(predicate)`. `ModelManager` installs the predicate
+on the `FilteredList` together with a check that the employee is not archived, so archived employees are never shown
+by `filter`. The command replaces the earlier predicate of `find` or `filter` instead of adding to it. It does not
+touch the comparator of the `SortedList`, so the sort order is kept. The result is the size of the displayed list,
+reported by `Messages#getEmployeesListedOverview`. A filter with no matches succeeds with `0 employees listed!`.
+Like all successful commands, it is followed by the shared saving flow in `LogicManager`; the filter itself is
+never written to the JSON file.
+
+#### Design considerations
+
+**Aspect: how several criteria and several values are combined**
+
+* **Alternative 1 (current choice):** `AND` between different fields, and `OR` between repeated values of one field.
+  * Pros: Both searches that HR staff ask for are possible with one command, such as `filter d/Sales d/Finance r/Manager`.
+    Repeating a prefix needs no new symbol, which is important because punctuation is a word separator in a value.
+  * Cons: Repeating the prefix is a little longer to type than a list such as `d/Sales,Finance`.
+* **Alternative 2:** Accept a separator inside a value, such as `d/Sales,Finance`.
+  * Pros: Shorter to type.
+  * Cons: The separator would also be a word separator in the value, so it would be ambiguous. Departments and roles
+    may contain `,` themselves.
+
+**Aspect: whether a new filter narrows the current list or replaces it**
+
+* **Alternative 1 (current choice):** A new filter replaces the earlier one, as `find` does.
+  * Pros: The result depends only on the last command, so it is easy to predict. All the fields are given in one
+    command.
+  * Cons: A user who wants to narrow the current list in steps must repeat the earlier criteria.
+* **Alternative 2:** A new filter is applied to the list that is already shown.
+  * Pros: Narrowing in steps is natural.
+  * Cons: A mistake in a step can only be undone with `list` or `undo`, and `find`, `filter` and the reporting
+    queries would need rules for how they combine.
+
+### Sort employees
+
+The model keeps the employees in three layers: the stored `UniqueEmployeeList`, the `FilteredList` that holds the
+employees selected by the current predicate, and a `SortedList` over the `FilteredList`. `ModelManager#getFilteredEmployeeList`
+returns the `SortedList`, so the UI, and every command that reads the displayed list, sees the filtered employees in
+the sorted order. `SortCommand` therefore changes only the comparator of the `SortedList` through
+`Model#updateEmployeeSortOrder`. The stored order and the saved file are not changed.
+
+`SortCommandParser` splits the trimmed arguments on whitespace. No argument, or more than two words, produces
+`Invalid command format.` followed by the usage. The first word is looked up with `SortField#fromString` and the
+optional second word with `SortOrder#fromString`. Both ignore letter case. An unknown word produces
+`Unknown sort field: X. The field must be one of: id, name, department, role.` or
+`Unknown sort order: X. The order must be one of: asc, desc.`, each followed by the usage. Without a second word the
+order is ascending.
+
+<puml src="diagrams/SortSequenceDiagram.puml" alt="Interactions for sorting employees" />
+
+`SortField#getComparator` builds the comparator. It compares the text of the field after removing accents and
+ignoring letter case, and reverses that comparison for `desc`. Employees with the same value are then ordered by employee ID from A to Z in
+both orders, so the order of the list never depends on the order in which employees were added. The tie-break never
+applies to the `ID` field, because employee IDs are unique.
+
+Because the `SortedList` observes the `FilteredList`, the list is kept in order without any further call. When an
+employee is added, edited or deleted, or when `find` or `filter` changes the predicate, the list is reordered
+automatically, and an employee whose name, department or role is edited moves to the correct position. Only
+`ListCommand` clears the comparator, through `Model#resetEmployeeSortOrder`, to show the stored order again. The sort
+order is not part of an undo/redo checkpoint and is not stored in the JSON file, so it is not remembered after HuntR is closed.
+
+#### Design considerations
+
+**Aspect: where the sorted order is kept**
+
+* **Alternative 1 (current choice):** A `SortedList` over the filtered list, with the comparator as view state.
+  * Pros: Sorting does not touch the stored employees, so it needs no saving, undo or rollback. The order is kept
+    when employees change or the filter changes, with no extra code.
+  * Cons: The order is lost when HuntR is closed, and is not restored by `undo`.
+* **Alternative 2:** Sort the stored `UniqueEmployeeList` itself.
+  * Pros: The order would be saved in the JSON file.
+  * Cons: Every sort would be a change of the stored data, so it would need saving, a checkpoint for `undo`, and a
+    way to get back the order in which employees were added.
+
 ### CSV import and export
 
 `ImportCommand` and `ExportCommand` extend the abstract `CsvFileCommand`, which holds the file path and the folder
@@ -705,6 +803,72 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 
     Use case ends.
 
+**Use case: Filter employees**
+
+**MSS**
+
+1. User requests to filter employees by one or more of employee ID, name, department and role.
+2. HuntR finds the employees who match all the given fields.
+3. HuntR displays the matching employees as a numbered list and reports the number of matches.
+
+    Use case ends.
+
+**Extensions**
+
+* 1a. The user gives no field, gives text before the first field, or gives an unknown field.
+
+  * 1a1. HuntR shows an error message and the expected command format.
+
+    Use case resumes at step 1.
+
+* 1b. A value is empty, has no letter or digit, or is not a valid employee ID.
+
+  * 1b1. HuntR shows an error message that names the field, and the expected command format.
+
+    Use case resumes at step 1.
+
+* 1c. The user repeats a field, such as `d/Sales d/Finance`.
+
+  * 1c1. HuntR matches the employees who match any value of that field, and all the other fields.
+
+    Use case resumes at step 3.
+
+* 2a. No employee matches.
+
+  * 2a1. HuntR displays an empty list and reports `0 employees listed!`.
+
+    Use case ends.
+
+**Use case: Sort employees**
+
+**MSS**
+
+1. User requests to sort the displayed employees by a field, and optionally by an order.
+2. HuntR orders the displayed employees by the field.
+3. HuntR displays the employees in the new order and reports the field and the order.
+
+    Use case ends.
+
+**Extensions**
+
+* 1a. The field or the order is missing, unknown, or followed by extra text.
+
+  * 1a1. HuntR shows an error message and the expected command format.
+
+    Use case resumes at step 1.
+
+* 1b. The user does not give an order.
+
+  * 1b1. HuntR uses ascending order.
+
+    Use case resumes at step 2.
+
+* 2a. Several employees have the same value for the field.
+
+  * 2a1. HuntR orders them by employee ID from A to Z.
+
+    Use case resumes at step 3.
+
 **Use case: View employee data**
 
 **MSS**
@@ -916,6 +1080,54 @@ testers are expected to do more *exploratory* testing.
 6. Enter `edit id/E0001 p/91234567 p/81234567`.<br>
    Expected: HuntR reports multiple values for `p/` and leaves `E0001` unchanged.
 
+
+### Filtering employees
+
+**Prerequisites:** Launch HuntR with the original sample employees, then enter `list`. `E0001` and `E0004` are in the
+Engineering department, `E0003` is in Finance and `E0006` is in Sales.
+
+1. Enter `filter d/Engineering`.<br>
+   Expected: `Alex Yeoh` and `David Li` are displayed and HuntR reports `2 employees listed!`.
+2. Enter `filter d/Engineering r/Manager`.<br>
+   Expected: Only `David Li` is displayed and HuntR reports `1 employee listed!`. An employee must match both fields.
+3. Enter `filter d/Sales d/Finance`.<br>
+   Expected: `Charlotte Oliveiro` and `Roy Balakrishnan` are displayed. A repeated field matches any of its values.
+4. Enter `filter d/Engineer`.<br>
+   Expected: The list is empty and HuntR reports `0 employees listed!`, because only whole words match.
+5. Enter `filter id/e0004`.<br>
+   Expected: Only `David Li` is displayed. The employee ID is not case-sensitive.
+6. Enter `filter d/Engineering`, followed by `filter d/Sales`.<br>
+   Expected: Only `Roy Balakrishnan` is displayed. The second filter replaces the first instead of narrowing it.
+7. Enter `filter`, `filter Engineering`, `filter x/foo` and `filter d/@@@`, one at a time.<br>
+   Expected: HuntR reports an invalid command format for the first two, an unknown parameter for the third, and that
+   the value of `d/` needs at least one letter or digit for the last. Each message is followed by the `filter` usage.
+   The displayed list does not change.
+8. Enter `list`.<br>
+   Expected: All six employees are displayed again.
+
+### Sorting employees
+
+**Prerequisites:** Launch HuntR with the original sample employees, then enter `list`. The employees are displayed from
+`E0001` to `E0006`.
+
+1. Enter `sort name desc`.<br>
+   Expected: HuntR reports `Sorted by name in descending order.` The employees are displayed from `Roy Balakrishnan`
+   to `Alex Yeoh`.
+2. Enter `sort department`.<br>
+   Expected: HuntR reports `Sorted by department in ascending order.` The department order is Engineering, Finance,
+   Human Resources, Operations and Sales. The two Engineering employees are in the order `E0001`, `E0004`.
+3. Enter `sort Department DESC`.<br>
+   Expected: The field and the order are not case-sensitive. The department order is reversed, but the two Engineering
+   employees are still in the order `E0001`, `E0004`.
+4. Enter `sort name desc`, followed by `filter d/Engineering`.<br>
+   Expected: `David Li` is displayed before `Alex Yeoh`. The sorted order is kept by the filter.
+5. Enter `add id/E0007 n/Zed Zhang p/91234567 e/zed@example.com d/Sales r/Analyst`.<br>
+   Expected: The new employee appears at the position that fits the sorted order, and the full list is displayed.
+6. Enter `sort salary`, `sort name down`, `sort` and `sort name asc desc`, one at a time.<br>
+   Expected: HuntR reports an unknown sort field, an unknown sort order, and an invalid command format twice. Each message
+   is followed by the `sort` usage. The displayed order does not change.
+7. Enter `list`.<br>
+   Expected: HuntR displays all employees in the order in which they were added, from `E0001` to `E0007`.
 
 ### Deleting an employee
 

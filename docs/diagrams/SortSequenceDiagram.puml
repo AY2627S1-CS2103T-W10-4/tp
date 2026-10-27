@@ -1,0 +1,60 @@
+@startuml
+!include style.puml
+skinparam ArrowFontStyle plain
+
+box Logic LOGIC_COLOR_T1
+participant ":SortCommandParser" as SortCommandParser LOGIC_COLOR
+participant "s:SortCommand" as SortCommand LOGIC_COLOR
+participant "DEPARTMENT:SortField" as SortField LOGIC_COLOR
+participant "r:CommandResult" as CommandResult LOGIC_COLOR
+end box
+
+box Model MODEL_COLOR_T1
+participant "m:Model" as Model MODEL_COLOR
+end box
+
+[-> SortCommandParser : parse("department desc")
+activate SortCommandParser
+
+note right of SortCommandParser
+Look up the SortField and the SortOrder by name,
+ignoring case. An unknown name or more than two
+words is a ParseException.
+end note
+
+create SortCommand
+SortCommandParser -> SortCommand : new SortCommand(DEPARTMENT, DESC)
+activate SortCommand
+SortCommand --> SortCommandParser
+deactivate SortCommand
+
+[<-- SortCommandParser : s
+deactivate SortCommandParser
+
+[-> SortCommand : execute(m)
+activate SortCommand
+
+SortCommand -> SortField : getComparator(DESC)
+activate SortField
+SortField --> SortCommand : comparator
+deactivate SortField
+
+SortCommand -> Model : updateEmployeeSortOrder(comparator)
+activate Model
+note right of Model
+Sets the comparator of the SortedList.
+The list reorders itself and the UI is updated.
+The stored employees are not changed.
+end note
+Model --> SortCommand
+deactivate Model
+
+create CommandResult
+SortCommand -> CommandResult : new CommandResult(\n"Sorted by department in descending order.")
+activate CommandResult
+CommandResult --> SortCommand
+deactivate CommandResult
+
+[<-- SortCommand : r
+deactivate SortCommand
+@enduml

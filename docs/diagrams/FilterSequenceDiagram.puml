@@ -1,0 +1,66 @@
+@startuml
+!include style.puml
+skinparam ArrowFontStyle plain
+
+box Logic LOGIC_COLOR_T1
+participant ":FilterCommandParser" as FilterCommandParser LOGIC_COLOR
+participant "p:EmployeeMatchesCriteriaPredicate" as Predicate LOGIC_COLOR
+participant "f:FilterCommand" as FilterCommand LOGIC_COLOR
+participant "r:CommandResult" as CommandResult LOGIC_COLOR
+end box
+
+box Model MODEL_COLOR_T1
+participant "m:Model" as Model MODEL_COLOR
+end box
+
+[-> FilterCommandParser : parse("d/Sales d/Finance r/Manager")
+activate FilterCommandParser
+
+note right of FilterCommandParser
+Reject unknown prefixes. Collect the values of
+id/, n/, d/ and r/, and check that at least one is given.
+Each value must have a word to search for.
+end note
+
+create Predicate
+FilterCommandParser -> Predicate : new EmployeeMatchesCriteriaPredicate(\nids, names, departments, roles)
+activate Predicate
+Predicate --> FilterCommandParser
+deactivate Predicate
+
+create FilterCommand
+FilterCommandParser -> FilterCommand : new FilterCommand(p)
+activate FilterCommand
+FilterCommand --> FilterCommandParser
+deactivate FilterCommand
+
+[<-- FilterCommandParser : f
+deactivate FilterCommandParser
+
+[-> FilterCommand : execute(m)
+activate FilterCommand
+
+FilterCommand -> Model : updateFilteredEmployeeList(p)
+activate Model
+note right of Model
+The predicate of the filtered list becomes
+"not archived and p". An earlier find or
+filter is replaced. The sort order is kept.
+end note
+Model --> FilterCommand
+deactivate Model
+
+FilterCommand -> Model : getFilteredEmployeeList()
+activate Model
+Model --> FilterCommand : employees
+deactivate Model
+
+create CommandResult
+FilterCommand -> CommandResult : new CommandResult(\n"N employees listed!")
+activate CommandResult
+CommandResult --> FilterCommand
+deactivate CommandResult
+
+[<-- FilterCommand : r
+deactivate FilterCommand
+@enduml
