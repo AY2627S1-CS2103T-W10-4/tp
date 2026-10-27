@@ -18,6 +18,22 @@ public class StringUtil {
     /** Anything that is not a letter, a mark that belongs to a letter, a digit, {@code &} or {@code '}. */
     private static final Pattern NOT_PART_OF_SEARCH_WORD = Pattern.compile("[^\\p{L}\\p{M}\\p{N}&']+");
 
+    private static final Pattern WHITESPACE_RUN = Pattern.compile("\\s+");
+
+    /**
+     * Returns {@code text} trimmed, with each run of whitespace inside it replaced by one space,
+     * so that a value typed with an accidental double space is stored the same as the intended value.
+     *   <br>examples:<pre>
+     *       collapseWhitespace("  Human   Resources ") == "Human Resources"
+     *       collapseWhitespace("HR\tExecutive") == "HR Executive"
+     *       </pre>
+     * @param text cannot be null
+     */
+    public static String collapseWhitespace(String text) {
+        requireNonNull(text);
+        return WHITESPACE_RUN.matcher(text.trim()).replaceAll(" ");
+    }
+
     /**
      * Returns the lower-case words of {@code text}, to be matched whole against other words.
      * Words are separated by spaces and punctuation, except for {@code &} and {@code '} which stay in a word.

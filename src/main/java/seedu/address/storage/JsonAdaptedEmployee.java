@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import seedu.address.commons.exceptions.IllegalValueException;
+import seedu.address.commons.util.StringUtil;
 import seedu.address.model.employee.Department;
 import seedu.address.model.employee.Email;
 import seedu.address.model.employee.Employee;
@@ -119,18 +120,20 @@ class JsonAdaptedEmployee {
             throw new IllegalValueException(
                     String.format(MISSING_FIELD_MESSAGE_FORMAT, Department.class.getSimpleName()));
         }
-        if (!Department.isValidDepartment(department)) {
+        String normalisedDepartment = StringUtil.collapseWhitespace(department);
+        if (!Department.isValidDepartment(normalisedDepartment)) {
             throw new IllegalValueException(Department.MESSAGE_CONSTRAINTS);
         }
-        final Department modelDepartment = new Department(department);
+        final Department modelDepartment = new Department(normalisedDepartment);
 
         if (role == null) {
             throw new IllegalValueException(String.format(MISSING_FIELD_MESSAGE_FORMAT, Role.class.getSimpleName()));
         }
-        if (!Role.isValidRole(role)) {
+        String normalisedRole = StringUtil.collapseWhitespace(role);
+        if (!Role.isValidRole(normalisedRole)) {
             throw new IllegalValueException(Role.MESSAGE_CONSTRAINTS);
         }
-        final Role modelRole = new Role(role);
+        final Role modelRole = new Role(normalisedRole);
 
         if (managerId != null && !EmployeeId.isValidEmployeeId(managerId)) {
             throw new IllegalValueException(EmployeeId.MESSAGE_CONSTRAINTS);

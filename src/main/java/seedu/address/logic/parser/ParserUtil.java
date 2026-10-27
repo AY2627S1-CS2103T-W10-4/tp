@@ -35,8 +35,6 @@ public class ParserUtil {
             + "folder HuntR runs from and stay inside it, for example exports/staff.csv.";
     public static final String MESSAGE_INVALID_FILE_PATH = "File path contains characters that are not allowed.";
 
-    private static final String WHITESPACE_RUN_REGEX = "\\s+";
-
     /**
      * Parses {@code oneBasedIndex} into an {@code Index} and returns it. Leading and trailing whitespaces will be
      * trimmed.
@@ -117,7 +115,7 @@ public class ParserUtil {
      */
     public static Department parseDepartment(String department) throws ParseException {
         requireNonNull(department);
-        String normalisedDepartment = collapseWhitespace(department);
+        String normalisedDepartment = StringUtil.collapseWhitespace(department);
         if (normalisedDepartment.isEmpty()) {
             throw new ParseException(Department.MESSAGE_BLANK);
         }
@@ -137,7 +135,7 @@ public class ParserUtil {
      */
     public static Role parseRole(String role) throws ParseException {
         requireNonNull(role);
-        String normalisedRole = collapseWhitespace(role);
+        String normalisedRole = StringUtil.collapseWhitespace(role);
         if (normalisedRole.isEmpty()) {
             throw new ParseException(Role.MESSAGE_BLANK);
         }
@@ -192,14 +190,6 @@ public class ParserUtil {
             throw new ParseException(MESSAGE_FILE_PATH_NOT_CSV);
         }
         return path;
-    }
-
-    /**
-     * Returns {@code text} trimmed, with each run of whitespace inside it replaced by one space,
-     * so that a value typed with an accidental double space is stored the same as the intended value.
-     */
-    private static String collapseWhitespace(String text) {
-        return text.trim().replaceAll(WHITESPACE_RUN_REGEX, " ");
     }
 
 }
