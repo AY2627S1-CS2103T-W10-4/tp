@@ -77,6 +77,66 @@ public class ImportCommandTest {
     }
 
     @Test
+    public void execute_quotedMultilineName_normalisesCompleteValue() throws Exception {
+        for (String ending : List.of("\n", "\r\n", "\r")) {
+            String csv = "id,name,phone,email,department,role" + ending
+                    + "E0002,\"Alice" + ending + "Smith\",12345678,alice@example.com,Engineering,Developer";
+            Files.writeString(appFolder.resolve(STAFF_CSV), csv, StandardCharsets.UTF_8);
+            Model emptyModel = new ModelManager();
+
+            importStaffCsv().execute(emptyModel);
+
+            assertEquals(1, emptyModel.getAddressBook().getEmployeeList().size());
+            assertEquals("Alice Smith", emptyModel.getAddressBook().getEmployeeList().getFirst().getName().fullName);
+        }
+    }
+
+    @Test
+    public void execute_invalidRecordAfterMultilineName_reportsStartingLineAndImportsNothing() throws Exception {
+        for (String ending : List.of("\n", "\r\n")) {
+            String multilineAmy = AMY_ROW.replace(VALID_NAME_AMY, "\"Amy" + ending + "Bee\"");
+            String csv = ExportCommand.CSV_HEADER + ending + multilineAmy + ending + ending
+                    + BOB_ROW.replace(VALID_PHONE_BOB, "911a");
+            Files.writeString(appFolder.resolve(STAFF_CSV), csv, StandardCharsets.UTF_8);
+            model.updateFilteredEmployeeList(employee -> false);
+
+            assertCommandFailure(importStaffCsv(), model,
+                    String.format(ImportCommand.MESSAGE_INVALID_ROW, 5, Phone.MESSAGE_CONSTRAINTS));
+            assertTrue(model.getFilteredEmployeeList().isEmpty());
+        }
+    }
+
+    @Test
+    public void execute_multilineRecordWithInvalidField_reportsRecordStartAndImportsNothing() throws Exception {
+        String multilineAmy = AMY_ROW.replace(VALID_NAME_AMY, "\"Amy\nBee\"")
+                .replace(AMY.getPhone().value, "911a");
+        Files.writeString(appFolder.resolve(STAFF_CSV), ExportCommand.CSV_HEADER + "\n" + multilineAmy);
+
+        assertCommandFailure(importStaffCsv(), model,
+                String.format(ImportCommand.MESSAGE_INVALID_ROW, 2, Phone.MESSAGE_CONSTRAINTS));
+    }
+
+    @Test
+    public void execute_unclosedMultilineQuote_reportsRecordStartAndImportsNothing() throws Exception {
+        Files.writeString(appFolder.resolve(STAFF_CSV), ExportCommand.CSV_HEADER + "\n" + AMY_ROW
+                + "\nE2000,\"Alice\nSmith\n");
+
+        assertCommandFailure(importStaffCsv(), model,
+                String.format(ImportCommand.MESSAGE_INVALID_ROW, 3, CsvUtil.MESSAGE_UNCLOSED_QUOTE));
+    }
+
+    @Test
+    public void execute_duplicateAfterMultilineRecord_reportsBothPhysicalStartingLines() throws Exception {
+        String multilineAmy = AMY_ROW.replace(VALID_NAME_AMY, "\"Amy\nBee\"");
+        String duplicate = BOB_ROW.replace(BOB.getId().value, AMY.getId().value);
+        Files.writeString(appFolder.resolve(STAFF_CSV), ExportCommand.CSV_HEADER + "\n"
+                + multilineAmy + "\n" + duplicate);
+
+        assertCommandFailure(importStaffCsv(), model, String.format(ImportCommand.MESSAGE_INVALID_ROW, 4,
+                String.format(ImportCommand.MESSAGE_DUPLICATE_IN_FILE, AMY.getId(), 2)));
+    }
+
+    @Test
     public void execute_exportedFile_importsBackUnchanged() throws Exception {
         Employee quotedEmployee = new EmployeeBuilder(AMY).withName("Tan, Ah Kow").withDepartment("R&D, Asia")
                 .withRole("Engineer (Backend), Senior").build();
