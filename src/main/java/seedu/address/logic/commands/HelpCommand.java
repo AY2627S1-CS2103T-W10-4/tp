@@ -49,6 +49,7 @@ public class HelpCommand extends Command {
             ImportCommand.COMMAND_WORD + " FILE_PATH",
             ExportCommand.COMMAND_WORD + " FILE_PATH",
             BackupCommand.COMMAND_WORD,
+            RestoreCommand.COMMAND_WORD + " file/JSON_FILE_PATH",
             UndoCommand.COMMAND_WORD,
             RedoCommand.COMMAND_WORD,
             COMMAND_WORD,

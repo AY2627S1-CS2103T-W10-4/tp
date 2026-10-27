@@ -298,6 +298,17 @@ and checking IDs for duplicates, it resolves managers against the existing roste
 validates the complete hierarchy before changing the model. It adds employees without managers first, then
 sets their validated assignments, preserving CSV row order even when a manager appears later in the file.
 `LogicManager` commits the import as one history step and restores its checkpoint on execution or save failure.
+
+#### JSON backup restoration
+
+`RestoreCommandParser` recognises `restore file/JSON_FILE_PATH`. `RestoreCommand` reads the complete backup through
+`JsonAddressBookStorage`, which validates all employee fields, unique IDs and the complete reporting graph before
+the model is changed. Null employee entries and trailing JSON content are rejected as loading failures.
+Only a validated backup is passed to `Model#setAddressBook`; the active view is then shown with the current sort.
+
+Restore declares `HistoryAction.COMMIT`, so `LogicManager` saves it as one history step and rolls back the roster,
+view and history if automatic saving fails. Undo and redo use snapshots and never reread the backup file.
+An identical restore creates no history step, consistent with the existing no-op policy.
 `ImportCommandTest` covers relationship round trips, forward references, legacy files and rejected relationships.
 
 `EmployeeCard` and `EmployeeListCard.fxml` display the manager ID or `Unassigned`. Reporting usage is also listed
@@ -430,7 +441,7 @@ messages. They create no entry and retain redo. Read-only and failed commands al
 
 `Command#getHistoryAction()` defaults to `NONE`; modifying commands return `COMMIT`, and undo/redo return `NAVIGATE`.
 `Command#isDataChanging()` is final and derives its result from that declaration. It means “this command may change
-employee data or navigate employee history.” The nine modifying commands and both history commands therefore
+employee data or navigate employee history.” The ten modifying commands and both history commands therefore
 return true even for no-ops. `LogicManager` parses first, captures a `ModelCheckpoint` for those commands, executes,
 commits only for `COMMIT`, then saves through the existing storage API. `NAVIGATE` never creates a snapshot.
 Only a successful storage return permits the result to be returned. No fallible work is added after that return.

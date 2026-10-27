@@ -28,7 +28,7 @@ public class HelpCommandTest {
             ManagerCommand.COMMAND_WORD, UnassignManagerCommand.COMMAND_WORD, TeamCommand.COMMAND_WORD,
             OrgCommand.COMMAND_WORD, ChainCommand.COMMAND_WORD,
             ArchiveCommand.COMMAND_WORD, UnarchiveCommand.COMMAND_WORD, ImportCommand.COMMAND_WORD,
-            ExportCommand.COMMAND_WORD, BackupCommand.COMMAND_WORD,
+            ExportCommand.COMMAND_WORD, BackupCommand.COMMAND_WORD, RestoreCommand.COMMAND_WORD,
             HelpCommand.COMMAND_WORD, ExitCommand.COMMAND_WORD, UndoCommand.COMMAND_WORD, RedoCommand.COMMAND_WORD};
         for (String commandWord : commandWords) {
             assertTrue(COMMAND_SUMMARY.lines().anyMatch(line -> line.equals(commandWord)
@@ -53,6 +53,7 @@ public class HelpCommandTest {
         assertTrue(COMMAND_SUMMARY.lines().anyMatch("import FILE_PATH"::equals));
         assertTrue(COMMAND_SUMMARY.lines().anyMatch("export FILE_PATH"::equals));
         assertTrue(COMMAND_SUMMARY.lines().anyMatch("backup"::equals));
+        assertTrue(COMMAND_SUMMARY.lines().anyMatch("restore file/JSON_FILE_PATH"::equals));
     }
 
     @Test
