@@ -111,6 +111,10 @@ Format: `help`
 
 Adds an employee to HuntR.
 
+If an existing employee has the same name apart from case or spacing, HuntR adds the new record and displays a
+warning. It lists up to five matching employee IDs; when there are more, it also reports the total match count.
+Both active and archived employees are checked, regardless of the current view. Existing records remain unchanged.
+
 Format: `add id/EMPLOYEE_ID n/NAME p/PHONE e/EMAIL d/DEPARTMENT r/ROLE [m/MANAGER_ID]`
 
 All six fields are required. The employee ID must be 1 to 20 characters long and contain only letters, digits,

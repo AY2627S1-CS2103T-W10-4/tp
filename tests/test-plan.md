@@ -1,5 +1,17 @@
 # Employee history and atomic saving test plan — #104
 
+## Similar-name performance validation — #199
+
+`AddCommandPerformanceTest` runs actual adds against `ModelManager` with 10,000 employees for no-match, all-match
+and sparse-match rosters, including archived records, Unicode names and repeated spaces. It checks total counts,
+the five-ID preview, matches at the end of the roster and preservation of existing records. The exactly-five
+boundary is also tested. Fixture setup is excluded from its generous 10-second severe-regression guard.
+
+Run `./gradlew -I tests/performance/history-performance.gradle addPerformance` for the opt-in benchmark comparing
+cached and uncached normalisation scans and measuring actual add commands at 100, 1,000 and 10,000 employees.
+See `tests/performance/results/2026-10-27-add.md` for measured results and limitations. Full scans remain O(N);
+the benchmark excludes disk saving, history commits and UI rendering and has no CI speedup threshold.
+
 ## Baseline and integration scope
 
 Both feature branches start at recorded local `master` `1d8b4b5eaeae6b1a102f92dd81a7befb18221ecb`.

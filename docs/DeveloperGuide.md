@@ -383,6 +383,21 @@ therefore includes archived employees. A duplicate produces `An employee with Em
 the supplied ID, without adding the employee. Otherwise, it calls `model.addEmployee`; a same or similar name only adds a
 warning to the success message.
 
+Each immutable `Name` caches its normalised form. Similar-name detection still scans the full roster, including
+archived employees, in O(N) name comparisons (string-comparison cost also depends on name length). This avoids repeated
+whitespace/Unicode normalisation during scans; it does not introduce a sublinear lookup. The warning retains at most
+five IDs in roster order and reports the full count when more match, using O(1) additional ID-preview space.
+`AddCommandPerformanceTest` exercises 10,000-employee rosters with no matches, all matches and a sixth match at the
+end of the roster, checking exact counts, bounded previews and successful additions using the real `ModelManager`.
+Its generous 10-second execution guard excludes fixture setup and is a severe-regression check, not a UI latency SLA.
+
+Run `./gradlew -I tests/performance/history-performance.gradle addPerformance` for no-match, sparse-match and
+all-match benchmarks at 100, 1,000 and 10,000 employees. The runner warms each workload and compares cached scans
+with the former per-comparison normalisation, checking that both find the same number of matches. It separately
+measures actual `AddCommand.execute` calls against the real model. Fixture setup, cleanup, disk saving, history
+commit and UI rendering are excluded. The uncached scan is an emulated baseline, not a full older-version add.
+Timing results are diagnostic and have no CI speedup threshold; see `tests/performance/results/2026-10-27-add.md`.
+
 When loading JSON, `JsonSerializableAddressBook#toModelType` converts and validates every employee. Duplicate IDs,
 including IDs differing only in case, cause an `IllegalValueException`, rejecting the file rather than returning
 partially loaded data.

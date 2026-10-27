@@ -80,6 +80,7 @@ public class AddCommand extends Command {
         }
 
         // Employees may share a name, so a similar name only produces a warning and does not stop the add.
+        // Scan the full roster for an accurate total; Name caches normalisation and only five IDs are retained.
         List<String> similarEmployeeIds = new ArrayList<>(MAX_SIMILAR_EMPLOYEE_IDS);
         int similarEmployeeCount = 0;
         for (Employee employee : model.getAddressBook().getEmployeeList()) {
