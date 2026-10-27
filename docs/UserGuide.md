@@ -156,6 +156,9 @@ Format: `edit id/EMPLOYEE_ID [n/NAME] [p/PHONE] [e/EMAIL] [d/DEPARTMENT] [r/ROLE
 * Employee ID matching is case-insensitive: `edit id/e0001 ...` identifies employee `E0001`.
 * HuntR searches the complete employee roster, so an employee hidden by the current `find` result can still be edited.
 * After a successful edit, HuntR resets the list to show all employees, clearing any active `find` result.
+* If every value you give is the same as the employee's current value, HuntR displays
+  `No changes made: the new values are the same as the existing ones for E0001.` and nothing is saved or added to
+  the `undo` history. Changing only the letter case of a name, such as `carol ng` to `Carol Ng`, counts as a change.
 * If an employee ID such as `E9999` does not exist, HuntR displays `No employee with ID E9999 was found.` and does not change any records.
 
 Examples:
@@ -344,8 +347,9 @@ Format: `check`
 
 * Checks cover all active employees regardless of the current search or archive view. Archived employees neither
   appear in the report nor cause an active employee to be flagged.
-* Contact values are compared exactly as stored, consistent with HuntR's phone and email equality rules.
-  For example, `91234567` and `9123 4567` are different, as are `Alice@example.com` and `alice@example.com`.
+* Phone numbers are compared exactly as stored, so `91234567` and `9123 4567` are different.
+* Emails are compared ignoring letter case, since they reach the same inbox. For example, `Alice@example.com`
+  and `alice@example.com` are flagged as a shared email, and each entry shows the email as stored.
 * Every affected employee is counted and listed once, even if both their phone and email are shared or more
   than two employees share a value. Each entry includes their ID, name and shared contact details.
 * Entries are sorted by employee ID, ignoring letter case. The current employee list view and records are unchanged.
@@ -409,6 +413,17 @@ Example: `archive id/E0123`
 
 The ID is matched case-insensitively. An unknown ID produces `No employee with ID E0123 was found.` Archiving an
 already archived employee produces `Employee with ID E0123 is already archived.` No data changes on either error.
+
+Archiving a manager preserves their reporting relationships. If active employees still report directly to that
+manager, the success message gives their count and suggests a command to review their assignments, for example:
+
+```text
+1 active employee still reports to this archived manager.
+Use team id/E0123 to review their assignments.
+```
+
+The count excludes archived employees and indirect reports. No notice appears when there are no active direct
+reports. Unarchiving the manager or undoing the archive preserves the same reporting relationships.
 
 ### Unarchiving employees: `unarchive`
 
