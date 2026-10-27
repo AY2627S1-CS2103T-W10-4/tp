@@ -156,13 +156,11 @@ public class ModelManager implements Model {
     @Override
     public void archiveEmployee(Employee employee) {
         addressBook.setEmployee(employee, employee.withArchived(true));
-        updateFilteredEmployeeList(PREDICATE_SHOW_ALL_EMPLOYEES);
     }
 
     @Override
     public void unarchiveEmployee(Employee employee) {
         addressBook.setEmployee(employee, employee.withArchived(false));
-        updateFilteredEmployeeList(PREDICATE_SHOW_ALL_EMPLOYEES);
     }
 
     //=========== Filtered Employee List Accessors =============================================================

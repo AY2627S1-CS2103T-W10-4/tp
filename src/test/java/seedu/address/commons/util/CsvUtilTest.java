@@ -8,8 +8,41 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 import seedu.address.commons.exceptions.IllegalValueException;
+import seedu.address.commons.util.CsvUtil.CsvRecord;
 
 public class CsvUtilTest {
+
+    @Test
+    public void splitCsvRecords_multilineAndEscapedQuotes_retainsTextAndStartingLines() throws Exception {
+        for (String ending : List.of("\n", "\r\n", "\r")) {
+            String employee = "E1,\"Alice" + ending + "\"\"A\"\" Smith\"";
+            String csv = "id,name" + ending + employee + ending + ending + "E2,Bob" + ending;
+
+            List<CsvRecord> records = CsvUtil.splitCsvRecords(csv);
+
+            assertEquals(List.of(new CsvRecord("id,name", 1), new CsvRecord(employee, 2),
+                    new CsvRecord("", 4), new CsvRecord("E2,Bob", 5)), records);
+            assertEquals(List.of("E1", "Alice" + ending + "\"A\" Smith"),
+                    CsvUtil.parseCsvLine(records.get(1).text()));
+        }
+    }
+
+    @Test
+    public void splitCsvRecords_unclosedQuotedField_retainedForValidation() {
+        String record = "E1,\"Alice\nSmith\n";
+        List<CsvRecord> records = CsvUtil.splitCsvRecords("id,name\n" + record);
+        assertEquals(List.of(new CsvRecord("id,name", 1), new CsvRecord(record, 2)), records);
+        assertThrows(IllegalValueException.class, CsvUtil.MESSAGE_UNCLOSED_QUOTE, () ->
+                CsvUtil.parseCsvLine(records.get(1).text()));
+    }
+
+    @Test
+    public void splitCsvRecords_emptyAndBlankInput_retainsOnlyActualRecords() {
+        assertEquals(List.of(), CsvUtil.splitCsvRecords(""));
+        assertEquals(List.of(new CsvRecord("", 1), new CsvRecord("  ", 2)),
+                CsvUtil.splitCsvRecords("\n  \r\n"));
+        assertThrows(NullPointerException.class, () -> CsvUtil.splitCsvRecords(null));
+    }
 
     @Test
     public void toCsvLine_plainValues_joinedWithCommas() {

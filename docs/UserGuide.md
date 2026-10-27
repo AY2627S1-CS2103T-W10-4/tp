@@ -65,6 +65,8 @@ HuntR is based on [AddressBook-Level3](https://github.com/se-edu/addressbook-lev
 * Items in square brackets are optional.<br>
   For example, `edit id/EMPLOYEE_ID [p/PHONE]` can be used as `edit id/E0001 p/91234567`.
 
+* Command words are written in lowercase, for example `list` and `filter`; `List` is not a command. The same is true for `archived` in `list archived`. If you mistype a command word, HuntR suggests the closest command, for example `Did you mean filter?` for `fliter`.
+
 * Parameters can be in any order.<br>
   For example, if the command specifies `n/NAME p/PHONE`, `p/PHONE n/NAME` is also acceptable.
 
@@ -287,27 +289,36 @@ six-column format and seven-column format ending in `archived`, treating those r
 A manager may appear later in the file or already exist in HuntR. Invalid IDs, missing managers, self-reporting
 and cycles reject the import without adding any employees. Existing employee IDs are rejected rather than overwritten.
 
+Quoted CSV fields may span multiple physical lines, including files using LF or CRLF line endings. For example,
+a quoted name containing `Alice` and `Smith` on separate lines is normalised to `Alice Smith`. Complete field values
+still follow the usual validation rules. An actually unclosed quoted field is rejected. Import errors identify the
+physical line where the record starts, counting the header as line 1; a multiline record counts as one employee.
+
 ### Finding employees by name: `find`
 
 Finds employees whose names contain any of the given keywords and displays them in the employee list.
 
 Format: `find KEYWORD [MORE_KEYWORDS]`
 
-* The search is case-insensitive; for example, `hans` matches `Hans`.
+* The search is case-insensitive and ignores accents; for example, `hans` matches `Hans`, and `emile` matches `Émile`.
 * Keyword order does not matter; for example, `Hans Bo` matches `Bo Hans`.
 * The search considers only names.
 * Only full words match; for example, `Han` does not match `Hans`.
+* Spaces and punctuation separate the words of a name, so `Tan` matches `Tan, Ah Kow` and `Dr. John Tan Jr.`, `Mary` and `Ann` match `Mary-Ann O'Brien`, and `s/o` matches `Ravi s/o Kumar`. The apostrophe is part of a word, so use `O'Brien`; `Brien` does not match `O'Brien`.
+* A keyword that contains punctuation, such as `Mary-Ann`, matches when all of its words are in the name. A comma after a keyword is ignored, so `find Ah, Mary-Ann` is the same as `find Ah Mary-Ann`.
 * Employees matching at least one keyword are returned (an `OR` search); for example, `Hans Bo` returns `Hans Gruber` and `Bo Yang`.
 * At least one non-blank keyword must be provided.
 * Each keyword must start with a letter or digit. Apostrophes, full stops, commas, slashes and hyphens are allowed
-  after the first character.
+  after the first character. If a keyword is not valid, the message names it, for example `Invalid keyword: @bo`.
 * An argument beginning with `/` is rejected as an invalid command format.
 * A search with no matching name is still valid.
-* Leading and trailing spaces are ignored, and multiple spaces between keywords are treated as separators.
+* Leading and trailing spaces are ignored, and multiple spaces between keywords are treated as separators. Any kind of
+  space separates keywords, including the non-breaking space that is copied from a web page.
 * A search with no matches is successful and displays an empty employee list.
 
 Examples:
 * `find John` returns employees named `john` and `John Doe`
+* `find Tan` returns `Tan, Ah Kow` and `Dr. John Tan Jr.`
 * `find alex david` returns `Alex Yeoh`, `David Li`<br>
   ![result for 'find alex david'](images/findAlexDavidResult.png)
 
@@ -382,7 +393,9 @@ Format: `filter [id/EMPLOYEE_ID] [n/NAME] [d/DEPARTMENT] [r/ROLE]`
 * If a value has several words, every word must appear in that field, in any order. For example, `r/Software Engineer` matches `Software Engineer` but not `Software Manager`.
 * An employee ID must be the whole ID, such as `id/E0123`. The ID is not case-sensitive.
 * To match any of several values of the same field (an `OR` search), repeat the prefix. For example, `d/Sales d/Finance` matches employees in `Sales` or in `Finance`. Each repeated value is a separate search, so `r/Manager r/Analyst` is not the same as `r/Manager Analyst`, which needs both words.
+* A new `filter` replaces the earlier `find` or `filter`. They are not combined, so to narrow the list further, put all the fields in one `filter`.
 * Filtering only changes what is shown. Your saved data is not changed. Archived employees are not shown. Use [`list`](#listing-all-employees-list) to show all employees again.
+* The order set by [`sort`](#sorting-employees-sort) is kept, so you can filter and sort in any order.
 * A filter with no matches is valid and shows an empty list with the message `0 employees listed!`.
 * Leading and trailing spaces are ignored, and the parameters can be in any order.
 
@@ -394,12 +407,14 @@ Examples:
 * `filter d/Sales d/Finance r/Manager` shows the managers who are in Sales or in Finance.
 * `filter id/E0123` shows only the employee with the ID `E0123`.
 
+Tip: `filter d/Engineering` followed by `sort name` shows the Engineering employees in alphabetical order.
+
 The following input errors leave the displayed list unchanged. Each message is followed by the usage of the command.
 
 | Input | Error message |
 | --- | --- |
-| `filter` or `filter Engineering` | `Invalid command format!` |
-| `filter e/john@example.com` or `filter x/foo` | `Unknown parameter: e/` (or the parameter given) |
+| `filter` or `filter Engineering` | `Invalid command format.` |
+| `filter e/john@example.com` or `filter x/foo` | `Invalid command format.` followed by `Unknown parameter: e/` (or the parameter given) |
 | `filter d/` or `filter n/` | `The value of d/ should contain at least one letter or digit.` (or `n/`, `r/`) |
 | `filter d/@@@` | `The value of d/ should contain at least one letter or digit.` |
 | `filter id/E 1` | The employee ID constraints message |
@@ -407,11 +422,15 @@ The following input errors leave the displayed list unchanged. Each message is f
 ### Archiving employees: `archive`
 
 Marks an employee as archived. Archived employees remain stored but are hidden from normal `list` and `find` results.
-After a successful archive, HuntR displays the full active employee list.
+The current list, search or filter and sort order are preserved. The employee disappears from active-only views;
+other matching employees stay visible. Use `list archived` to see the archived record.
 
 Format: `archive id/EMPLOYEE_ID`
 
 Example: `archive id/E0123`
+
+If you run `find Alice` and then archive one matching employee, the remaining Alice records stay visible.
+If that was the last match, the search remains active with an empty result.
 
 The ID is matched case-insensitively. An unknown ID produces `No employee with ID E0123 was found.` Archiving an
 already archived employee produces `Employee with ID E0123 is already archived.` No data changes on either error.
@@ -430,11 +449,16 @@ reports. Unarchiving the manager or undoing the archive preserves the same repor
 ### Unarchiving employees: `unarchive`
 
 Restores an archived employee to the active roster.
-After a successful unarchive, HuntR displays the full active employee list, including the restored employee.
+The current list, search or filter and sort order are preserved. A restored employee appears only if they match
+that view. When they are outside the view, the success message suggests `list` to see them.
 
 Format: `unarchive id/EMPLOYEE_ID`
 
 Example: `unarchive id/E0123`
+
+If you run `list archived` and then `unarchive id/E0123`, the remaining archived records stay visible so you can
+continue restoring employees. Restoring the last archived record leaves an empty archive view. Use `list` to view
+the restored employees.
 
 An unknown ID produces the usual employee-not-found error. Attempting to unarchive an active employee produces
 `Employee with ID E0123 is already active.`
@@ -500,7 +524,8 @@ Format: `sort FIELD [asc|desc]`
 * Letter case and accents are ignored, so `Émile` is sorted with the names that start with `E`. A number inside a value is compared by its value, so `E2` comes before `E10`, and `Level 2` comes before `Level 10`; leading zeros do not change this, so `E0002` comes before `E10`. Otherwise text is compared character by character.
 * Employees with the same value are always ordered by employee ID from A to Z, also when the order is `desc`.
 * Sorting only changes the order in which employees are shown. Your saved data is not changed.
-* The sorted order is kept when you use `find`, and when you add, edit or delete employees. An employee whose name, department or role is edited moves to the correct position.
+* The sorted order is kept when you use `find` or `filter`, and when you add, edit or delete employees. An employee whose name, department or role is edited moves to the correct position.
+* HuntR does not remember the sorted order after you close it. The employees are shown in the order in which they were added.
 * Use [`list`](#listing-all-employees-list) to show the employees in the order in which they were added again.
 
 Examples:
@@ -512,7 +537,7 @@ The following input errors leave the displayed order unchanged. Each message is 
 
 | Input | Error message |
 | --- | --- |
-| `sort` or `sort name asc desc` | `Invalid command format!` |
+| `sort` or `sort name asc desc` | `Invalid command format.` |
 | `sort salary` or `sort salary desc` | `Unknown sort field: salary. The field must be one of: id, name, department, role.` |
 | `sort name down` | `Unknown sort order: down. The order must be one of: asc, desc.` |
 
@@ -588,7 +613,11 @@ active-roster clear creates no history entry, preserves redo, and retains its ex
 to the active view. Failed commands and `list`, `list archived`, `find`, `help`, `export`, `backup` and `exit` preserve
 redo. Exported and backup files are outside employee history. Header-only imports remain errors.
 
-History has no explicit capacity limit and exists only for this session. Starting HuntR loads the saved employee
+History is unlimited by default and exists only for this session. To limit memory used by history, launch HuntR with
+`java -Dhuntr.maxUndoHistory=100 -jar huntr.jar` to retain up to 100 undo steps. Once that limit is exceeded, the oldest
+states are discarded and cannot be restored with undo. Use `0` to disable undo history, or `-1` for unlimited history.
+The setting must be an integer from `-1` to `2147483647`; invalid values prevent startup. Restart to change the limit.
+Starting HuntR loads the saved employee
 state as one initial snapshot; neither undo nor redo is available until you make changes in that session.
 
 ### Exiting the program: `exit`
