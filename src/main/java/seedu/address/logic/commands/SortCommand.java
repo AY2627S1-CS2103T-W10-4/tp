@@ -6,6 +6,7 @@ import java.text.Normalizer;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.logging.Logger;
@@ -78,6 +79,11 @@ public class SortCommand extends Command {
         }
 
         return field == otherSortCommand.field && order == otherSortCommand.order;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(field, order);
     }
 
     @Override
