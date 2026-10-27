@@ -15,7 +15,7 @@ public class ResultDisplayTest {
     @Test
     public void getHeightFor_textBetweenLimits_fitsText() {
         double heightBetweenLimits = (ResultDisplay.MIN_HEIGHT + ResultDisplay.MAX_HEIGHT) / 2;
-        double textHeight = heightBetweenLimits - 40;
+        double textHeight = heightBetweenLimits - ResultDisplay.VERTICAL_SPACE;
         assertEquals(heightBetweenLimits, ResultDisplay.getHeightFor(textHeight));
     }
 

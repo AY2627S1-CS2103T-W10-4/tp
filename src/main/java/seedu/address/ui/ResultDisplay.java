@@ -21,12 +21,12 @@ public class ResultDisplay extends UiPart<Region> {
     /** The largest height of the text area. A longer result is read by scrolling. */
     static final double MAX_HEIGHT = 340;
 
+    /** The space above and below the text in the text area. */
+    static final double VERTICAL_SPACE = 40;
+
     private static final String FXML = "ResultDisplay.fxml";
     private static final String SUCCESS_STYLE_CLASS = "result-success";
     private static final String ERROR_STYLE_CLASS = "result-error";
-
-    /** The space above and below the text in the text area. */
-    private static final double VERTICAL_SPACE = 40;
 
     /** The space left and right of the text: the padding, the stripe at the left and the scroll bar. */
     private static final double HORIZONTAL_SPACE = 48;
