@@ -58,6 +58,19 @@ public class CommandWordsTest {
     }
 
     @Test
+    public void closestTo_wordOfFiveLettersOrFewer_needsToBeOneChangeAway() {
+        // two changes away from a command, which is not enough to tell what was meant
+        assertEquals(Optional.empty(), CommandWords.closestTo("quit"));
+        assertEquals(Optional.empty(), CommandWords.closestTo("sear"));
+        assertEquals(Optional.empty(), CommandWords.closestTo("sxxts"));
+    }
+
+    @Test
+    public void closestTo_wordOfSixLettersOrMore_canBeTwoChangesAway() {
+        assertEquals(Optional.of("filter"), CommandWords.closestTo("fxltxr"));
+    }
+
+    @Test
     public void closestTo_shortWord_needsToBeOneChangeAway() {
         assertEquals(Optional.of("add"), CommandWords.closestTo("ad"));
         assertEquals(Optional.of("org"), CommandWords.closestTo("ogr"));

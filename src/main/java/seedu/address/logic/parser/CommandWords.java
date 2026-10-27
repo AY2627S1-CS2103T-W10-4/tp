@@ -47,8 +47,8 @@ public final class CommandWords {
             SortCommand.COMMAND_WORD, StatsCommand.COMMAND_WORD, TeamCommand.COMMAND_WORD,
             UnarchiveCommand.COMMAND_WORD, UnassignManagerCommand.COMMAND_WORD, UndoCommand.COMMAND_WORD);
 
-    /** A word of at most this many characters must be one change away from a command, a longer one two. */
-    private static final int SHORT_WORD_LENGTH = 3;
+    /** A word of fewer letters than this must be one change away from a command, a word of this many or more two. */
+    private static final int LONGER_WORD_LENGTH = 6;
 
     private CommandWords() {}
 
@@ -56,7 +56,8 @@ public final class CommandWords {
      * Returns the command that {@code word} is closest to, or an empty {@code Optional} if no command is close.
      * A word that is a command except for its letter case (such as {@code List}) gives that command. Otherwise a
      * command is close when one letter is missing, added or changed, or two neighbouring letters are swapped
-     * (two such changes for a word of more than three letters), as in {@code fliter}.
+     * (two such changes for a word of six letters or more), as in {@code fliter}. A shorter word is only one change
+     * away from a command when it is clearly meant to be that command: {@code quit} is not close to {@code exit}.
      */
     public static Optional<String> closestTo(String word) {
         requireNonNull(word);
@@ -64,7 +65,7 @@ public final class CommandWords {
         if (ALL.contains(lowerCaseWord)) {
             return Optional.of(lowerCaseWord);
         }
-        int allowedChanges = lowerCaseWord.length() <= SHORT_WORD_LENGTH ? 1 : 2;
+        int allowedChanges = lowerCaseWord.length() < LONGER_WORD_LENGTH ? 1 : 2;
         String closest = null;
         int fewestChanges = allowedChanges + 1;
         for (String command : ALL) {
@@ -91,12 +92,12 @@ public final class CommandWords {
         }
         for (int i = 1; i <= from.length(); i++) {
             for (int j = 1; j <= to.length(); j++) {
-                int sameLetter = from.charAt(i - 1) == to.charAt(j - 1) ? 0 : 1;
+                int substitutionCost = from.charAt(i - 1) == to.charAt(j - 1) ? 0 : 1;
                 changes[i][j] = Math.min(Math.min(changes[i - 1][j] + 1, changes[i][j - 1] + 1),
-                        changes[i - 1][j - 1] + sameLetter);
-                boolean swapped = i > 1 && j > 1 && from.charAt(i - 1) == to.charAt(j - 2)
+                        changes[i - 1][j - 1] + substitutionCost);
+                boolean isSwapped = i > 1 && j > 1 && from.charAt(i - 1) == to.charAt(j - 2)
                         && from.charAt(i - 2) == to.charAt(j - 1);
-                if (swapped) {
+                if (isSwapped) {
                     changes[i][j] = Math.min(changes[i][j], changes[i - 2][j - 2] + 1);
                 }
             }
