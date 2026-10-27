@@ -24,29 +24,29 @@ public class ListCommand extends Command {
             + "add id/EMPLOYEE_ID n/NAME p/PHONE e/EMAIL d/DEPARTMENT r/ROLE\n"
             + "to get a start!";
 
-    private final boolean listArchived;
+    private final boolean shouldListArchived;
 
     public ListCommand() {
         this(false);
     }
 
-    public ListCommand(boolean listArchived) {
-        this.listArchived = listArchived;
+    public ListCommand(boolean shouldListArchived) {
+        this.shouldListArchived = shouldListArchived;
     }
 
     @Override
     public CommandResult execute(Model model) {
         requireNonNull(model);
         model.resetEmployeeSortOrder();
-        if (listArchived) {
+        if (shouldListArchived) {
             model.showArchivedEmployees();
         } else {
             model.updateFilteredEmployeeList(PREDICATE_SHOW_ALL_EMPLOYEES);
         }
         String feedbackToUser;
         if (!model.getFilteredEmployeeList().isEmpty()) {
-            feedbackToUser = listArchived ? MESSAGE_ARCHIVED_SUCCESS : MESSAGE_SUCCESS;
-        } else if (listArchived) {
+            feedbackToUser = shouldListArchived ? MESSAGE_ARCHIVED_SUCCESS : MESSAGE_SUCCESS;
+        } else if (shouldListArchived) {
             feedbackToUser = MESSAGE_EMPTY_ARCHIVE;
         } else {
             int archivedCount = model.getArchivedEmployeeCount();
@@ -60,18 +60,18 @@ public class ListCommand extends Command {
     @Override
     public boolean equals(Object other) {
         return other == this || other instanceof ListCommand otherCommand
-                && listArchived == otherCommand.listArchived;
+                && shouldListArchived == otherCommand.shouldListArchived;
     }
 
     @Override
     public int hashCode() {
-        return Boolean.hashCode(listArchived);
+        return Boolean.hashCode(shouldListArchived);
     }
 
     @Override
     public String toString() {
         return new ToStringBuilder(this)
-                .add("listArchived", listArchived)
+                .add("shouldListArchived", shouldListArchived)
                 .toString();
     }
 }
