@@ -19,17 +19,25 @@ import seedu.address.commons.util.ToStringBuilder;
 public class NameContainsKeywordsPredicate implements Predicate<Employee> {
     private final List<String> keywords;
 
+    // the words of each keyword that has a word, worked out once as the keywords do not change
+    private final List<List<String>> wordsOfKeywords;
+
+    /**
+     * Creates a predicate that tests for any of the {@code keywords}. A keyword without a word, such as {@code @},
+     * never matches.
+     */
     public NameContainsKeywordsPredicate(List<String> keywords) {
         this.keywords = keywords;
+        this.wordsOfKeywords = keywords.stream()
+                .map(StringUtil::getSearchWords)
+                .filter(words -> !words.isEmpty())
+                .toList();
     }
 
     @Override
     public boolean test(Employee employee) {
         Set<String> wordsOfName = new HashSet<>(StringUtil.getSearchWords(employee.getName().fullName));
-        return keywords.stream().anyMatch(keyword -> {
-            List<String> wordsOfKeyword = StringUtil.getSearchWords(keyword);
-            return !wordsOfKeyword.isEmpty() && wordsOfName.containsAll(wordsOfKeyword);
-        });
+        return wordsOfKeywords.stream().anyMatch(wordsOfName::containsAll);
     }
 
     @Override
