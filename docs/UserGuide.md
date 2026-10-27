@@ -113,6 +113,10 @@ hyphens and underscores. Employee IDs are compared case-insensitively, so `E0123
 same employee. For example, if `E0123` is already in use, HuntR displays
 `An employee with Employee ID E0123 already exists.` and does not add the employee.
 
+The department and the role must start with a letter or a digit, and may contain letters (also with accents, such as
+`Soporte técnico`), digits, spaces and the symbols `&` `'` `(` `)` `,` `.` `-`, up to 100 characters. The name may
+contain letters (also with accents), digits, spaces and the symbols `'` `.` `,` `/` `-`.
+
 Parameters can be supplied in any order. Optional `m/MANAGER_ID` assigns an existing employee as the manager.
 Manager IDs are matched case-insensitively and saved using the spelling of the existing employee's ID.
 An empty `m/`, unknown manager or self-assignment is rejected without changing the roster.
@@ -152,6 +156,9 @@ Format: `edit id/EMPLOYEE_ID [n/NAME] [p/PHONE] [e/EMAIL] [d/DEPARTMENT] [r/ROLE
 * Employee ID matching is case-insensitive: `edit id/e0001 ...` identifies employee `E0001`.
 * HuntR searches the complete employee roster, so an employee hidden by the current `find` result can still be edited.
 * After a successful edit, HuntR resets the list to show all employees, clearing any active `find` result.
+* If every value you give is the same as the employee's current value, HuntR displays
+  `No changes made: the new values are the same as the existing ones for E0001.` and nothing is saved or added to
+  the `undo` history. Changing only the letter case of a name, such as `carol ng` to `Carol Ng`, counts as a change.
 * If an employee ID such as `E9999` does not exist, HuntR displays `No employee with ID E9999 was found.` and does not change any records.
 
 Examples:
@@ -278,6 +285,11 @@ six-column format and seven-column format ending in `archived`, treating those r
 A manager may appear later in the file or already exist in HuntR. Invalid IDs, missing managers, self-reporting
 and cycles reject the import without adding any employees. Existing employee IDs are rejected rather than overwritten.
 
+Quoted CSV fields may span multiple physical lines, including files using LF or CRLF line endings. For example,
+a quoted name containing `Alice` and `Smith` on separate lines is normalised to `Alice Smith`. Complete field values
+still follow the usual validation rules. An actually unclosed quoted field is rejected. Import errors identify the
+physical line where the record starts, counting the header as line 1; a multiline record counts as one employee.
+
 ### Finding employees by name: `find`
 
 Finds employees whose names contain any of the given keywords and displays them in the employee list.
@@ -340,8 +352,9 @@ Format: `check`
 
 * Checks cover all active employees regardless of the current search or archive view. Archived employees neither
   appear in the report nor cause an active employee to be flagged.
-* Contact values are compared exactly as stored, consistent with HuntR's phone and email equality rules.
-  For example, `91234567` and `9123 4567` are different, as are `Alice@example.com` and `alice@example.com`.
+* Phone numbers are compared exactly as stored, so `91234567` and `9123 4567` are different.
+* Emails are compared ignoring letter case, since they reach the same inbox. For example, `Alice@example.com`
+  and `alice@example.com` are flagged as a shared email, and each entry shows the email as stored.
 * Every affected employee is counted and listed once, even if both their phone and email are shared or more
   than two employees share a value. Each entry includes their ID, name and shared contact details.
 * Entries are sorted by employee ID, ignoring letter case. The current employee list view and records are unchanged.
@@ -409,6 +422,17 @@ If that was the last match, the search remains active with an empty result.
 
 The ID is matched case-insensitively. An unknown ID produces `No employee with ID E0123 was found.` Archiving an
 already archived employee produces `Employee with ID E0123 is already archived.` No data changes on either error.
+
+Archiving a manager preserves their reporting relationships. If active employees still report directly to that
+manager, the success message gives their count and suggests a command to review their assignments, for example:
+
+```text
+1 active employee still reports to this archived manager.
+Use team id/E0123 to review their assignments.
+```
+
+The count excludes archived employees and indirect reports. No notice appears when there are no active direct
+reports. Unarchiving the manager or undoing the archive preserves the same reporting relationships.
 
 ### Unarchiving employees: `unarchive`
 
@@ -485,7 +509,7 @@ Format: `sort FIELD [asc|desc]`
 
 * `FIELD` must be one of `id`, `name`, `department` or `role`. It is not case-sensitive, so `Department` also works.
 * The order is `asc` (A to Z) or `desc` (Z to A). It is not case-sensitive. If you leave it out, the order is ascending.
-* Letter case and accents are ignored, so `Émile` is sorted with the names that start with `E`. Otherwise text is compared character by character, so `E10` comes before `E2`.
+* Letter case and accents are ignored, so `Émile` is sorted with the names that start with `E`. A number inside a value is compared by its value, so `E2` comes before `E10`, and `Level 2` comes before `Level 10`; leading zeros do not change this, so `E0002` comes before `E10`. Otherwise text is compared character by character.
 * Employees with the same value are always ordered by employee ID from A to Z, also when the order is `desc`.
 * Sorting only changes the order in which employees are shown. Your saved data is not changed.
 * The sorted order is kept when you use `find`, and when you add, edit or delete employees. An employee whose name, department or role is edited moves to the correct position.

@@ -6,6 +6,7 @@ import java.text.Normalizer;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.logging.Logger;
@@ -13,6 +14,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import seedu.address.commons.core.LogsCenter;
+import seedu.address.commons.util.NaturalOrderComparator;
 import seedu.address.commons.util.ToStringBuilder;
 import seedu.address.model.Model;
 import seedu.address.model.employee.Employee;
@@ -80,6 +82,11 @@ public class SortCommand extends Command {
     }
 
     @Override
+    public int hashCode() {
+        return Objects.hash(field, order);
+    }
+
+    @Override
     public String toString() {
         return new ToStringBuilder(this)
                 .add("field", field)
@@ -108,14 +115,15 @@ public class SortCommand extends Command {
         /**
          * Returns a comparator that orders employees by this field in the given {@code order}.
          * Letter case and accents are ignored, so {@code Émile} is placed with the names that start with E.
-         * Employees with an equal value are always ordered by ID from A to Z.
+         * A number inside a value is compared by its value, so {@code E2} comes before {@code E10}.
+         * Employees with an equal value are always ordered by ID, from A to Z and from the smallest number up.
          */
         public Comparator<Employee> getComparator(SortOrder order) {
             requireNonNull(order);
             Comparator<Employee> byKey = Comparator.comparing(
-                    keyExtractor.andThen(SortField::removeAccents), String.CASE_INSENSITIVE_ORDER);
+                    keyExtractor.andThen(SortField::removeAccents), NaturalOrderComparator.INSTANCE);
             Comparator<Employee> byId = Comparator.comparing(
-                    employee -> employee.getId().value, String.CASE_INSENSITIVE_ORDER);
+                    employee -> employee.getId().value, NaturalOrderComparator.INSTANCE);
             return (order == SortOrder.DESC ? byKey.reversed() : byKey).thenComparing(byId);
         }
 

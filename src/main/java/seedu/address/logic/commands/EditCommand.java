@@ -48,6 +48,8 @@ public class EditCommand extends Command {
 
     public static final String MESSAGE_EDIT_EMPLOYEE_SUCCESS = "Edited employee: %1$s";
     public static final String MESSAGE_NOT_EDITED = "At least one field to edit must be provided.";
+    public static final String MESSAGE_NO_CHANGES = "No changes made: the new values are the same as the existing "
+            + "ones for %1$s.";
 
     private final EmployeeId targetId;
     private final EditEmployeeDescriptor editEmployeeDescriptor;
@@ -81,6 +83,9 @@ public class EditCommand extends Command {
         try {
             editedEmployee = ReportingStructure.withCanonicalManager(model.getAddressBook().getEmployeeList(),
                     editedEmployee);
+            if (editedEmployee.equals(employeeToEdit)) {
+                throw new CommandException(String.format(MESSAGE_NO_CHANGES, employeeToEdit.getId()));
+            }
             model.setEmployee(employeeToEdit, editedEmployee);
         } catch (IllegalArgumentException e) {
             throw new CommandException(e.getMessage());
