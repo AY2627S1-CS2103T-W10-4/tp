@@ -70,6 +70,7 @@ public class EmployeeCard extends UiPart<Region> {
         Tooltip.install(department, new Tooltip(employee.getDepartment().value));
         employee.getManagerId().ifPresent(managerId -> {
             manager.setText("Reports to " + managerId);
+            manager.setTooltip(new Tooltip(manager.getText()));
             manager.setVisible(true);
             manager.setManaged(true);
         });
