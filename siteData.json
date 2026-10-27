@@ -59,6 +59,8 @@
         "edit-an-employee-by-id": "Edit an employee by ID",
         "find-employees-by-name": "Find employees by name",
         "duplicate-employee-detection": "Duplicate employee detection",
+        "filter-employees-by-multiple-criteria": "Filter employees by multiple criteria",
+        "sort-employees": "Sort employees",
         "csv-import-and-export": "CSV import and export",
         "employee-history-and-in-memory-rollback": "Employee history and in-memory rollback",
         "proposed-data-archiving": "[Proposed] Data archiving",
@@ -75,6 +77,8 @@
         "listing-employees": "Listing employees",
         "finding-employees": "Finding employees",
         "editing-an-employee": "Editing an employee",
+        "filtering-employees": "Filtering employees",
+        "sorting-employees": "Sorting employees",
         "deleting-an-employee": "Deleting an employee",
         "reporting-relationships-and-team-structure-2": "Reporting relationships and team structure",
         "saving-data": "Saving data"
