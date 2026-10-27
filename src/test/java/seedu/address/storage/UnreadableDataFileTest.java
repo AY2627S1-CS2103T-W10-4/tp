@@ -34,7 +34,7 @@ public class UnreadableDataFileTest {
         Files.writeString(dataFile, UNREADABLE_CONTENT);
         Path copy = UnreadableDataFile.getCopyPath(dataFile);
 
-        assertEquals(String.format(UnreadableDataFile.MESSAGE_COPY_KEPT, dataFile, copy, "addressbook.json"),
+        assertEquals(String.format(UnreadableDataFile.MESSAGE_COPY_KEPT, dataFile, copy),
                 UnreadableDataFile.keepCopy(dataFile));
         assertEquals(UNREADABLE_CONTENT, Files.readString(copy));
         assertEquals(UNREADABLE_CONTENT, Files.readString(dataFile));
