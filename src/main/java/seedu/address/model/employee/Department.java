@@ -5,6 +5,8 @@ import static seedu.address.commons.util.AppUtil.checkArgument;
 
 import java.text.Normalizer;
 
+import seedu.address.commons.util.StringUtil;
+
 /**
  * Represents an Employee's department in the address book.
  * Guarantees: immutable; is valid as declared in {@link #isValidDepartment(String)}
@@ -39,7 +41,16 @@ public class Department {
     public Department(String department) {
         requireNonNull(department);
         checkArgument(isValidDepartment(department), MESSAGE_CONSTRAINTS);
-        value = Normalizer.normalize(department, Normalizer.Form.NFC);
+        value = normalise(department);
+    }
+
+    /**
+     * Returns {@code department} with leading and trailing spaces removed, runs of whitespace replaced by one space,
+     * and characters composed into their standard Unicode form, so that values that look the same are the same
+     * department.
+     */
+    public static String normalise(String department) {
+        return Normalizer.normalize(StringUtil.collapseWhitespace(department), Normalizer.Form.NFC);
     }
 
     /**

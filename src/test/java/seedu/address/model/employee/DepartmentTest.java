@@ -61,6 +61,19 @@ public class DepartmentTest {
     }
 
     @Test
+    public void constructor_repeatedSpaces_storedWithOneSpace() {
+        Department department = new Department("Human  Resources");
+
+        assertEquals("Human Resources", department.value);
+        assertEquals(new Department("Human Resources"), department);
+    }
+
+    @Test
+    public void normalise_outerAndRepeatedWhitespace_collapsedToOneSpace() {
+        assertEquals("Human Resources", Department.normalise("  Human\t Resources "));
+    }
+
+    @Test
     public void equals() {
         Department department = new Department("Engineering");
 

@@ -119,6 +119,10 @@ The department and the role must start with a letter or a digit, and may contain
 `Soporte técnico`), digits, spaces and the symbols `&` `'` `(` `)` `,` `.` `-`, up to 100 characters. The name may
 contain letters (also with accents), digits, spaces and the symbols `'` `.` `,` `/` `-`.
 
+Repeated spaces inside a department or role are reduced to one space, so `d/Human  Resources` is saved as
+`Human Resources`. This also applies to `edit`, `import` and departments or roles already in the data file,
+which are tidied up when HuntR starts.
+
 Parameters can be supplied in any order. Optional `m/MANAGER_ID` assigns an existing employee as the manager.
 Manager IDs are matched case-insensitively and saved using the spelling of the existing employee's ID.
 An empty `m/`, unknown manager or self-assignment is rejected without changing the roster.
