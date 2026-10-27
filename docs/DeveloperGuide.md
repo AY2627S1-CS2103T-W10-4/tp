@@ -364,9 +364,11 @@ The sequence diagram below shows a successful `edit id/E0001 r/Manager`, adapted
 
 ### Find employees by name
 
-`FindCommandParser` trims the arguments and splits them into keywords on whitespace using `split("\\s+")`. Empty or whitespace-only arguments, and arguments beginning with `/`, produce `Invalid command format.` followed by the command usage. Each keyword is then checked against the existing `Name` validation rules; an invalid keyword produces the keyword validation error. Otherwise, the parser creates a `NameContainsKeywordsPredicate` and passes it to `FindCommand`.
+`FindCommandParser` removes the spaces at both ends of the arguments and splits them into keywords at any kind of space (the characters matched by `[\\s\\p{Z}]`, which includes the non-breaking space of a web page). Empty arguments, and arguments beginning with `/`, produce `Invalid command format.` followed by the command usage. Each keyword is then checked against the existing `Name` validation rules; the first invalid keyword produces `Invalid keyword: X` followed by the keyword rules (`FindCommand#MESSAGE_INVALID_KEYWORD`). Otherwise, the parser creates a `NameContainsKeywordsPredicate` and passes it to `FindCommand`.
 
-`NameContainsKeywordsPredicate` uses `StringUtil.containsWordIgnoreCase` to match any keyword against a full, whitespace-separated word in the employee's name. Matching is case-insensitive and uses OR semantics: `find alex david` matches either name, while `find al` does not match `Alex`. It does not search employee IDs or other fields.
+`NameContainsKeywordsPredicate` splits the employee's name and each keyword into words with `StringUtil.getSearchWords`, the same method that `filter` uses. Spaces and punctuation separate words, except for `&` and `'`, which stay in a word, and letter case and accents are ignored. A keyword matches when every one of its words is a whole word of the name, so `Tan` matches `Tan, Ah Kow`, `Mary-Ann` matches `Mary-Ann O'Brien`, and `emile` matches `Émile`, while `Han` does not match `Hans`. The employee matches when any keyword matches (OR semantics): `find alex david` matches either name, while `find al` does not match `Alex`. A keyword without any letter or digit never matches. It does not search employee IDs or other fields.
+
+Because `find` and `filter` use the same word splitting, `find Tan` and `filter n/Tan` find the same employees.
 
 `FindCommand` calls `model.updateFilteredEmployeeList(predicate)` to replace the current filter over the full employee list, without changing employee records. It returns the filtered list's size through `Messages.getEmployeesListedOverview`, using `1 employee listed!` or `N employees listed!`. No matches is a successful search returning `0 employees listed!`.
 
@@ -1039,12 +1041,20 @@ testers are expected to do more *exploratory* testing.
    Expected: `Alex Yeoh` and `David Li` are displayed and HuntR reports `2 employees listed!`. An employee matches when its name contains any one of the whole-word keywords.
 3. Enter `find NotPresent`.<br>
    Expected: The employee list is empty and HuntR reports `0 employees listed!`.
+
+   **With names that contain punctuation and accents:** first add `add id/T1 n/Tan, Ah Kow p/91110001 e/t1@example.com d/Sales r/Analyst` and `add id/T3 n/Émile Roux p/91110003 e/t3@example.com d/Sales r/Analyst`.
+   * Enter `find Tan`.<br>
+     Expected: `Tan, Ah Kow` is displayed (the comma does not matter) and HuntR reports `1 employee listed!`.
+   * Enter `find emile`.<br>
+     Expected: `Émile Roux` is displayed (accents are ignored).
+   * Enter `find Ah, Alex`.<br>
+     Expected: `Tan, Ah Kow` and `Alex Yeoh` are displayed, and HuntR reports `2 employees listed!`.
 4. Enter `find`, with no keyword.<br>
    Expected: HuntR reports an invalid command format and shows the `find` command usage. The previously displayed empty result remains unchanged.
 5. Enter `find /Alex`.<br>
    Expected: HuntR reports an invalid command format and shows the `find` command usage because a keyword cannot begin with `/`.
 6. Enter `find Alex valid!`.<br>
-   Expected: HuntR reports the keyword constraints because `!` is not allowed. The employee list and stored data remain unchanged.
+   Expected: HuntR reports `Invalid keyword: valid!` followed by the keyword rules because `!` is not allowed. The employee list and stored data remain unchanged.
 
 ### Editing an employee
 
