@@ -854,7 +854,7 @@ testers are expected to do more *exploratory* testing.
 1. Enter `find Alex`.<br>
    Expected: Only employees whose names contain the whole-word keyword `Alex`, ignoring case, are displayed.
 2. Enter `list`.<br>
-   Expected: HuntR displays `Listed all employees.` and restores the complete employee roster.
+   Expected: HuntR displays `Listed all active employees.` and restores the complete active employee roster.
 3. Enter `clear`, followed by `list`.<br>
    Expected: After `clear`, all active employee records are removed. `list` displays an empty active roster and a message beginning with `You don’t have any employees yet.`, followed by the `add` command format. Any archived records remain available through `list archived`.
 

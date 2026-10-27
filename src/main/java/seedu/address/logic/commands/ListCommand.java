@@ -7,14 +7,14 @@ import seedu.address.commons.util.ToStringBuilder;
 import seedu.address.model.Model;
 
 /**
- * Lists all employees to the user.
+ * Lists all active employees by default, or all archived employees when requested.
  */
 public class ListCommand extends Command {
 
     public static final String COMMAND_WORD = "list";
 
     public static final String MESSAGE_USAGE = "Usage: " + COMMAND_WORD + " [archived]";
-    public static final String MESSAGE_SUCCESS = "Listed all employees.";
+    public static final String MESSAGE_SUCCESS = "Listed all active employees.";
     public static final String MESSAGE_ARCHIVED_SUCCESS = "Listed all archived employees.";
     public static final String MESSAGE_EMPTY_ARCHIVE = "There are no archived employees.";
     public static final String MESSAGE_EMPTY_ACTIVE_WITH_ARCHIVED = "There are no active employees. "
