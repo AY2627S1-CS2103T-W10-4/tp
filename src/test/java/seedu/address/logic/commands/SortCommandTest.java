@@ -158,6 +158,63 @@ public class SortCommandTest {
     }
 
     @Test
+    public void execute_sortByIdWithNumbersWithoutZeros_sortsByTheNumber() {
+        Employee e1 = new EmployeeBuilder().withId("E1").withName("Alice One").build();
+        Employee e2 = new EmployeeBuilder().withId("E2").withName("Bob Two").build();
+        Employee e10 = new EmployeeBuilder().withId("E10").withName("Zoe Ten").build();
+        Employee lowerCaseE3 = new EmployeeBuilder().withId("e3").withName("Chloe Three").build();
+        Employee e20 = new EmployeeBuilder().withId("E20").withName("Dan Twenty").build();
+        Model unsortedModel = new ModelManager(new AddressBookBuilder().withEmployee(e10).withEmployee(e20)
+                .withEmployee(e2).withEmployee(lowerCaseE3).withEmployee(e1).build(), new UserPrefs());
+
+        new SortCommand(SortField.ID).execute(unsortedModel);
+        assertEquals(List.of(e1, e2, lowerCaseE3, e10, e20), unsortedModel.getFilteredEmployeeList());
+
+        new SortCommand(SortField.ID, SortOrder.DESC).execute(unsortedModel);
+        assertEquals(List.of(e20, e10, lowerCaseE3, e2, e1), unsortedModel.getFilteredEmployeeList());
+    }
+
+    @Test
+    public void execute_sortByIdWithLeadingZeros_zerosDoNotChangeTheOrder() {
+        Employee e0001 = new EmployeeBuilder().withId("E0001").withName("Alice One").build();
+        Employee e2 = new EmployeeBuilder().withId("E2").withName("Bob Two").build();
+        Employee e0010 = new EmployeeBuilder().withId("E0010").withName("Zoe Ten").build();
+        Model unsortedModel = new ModelManager(new AddressBookBuilder().withEmployee(e0010).withEmployee(e2)
+                .withEmployee(e0001).build(), new UserPrefs());
+
+        new SortCommand(SortField.ID).execute(unsortedModel);
+        assertEquals(List.of(e0001, e2, e0010), unsortedModel.getFilteredEmployeeList());
+    }
+
+    @Test
+    public void execute_sortByNameWithNumbers_sortsByTheNumber() {
+        Employee level2 = new EmployeeBuilder().withId("E1").withName("Agent 2").build();
+        Employee level10 = new EmployeeBuilder().withId("E2").withName("Agent 10").build();
+        Employee level9 = new EmployeeBuilder().withId("E3").withName("Agent 9").build();
+        Model unsortedModel = new ModelManager(new AddressBookBuilder().withEmployee(level10).withEmployee(level2)
+                .withEmployee(level9).build(), new UserPrefs());
+
+        new SortCommand(SortField.NAME).execute(unsortedModel);
+        assertEquals(List.of(level2, level9, level10), unsortedModel.getFilteredEmployeeList());
+    }
+
+    @Test
+    public void execute_sortByDepartmentWithNumbers_equalValuesAreOrderedByTheNumberOfTheId() {
+        Employee e10 = new EmployeeBuilder().withId("E10").withName("Zoe Ten").withDepartment("Level 2 Support")
+                .build();
+        Employee e9 = new EmployeeBuilder().withId("E9").withName("Bob Nine").withDepartment("Level 2 Support")
+                .build();
+        Employee e1 = new EmployeeBuilder().withId("E1").withName("Alice One").withDepartment("Level 10 Support")
+                .build();
+        Model unsortedModel = new ModelManager(new AddressBookBuilder().withEmployee(e10).withEmployee(e1)
+                .withEmployee(e9).build(), new UserPrefs());
+
+        new SortCommand(SortField.DEPARTMENT).execute(unsortedModel);
+        // Level 2 before Level 10, and E9 before E10 because they have the same department
+        assertEquals(List.of(e9, e10, e1), unsortedModel.getFilteredEmployeeList());
+    }
+
+    @Test
     public void execute_sortIgnoresLetterCaseAndBreaksTiesById() {
         Employee zed = new EmployeeBuilder().withId("E3").withName("Zed").withDepartment("Sales").build();
         Employee lowerCaseAlice = new EmployeeBuilder().withId("E1").withName("alice").withDepartment("sales")
