@@ -215,13 +215,13 @@ public constructors or command behavior. See the repository's `tests/test-plan.m
 
 `MainApp#initModelManager` loads the employees through `Storage#readAddressBook`. If that throws a
 `DataLoadingException`, such as for invalid JSON or invalid employee data, HuntR starts with an empty `ModelManager`
-instead of failing to launch. Because the next automatic save would overwrite the file, it first calls
+instead of failing to launch. Because the next successful data-changing command would overwrite the file, it first calls
 `UnreadableDataFile#keepCopy`, which copies the file to `unreadable-` followed by its name in the same folder
 (`data/unreadable-addressbook.json`), replacing any earlier copy.
 
 `keepCopy` returns the warning that `MainApp` passes to `UiManager`, which shows it in the result box at startup.
 The warning says where the copy is, or, if the copy could not be made, asks the user to close HuntR and back up the
-file. A missing data file is not an error: HuntR starts with the sample employees and creates the file at the next save.
+file. A missing data file is not an error: HuntR starts with the sample employees and creates the file after the first successful data-changing command.
 
 ### Common classes
 
@@ -1238,8 +1238,8 @@ The employee data file is `data/addressbook.json`, relative to the folder from w
 
 1. Run `java -jar huntr.jar`.<br>
    Expected: HuntR starts with the six sample employees instead of failing to launch.
-2. Enter `list` and close HuntR.<br>
-   Expected: HuntR creates a new `data/addressbook.json` containing the sample employees. Restore the backup after closing the app if the original data is still needed.
+2. Enter `list`, then check that `data/addressbook.json` does not exist yet. Enter `add id/E0007 n/Test User p/91234567 e/test@example.com d/QA r/Tester` and close HuntR.<br>
+   Expected: `list` does not create the file, because it does not change data. After the `add`, HuntR creates a new `data/addressbook.json` containing the six sample employees and `Test User`. Restore the backup after closing the app if the original data is still needed.
 
 **Dealing with a corrupted data file**
 
@@ -1247,8 +1247,8 @@ The employee data file is `data/addressbook.json`, relative to the folder from w
 
 1. Run `java -jar huntr.jar`.<br>
    Expected: HuntR starts with an empty employee list. It does not load sample employees for a corrupted file. The result box shows a warning that `data/addressbook.json` could not be loaded and that a copy was kept at `data/unreadable-addressbook.json`, and the log records a warning that the data file could not be loaded. The copy contains `{ invalid json`.
-2. Enter `list`.<br>
-   Expected: HuntR remains usable, displays the empty-list guidance, and replaces the corrupted file with a valid JSON representation of the current empty roster. `data/unreadable-addressbook.json` still contains the corrupted text. Close HuntR and restore the backup after the test.
+2. Enter `list`, then `add id/E0001 n/Test User p/91234567 e/test@example.com d/QA r/Tester`.<br>
+   Expected: HuntR remains usable and `list` displays the empty-list guidance, without changing `data/addressbook.json`, which still contains the corrupted text. After the `add`, HuntR replaces the corrupted file with valid JSON containing only `Test User`. `data/unreadable-addressbook.json` still contains the corrupted text. Close HuntR and restore the backup after the test.
 
 **Dealing with invalid employee data**
 
