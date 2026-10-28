@@ -158,6 +158,7 @@
         "deleting-an-employee-delete": "Deleting an employee: delete",
         "sorting-employees-sort": "Sorting employees: sort",
         "clearing-active-employees-clear": "Clearing active employees: clear",
+        "importing-and-exporting-csv-files-import-export": "Importing and exporting CSV files: import, export",
         "undoing-and-redoing-employee-changes-undo-redo": "Undoing and redoing employee changes: undo, redo",
         "exiting-the-program-exit": "Exiting the program: exit",
         "saving-the-data": "Saving the data",
