@@ -49,7 +49,12 @@ public class ReportingCommandParserTest {
     @Test
     public void parse_whitespaceAccepted() throws Exception {
         assertEquals(new ManagerCommand(new EmployeeId("E1"), new EmployeeId("E2")),
-                parser.parseCommand("manager \t m/E2   id/E1  "));
+                parser.parseCommand("manager\tid/E1\tm/E2"));
+        assertEquals(new UnassignManagerCommand(new EmployeeId("E1")),
+                parser.parseCommand("unassign-manager\tid/E1"));
+        assertEquals(new TeamCommand(new EmployeeId("E1")), parser.parseCommand("team\tid/E1"));
+        assertEquals(new OrgCommand(new EmployeeId("E1")), parser.parseCommand("org\tid/E1"));
+        assertEquals(new ChainCommand(new EmployeeId("E1")), parser.parseCommand("chain\tid/E1"));
     }
 
     @Test

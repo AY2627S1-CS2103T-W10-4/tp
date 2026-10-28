@@ -3,6 +3,7 @@ package seedu.address.model;
 import static seedu.address.commons.util.AppUtil.checkArgument;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Predicate;
 
@@ -16,7 +17,8 @@ public class VersionedAddressBook extends AddressBook {
     public static final String MAX_UNDO_HISTORY_PROPERTY = "huntr.maxUndoHistory";
 
     private final int maxUndoHistory;
-    private final List<List<Employee>> addressBookStateList = new ArrayList<>();
+    private List<List<Employee>> addressBookStateList = new ArrayList<>();
+    private boolean historyShared;
     private int currentStatePointer;
 
     /**
@@ -55,6 +57,10 @@ public class VersionedAddressBook extends AddressBook {
             return;
         }
         List<Employee> snapshot = List.copyOf(getEmployeeList());
+        if (historyShared) {
+            addressBookStateList = new ArrayList<>(addressBookStateList);
+            historyShared = false;
+        }
         addressBookStateList.subList(currentStatePointer + 1, addressBookStateList.size()).clear();
         addressBookStateList.add(snapshot);
         currentStatePointer++;
@@ -109,16 +115,20 @@ public class VersionedAddressBook extends AddressBook {
         currentStatePointer++;
     }
 
-    /** Captures working data and the history container, sharing only immutable snapshots. */
+    /** Captures working data, sharing a frozen history index without copying its entries. */
     ModelCheckpoint createCheckpoint(Predicate<? super Employee> predicate) {
+        if (!historyShared) {
+            addressBookStateList = Collections.unmodifiableList(addressBookStateList);
+            historyShared = true;
+        }
         return new ModelCheckpoint(getEmployeeList(), addressBookStateList, currentStatePointer, predicate);
     }
 
     /** Restores a checkpoint without modifying any container held by that checkpoint. */
     void restoreCheckpoint(ModelCheckpoint checkpoint) {
         setEmployees(checkpoint.getWorkingEmployees());
-        addressBookStateList.clear();
-        addressBookStateList.addAll(checkpoint.getHistory());
+        addressBookStateList = checkpoint.getHistory();
+        historyShared = true;
         currentStatePointer = checkpoint.getCurrentStatePointer();
     }
 }

@@ -30,7 +30,7 @@ public class ChainCommand extends Command {
         requireNonNull(model);
         Employee employee = EmployeeCommandSupport.find(model, employeeId);
         List<Employee> result = ReportingStructure.chain(model.getAddressBook().getEmployeeList(), employee);
-        ReportingCommandSupport.show(model, result);
+        ReportingCommandSupport.show(model, () -> ReportingCommandSupport.chain(model, employeeId));
         return new CommandResult("Reporting chain of " + ReportingCommandSupport.label(employee) + ": "
                 + ReportingCommandSupport.describe(result, " -> "));
     }

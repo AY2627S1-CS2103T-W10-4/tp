@@ -52,7 +52,7 @@ public class Messages {
     }
 
     /**
-     * Formats the {@code employee} for display to the user.
+     * Formats the {@code employee} for display to the user, including the manager only if the employee has one.
      */
     public static String format(Employee employee) {
         final StringBuilder builder = new StringBuilder();
@@ -68,6 +68,7 @@ public class Messages {
                 .append(employee.getDepartment())
                 .append("; Role: ")
                 .append(employee.getRole());
+        employee.getManagerId().ifPresent(managerId -> builder.append("; Manager: ").append(managerId));
         return builder.toString();
     }
 
