@@ -510,6 +510,10 @@ Use lowercase `archived` with no additional arguments. `list Archived`, `list al
 `list archived id/E0123` are rejected with `Invalid command format.` followed by `Usage: list [archived]`.
 Listing does not change employee records or add an undo step.
 
+Undo keeps the current view. For example, after `archive id/E0123`, `list archived`, then `undo`, the restored
+employee leaves the archive view. If no other archived employees remain, the panel is empty even though the
+message says `Undo successful.` Use `list` to see the restored employee in the active roster.
+
 Archived employees retain their IDs, can be edited with `edit`, and can be deleted with `delete` (and restored with `undo` during the same session).
 
 ### Deleting an employee: `delete`

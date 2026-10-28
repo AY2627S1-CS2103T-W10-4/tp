@@ -1254,43 +1254,62 @@ add id/A1003 n/Bob Ng p/91234563 e/bob.ng@example.com d/Sales r/Engineer
 
 1. Enter `archive id/a1001`, then `list archived`.<br>
    Expected: The archive result begins with `Archived employee:` and uses stored ID `A1001`. Only `A1001` appears
-   in the archive view, with an `Archived` label. Its other details are unchanged. `list`, `find Alice` and
-   `filter d/Engineering` exclude it, and `stats` counts two active employees. Attempting to add `A1001` again
-   reports a duplicate ID even with different letter case.
-2. Enter `find Alice`, `sort id desc`, `archive id/A1001`, then `unarchive id/a1001`.<br>
+   in the archive view, with an `Archived` label. Its other details are unchanged.
+2. Archive `A1001`, then enter `list`.<br>
+   Expected: Only the active employees `A1002` and `A1003` appear.
+3. Archive `A1001`, then enter `find Alice`.<br>
+   Expected: Only `A1002` appears; the archived employee `A1001` is excluded.
+4. Archive `A1001`, then enter `filter d/Engineering`.<br>
+   Expected: Only `A1002` appears; the archived employee `A1001` is excluded.
+5. Archive `A1001`, then enter `stats`.<br>
+   Expected: The summary begins with `Total active employees: 2`. Each department has one employee, and each
+   role has one employee; the archived employee `A1001` is excluded from all counts.
+6. Archive `A1001`, then enter
+   `add id/a1001 n/Carol Lee p/91234564 e/carol.lee@example.com d/Finance r/Analyst`.<br>
+   Expected: The duplicate ID is rejected even with different letter case; no new employee is added.
+7. Enter `find Alice`, `sort id desc`, `archive id/A1001`, then `unarchive id/a1001`.<br>
    Expected: Archiving leaves `A1002` visible. Restoration displays `A1002`, then `A1001`, without a `list` hint.
    Repeat from the starting state with `filter d/Engineering r/Engineer`:<br>
    Expected: Archiving leaves an empty view; unarchiving brings `A1001` back into that same filter.
-3. Enter `find Nobody`, `archive id/A1001`, then `unarchive id/A1001`.<br>
+8. Enter `find Nobody`, `archive id/A1001`, then `unarchive id/A1001`.<br>
    Expected: Both commands find the hidden employee. The view stays empty, and restoration appends
    ``The restored employee is outside the current view. Use `list` to see it.`` Enter `list` to see all three records.
-4. Archive `A1001` and `A1002`, then enter `list archived` and `sort id desc`. Unarchive `A1001`, then `A1002`.<br>
+9. Archive `A1001` and `A1002`, then enter `list archived` and `sort id desc`. Unarchive `A1001`, then `A1002`.<br>
    Expected: The first restoration leaves `A1002` visible; the second leaves an empty archive view. Both suggest
    `list`. Enter `undo`:<br>
    Expected: `A1002` reappears as archived. Enter `redo`:<br>
    Expected: It disappears again. Enter `list` to see all three active employees.
-5. Enter `manager id/A1001 m/A1002`, `manager id/A1003 m/A1002`, `archive id/A1003`, then `archive id/a1002`.<br>
+10. Enter `archive id/A1001`, `list archived`, then `undo`.<br>
+   Expected: The message is `Undo successful.` and the archive view becomes empty. Enter `list`:<br>
+   Expected: All three employees appear as active, including the restored employee `A1001`.
+11. Enter `manager id/A1001 m/A1002`, `manager id/A1003 m/A1002`, `archive id/A1003`, then `archive id/a1002`.<br>
    Expected: The manager's result adds `1 active employee still reports to this archived manager.` and
    `Use team id/A1002 to review their assignments.` Enter `team id/A1002`:<br>
    Expected: Both reports retain manager `A1002`; the cards include the archived manager and archived report.
    Unarchive `A1002`, then undo and redo:<br>
    Expected: Every manager assignment remains unchanged throughout.
-6. Enter `archive`, `archive id/`, `archive id/A1001 id/A1001`, `archive x/A1001`, `archive extra id/A1001`
+12. Enter `manager id/A1001 m/A1002`, `manager id/A1003 m/A1002`, then `archive id/a1002`.<br>
+   Expected: The manager's result adds `2 active employees still report to this archived manager.` and
+   `Use team id/A1002 to review their assignments.` Enter `team id/A1002`:<br>
+   Expected: The manager is archived; both reports remain active and retain manager `A1002`.
+   Unarchive `A1002`, then undo and redo:<br>
+   Expected: Every manager assignment remains unchanged throughout.
+13. Enter `archive`, `archive id/`, `archive id/A1001 id/A1001`, `archive x/A1001`, `archive extra id/A1001`
    and `archive id/A 1001` separately; repeat each malformed form with `unarchive`.<br>
    Expected: Each reports the corresponding input error and command-specific usage. Data and view are unchanged.
    Enter `archive id/A9999` and `unarchive id/A9999`:<br>
    Expected: `No employee with ID A9999 was found.` without usage.
-7. Archive `A1001`, unarchive it, then undo. Attempt `archive id/A1001` and `unarchive id/A1002`.<br>
+14. Archive `A1001`, unarchive it, then undo. Attempt `archive id/A1001` and `unarchive id/A1002`.<br>
    Expected: The errors say that `A1001` is already archived and `A1002` is already active. Enter `redo`:<br>
    Expected: `A1001` becomes active; neither failed request consumed the redo step.
-8. Enter `list archived` with no archived employees.<br>
+15. Enter `list archived` with no archived employees.<br>
    Expected: An empty panel and `There are no archived employees.` Archive `A1002`, then `A1001`, and enter
    `list archived`:<br>
    Expected: `A1001`, then `A1002`, in stored roster order. After `sort id desc`, `list archived` resets that order.
    `list Archived`, `list all` and `list archived id/A1001` report invalid format and retain the previous view.
    Archive `A1003` and enter `list`:<br>
    Expected: ``There are no active employees. Use `list archived` to see the 3 archived employees.``
-9. Archive `A1001`, exit and relaunch, then enter `list archived`.<br>
+16. Archive `A1001`, exit and relaunch, then enter `list archived`.<br>
    Expected: `A1001` is still archived with the same details. Unarchive it, exit and relaunch again:<br>
    Expected: `A1001` is active. `undo` immediately after either restart reports that no commands are available to undo.
 
