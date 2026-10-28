@@ -384,6 +384,21 @@ the supplied ID, without adding the employee. Otherwise, it calls `model.addEmpl
 warning to the success message. Matching archived employees have ` (archived)` appended to their IDs, so users
 can distinguish historical matches from active employees. Both statuses are checked regardless of the current view.
 
+Each immutable `Name` caches its normalised form. Similar-name detection still scans the full roster, including
+archived employees, in O(N) name comparisons (string-comparison cost also depends on name length). This avoids repeated
+whitespace/Unicode normalisation during scans; it does not introduce a sublinear lookup. The warning retains at most
+five IDs in roster order and reports the full count when more match, using O(1) additional ID-preview space.
+`AddCommandPerformanceTest` exercises 10,000-employee rosters with no matches, all matches and a sixth match at the
+end of the roster, checking exact counts, bounded previews and successful additions using the real `ModelManager`.
+Its generous 10-second execution guard excludes fixture setup and is a severe-regression check, not a UI latency SLA.
+
+Run `./gradlew -I tests/performance/history-performance.gradle addPerformance` for no-match, sparse-match and
+all-match benchmarks at 100, 1,000 and 10,000 employees. The runner warms each workload and compares cached scans
+with the former per-comparison normalisation, checking that both find the same number of matches. It separately
+measures actual `AddCommand.execute` calls against the real model. Fixture setup, cleanup, disk saving, history
+commit and UI rendering are excluded. The uncached scan is an emulated baseline, not a full older-version add.
+Timing results are diagnostic and have no CI speedup threshold; see `tests/performance/results/2026-10-27-add.md`.
+
 When loading JSON, `JsonSerializableAddressBook#toModelType` converts and validates every employee. Duplicate IDs,
 including IDs differing only in case, cause an `IllegalValueException`, rejecting the file rather than returning
 partially loaded data.
@@ -1031,9 +1046,11 @@ testers are expected to do more *exploratory* testing.
    Expected: HuntR reports that an employee with ID `e1001` already exists. No employee is added because employee IDs are compared case-insensitively.
 3. Enter `add id/E1002 n/  mary-ann   o'brien  p/81234567 e/mary2@example.com d/Finance r/Analyst`.<br>
    Expected: HuntR adds `E1002`, normalises repeated spaces in the name, and displays a warning that an employee with the same or a very similar name already exists. `E1001` remains unchanged.
-4. Enter `add id/E1003 n/Test User p/12 e/test@example.com d/QA r/Tester`.<br>
+4. Add six employees named `Jose Tan` with IDs `E1101` through `E1106`, each with a distinct valid phone number and email. Then enter `add id/E1107 n/ JOSE   tan p/91231107 e/jose7@example.com d/Finance r/Analyst`.<br>
+   Expected: HuntR adds `E1107` and warns that `6 employees with the same or a very similar name already exist`, showing only the first five matching employee IDs. The warning points to `find NAME` and `list archived` for the remaining matches.
+5. Enter `add id/E1003 n/Test User p/12 e/test@example.com d/QA r/Tester`.<br>
    Expected: HuntR reports that phone numbers must contain at least 3 digits. No employee is added.
-5. Enter `add id/E1003 n/Test User p/91234567 e/test@example.com d/QA`.<br>
+6. Enter `add id/E1003 n/Test User p/91234567 e/test@example.com d/QA`.<br>
    Expected: HuntR reports an invalid command format and shows the `add` command usage because the required `r/` field is missing. No employee is added.
 
 ### Listing employees

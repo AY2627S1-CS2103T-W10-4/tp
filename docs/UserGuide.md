@@ -110,8 +110,9 @@ Format: `help`
 ### Adding an employee: `add`
 
 Adds an employee to HuntR. If another employee has the same name apart from letter case or spacing, HuntR
-adds the new record and displays a warning listing the matching IDs. Archived matches are marked `(archived)`,
-including when the current view hides them. The existing records are unchanged.
+adds the new record and displays a warning listing up to five matching employee IDs. When there are more matches,
+it also reports the total match count. Both active and archived employees are checked regardless of the current
+view, and archived matches are marked `(archived)`. Existing records remain unchanged.
 
 Format: `add id/EMPLOYEE_ID n/NAME p/PHONE e/EMAIL d/DEPARTMENT r/ROLE [m/MANAGER_ID]`
 
