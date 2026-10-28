@@ -11,6 +11,8 @@ class AddressBook
 class VersionedAddressBook {
   - addressBookStateList : List<List<Employee>>
   - currentStatePointer : int
+  - maxUndoHistory : int
+  - historyShared : boolean
   + commit()
   + canUndo()
   + canRedo()
@@ -63,8 +65,9 @@ SortedList --> FilteredList : orders by the current sort
 VersionedAddressBook --> "*" Employee : immutable snapshots
 ModelCheckpoint --> "*" Employee : copied working container
 note bottom of ModelCheckpoint
-History container is copied;
-immutable snapshots are shared.
+Working-list container is copied.
+Frozen history index and immutable snapshots are shared.
+Changed commits copy a shared index before mutation.
 Effective predicate is retained by reference.
 end note
 @enduml

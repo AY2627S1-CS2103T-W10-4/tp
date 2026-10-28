@@ -127,6 +127,15 @@ public class ArgumentTokenizerTest {
     }
 
     @Test
+    public void tokenize_tabBeforePrefixes_argumentsRecognized() {
+        ArgumentMultimap argMultimap = ArgumentTokenizer.tokenize("p/first\t-tsecond\n^Qthird", pSlash, dashT, hatQ);
+
+        assertArgumentPresent(argMultimap, pSlash, "first");
+        assertArgumentPresent(argMultimap, dashT, "second");
+        assertArgumentPresent(argMultimap, hatQ, "third");
+    }
+
+    @Test
     public void tokenize_multipleArgumentsJoined() {
         String argsString = "SomePreambleStringp/ pSlash joined-tjoined -t not joined^Qjoined";
         ArgumentMultimap argMultimap = ArgumentTokenizer.tokenize(argsString, pSlash, dashT, hatQ);

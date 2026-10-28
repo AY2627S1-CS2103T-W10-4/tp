@@ -17,7 +17,7 @@ end note
 Logic -> Command : isDataChanging()
 Command --> Logic : true
 Logic -> Model : createCheckpoint()
-Model -> History : copy working list and history container
+Model -> History : copy working list, share frozen history index
 History --> Model : data, immutable snapshot references, pointer
 Model --> Logic : checkpoint (including effective predicate)
 Logic -> Command : execute(model)
@@ -61,8 +61,8 @@ else serialization or save fails before replacement
     Logic --> UI : rethrow CommandException or RuntimeException\n(convert I/O errors to existing CommandException)
 end
 note over Logic, Storage
-Read-only commands skip checkpoint/rollback,
-but still save after successful execution.
+Read-only commands skip checkpoint/rollback
+and employee-file saving.
 isDataChanging() derives from getHistoryAction().
 end note
 @enduml

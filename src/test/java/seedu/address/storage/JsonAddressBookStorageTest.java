@@ -331,7 +331,7 @@ public class JsonAddressBookStorageTest {
     private AddressBook orderedBook() {
         AddressBook book = new AddressBook();
         book.addEmployee(new EmployeeBuilder().withId("e0123").withName("李  Mei").withPhone("91234567")
-                .withEmail("Mei@example.COM").withDepartment("R&D ").withRole("Engineer (Senior)")
+                .withEmail("Mei@example.COM").withDepartment("R&D").withRole("Engineer (Senior)")
                 .withArchived(true).build());
         book.addEmployee(HOON);
         return book;

@@ -1,6 +1,7 @@
 package seedu.address.logic.commands;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -138,9 +139,56 @@ public class ReportingCommandTest {
 
     @Test
     public void execute_deleteManagerUnassignsOnlyDirectReports() throws Exception {
-        assertTrue(run("delete id/LEAD").getFeedbackToUser().contains("1 direct report(s) now have no manager."));
+        assertTrue(run("delete id/LEAD").getFeedbackToUser().contains("1 direct report now has no manager."));
         assertTrue(find(worker.getId()).getManagerId().isEmpty());
         assertEquals(3, model.getAddressBook().getEmployeeList().size());
+    }
+
+    @Test
+    public void execute_deleteManagerWithMultipleDirectReports_usesPluralFeedback() throws Exception {
+        run("manager id/OTHER m/BOSS");
+
+        assertTrue(run("delete id/BOSS").getFeedbackToUser().contains("2 direct reports now have no manager."));
+    }
+
+    @Test
+    public void execute_deleteEmployeeWithoutReports_omitsReportFeedback() throws Exception {
+        String feedback = run("delete id/OTHER").getFeedbackToUser();
+
+        assertFalse(feedback.contains("direct report"));
+    }
+
+    @Test
+    public void execute_teamView_refreshesAfterRelationshipChangesAndPreservesSort() throws Exception {
+        run("sort id desc");
+        run("team id/BOSS");
+        assertEquals(List.of(find(lead.getId()), boss), model.getFilteredEmployeeList());
+
+        run("manager id/OTHER m/BOSS");
+        assertEquals(List.of(outsider.withManager(boss.getId()), find(lead.getId()), boss),
+                model.getFilteredEmployeeList());
+        run("unassign-manager id/LEAD");
+        assertEquals(List.of(find(outsider.getId()), boss), model.getFilteredEmployeeList());
+    }
+
+    @Test
+    public void execute_orgAndChainViews_refreshAfterRelationshipChanges() throws Exception {
+        run("org id/BOSS");
+        run("manager id/LEAD m/OTHER");
+        assertEquals(List.of(), model.getFilteredEmployeeList());
+
+        run("chain id/WORKER");
+        assertEquals(List.of(find(lead.getId()), outsider), model.getFilteredEmployeeList());
+        run("unassign-manager id/WORKER");
+        assertEquals(List.of(), model.getFilteredEmployeeList());
+    }
+
+    @Test
+    public void execute_reportingView_refreshesAfterEmployeeDeletion() throws Exception {
+        run("chain id/WORKER");
+
+        run("delete id/LEAD");
+        assertEquals(List.of(), model.getFilteredEmployeeList());
     }
 
     @Test
