@@ -1,5 +1,6 @@
 package seedu.address.model.employee;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.testutil.Assert.assertThrows;
@@ -29,6 +30,9 @@ public class RoleTest {
         assertFalse(Role.isValidRole("@@@")); // no letter or digit
         assertFalse(Role.isValidRole("-Engineering")); // must start with a letter or digit
         assertFalse(Role.isValidRole("A".repeat(101))); // longer than 100 characters
+        assertFalse(Role.isValidRole("\u0301Engineering")); // starts with a mark and not a letter
+        assertFalse(Role.isValidRole("\u00C9".repeat(101))); // longer than 100 characters, with accents
+        assertFalse(Role.isValidRole("Caf\u00E9!")); // a symbol that is not allowed, after an accent
 
         // valid roles
         assertTrue(Role.isValidRole("Engineering"));
@@ -38,6 +42,35 @@ public class RoleTest {
         assertTrue(Role.isValidRole("Software Engineer (Backend)")); // brackets
         assertTrue(Role.isValidRole("Sales - APAC, North")); // hyphen and comma
         assertTrue(Role.isValidRole("A".repeat(100))); // exactly 100 characters
+        assertTrue(Role.isValidRole("Directeur g\u00E9n\u00E9ral")); // letter with an accent
+        assertTrue(Role.isValidRole("Ing\u00E9nieur")); // accent on the first letter or later
+        assertTrue(Role.isValidRole("Ma\u00EEtre d'h\u00F4tel")); // accent, space and other words
+        assertTrue(Role.isValidRole("E\u0301cole")); // accent as a separate mark after the letter
+        assertTrue(Role.isValidRole("\u00C9".repeat(100))); // exactly 100 characters, all with an accent
+        assertTrue(Role.isValidRole("\u4E2D\u6587 role")); // letters of another script
+    }
+
+    @Test
+    public void constructor_decomposedAccent_storedInTheSameFormAsTheAccentOnTheLetter() {
+        Role decomposed = new Role("E\u0301cole");
+        Role precomposed = new Role("\u00C9cole");
+
+        assertEquals("\u00C9cole", decomposed.value);
+        assertEquals(precomposed, decomposed);
+        assertEquals(precomposed.hashCode(), decomposed.hashCode());
+    }
+
+    @Test
+    public void constructor_repeatedSpaces_storedWithOneSpace() {
+        Role role = new Role("HR   Executive");
+
+        assertEquals("HR Executive", role.value);
+        assertEquals(new Role("HR Executive"), role);
+    }
+
+    @Test
+    public void normalise_outerAndRepeatedWhitespace_collapsedToOneSpace() {
+        assertEquals("HR Executive", Role.normalise("  HR\t  Executive "));
     }
 
     @Test

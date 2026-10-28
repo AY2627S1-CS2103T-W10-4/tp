@@ -75,7 +75,7 @@ public class AtomicSaveLogicTest {
     }
 
     @Test
-    public void execute_backupThenAutomaticSaveFails_keepsBackupAndPresentsAutomaticSaveError() throws Exception {
+    public void execute_backupWithUnavailablePrimaryStorage_reportsSuccess() throws Exception {
         Path backupFolder = folder.resolve("backups");
         Path backupPath = backupFolder.resolve("huntr-20261020-153005.json");
         Clock clock = Clock.fixed(Instant.parse("2026-10-20T15:30:05Z"), ZoneOffset.UTC);
@@ -90,14 +90,10 @@ public class AtomicSaveLogicTest {
                 return new BackupCommand(backupFolder, clock);
             }
         });
-        CommandException thrown = assertThrows(CommandException.class, () -> logic.execute("backup"));
-        assertEquals("Could not save data due to the following error: "
-                + "Atomic replacement is not supported for this data file.", thrown.getMessage());
-        assertSame(failure, thrown.getCause());
+        assertEquals("Backed up 7 employee(s) to " + backupPath, logic.execute("backup").getFeedbackToUser());
         assertEquals(getTypicalAddressBook(),
                 new AddressBook(new JsonAddressBookStorage(backupPath).readAddressBook().orElseThrow()));
         assertEquals(getTypicalAddressBook(), model.getAddressBook());
-        assertFalse(thrown.getMessage().startsWith("Backed up"));
     }
 
     @Test
@@ -150,13 +146,13 @@ public class AtomicSaveLogicTest {
     }
 
     @Test
-    public void execute_successfulReadOnlyAndNoOpCommands_continueAutomaticSaving() throws Exception {
+    public void execute_successfulReadOnlyCommands_skipSavingAndNoOpMutationsStillSave() throws Exception {
         CountingStorage storage = new CountingStorage(folder.resolve("employees.json"));
         LogicManager logic = new LogicManager(new ModelManager(), storageManager(storage));
         for (String command : List.of("list", "help", "clear", "clear", "exit")) {
             logic.execute(command);
         }
-        assertEquals(5, storage.saves);
+        assertEquals(2, storage.saves);
     }
 
     @Test
@@ -180,7 +176,7 @@ public class AtomicSaveLogicTest {
 
     @Test
     public void execute_noOpAfterUndoWithReadOnlyFile_preservesDiskViewAndRedoSequence() throws Exception {
-        for (String command : List.of("edit id/" + ALICE.getId() + " r/" + ALICE.getRole(), "clear")) {
+        for (String command : List.of("clear")) {
             Model model = new ModelManager(new AddressBookBuilder().withEmployee(ALICE.withArchived(true)).build(),
                     new UserPrefs());
             JsonAddressBookStorage storage = new JsonAddressBookStorage(folder.resolve("employees.json"));

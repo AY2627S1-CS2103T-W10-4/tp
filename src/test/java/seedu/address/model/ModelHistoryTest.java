@@ -2,6 +2,7 @@ package seedu.address.model;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -140,6 +141,41 @@ public class ModelHistoryTest {
         model.addEmployee(ALICE);
         assertStoredEmployees(List.of(BENSON), first.getWorkingEmployees());
         assertStoredEmployees(List.of(ALICE, BENSON), first.getHistory().getFirst());
+    }
+
+    @Test
+    public void checkpoint_captureNavigationAndNoOp_shareHistoryIndex() {
+        model.deleteEmployee(ALICE);
+        model.commitAddressBook();
+        ModelCheckpoint first = model.createCheckpoint();
+        assertSame(first.getHistory(), model.createCheckpoint().getHistory());
+        model.undoAddressBook();
+        assertSame(first.getHistory(), model.createCheckpoint().getHistory());
+        model.commitAddressBook();
+        assertSame(first.getHistory(), model.createCheckpoint().getHistory());
+        model.redoAddressBook();
+        assertSame(first.getHistory(), model.createCheckpoint().getHistory());
+    }
+
+    @Test
+    public void checkpoint_changedCommit_copiesIndexAndPreservesEarlierCheckpoint() {
+        model.deleteEmployee(ALICE);
+        model.commitAddressBook();
+        ModelCheckpoint first = model.createCheckpoint();
+        model.addEmployee(ALICE);
+        model.commitAddressBook();
+        ModelCheckpoint second = model.createCheckpoint();
+        assertNotSame(first.getHistory(), second.getHistory());
+        assertEquals(2, first.getHistory().size());
+        assertEquals(3, second.getHistory().size());
+        assertSame(first.getHistory().getFirst(), second.getHistory().getFirst());
+        model.restoreCheckpoint(first);
+        assertSame(first.getHistory(), model.createCheckpoint().getHistory());
+        model.deleteEmployee(BENSON);
+        model.commitAddressBook();
+        assertStoredEmployees(List.of(BENSON), first.getHistory().getLast());
+        model.restoreCheckpoint(second);
+        assertStoredEmployees(List.of(BENSON, ALICE), model.getAddressBook().getEmployeeList());
     }
 
     @Test

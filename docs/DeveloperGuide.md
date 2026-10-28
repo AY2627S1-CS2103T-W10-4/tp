@@ -96,7 +96,7 @@ How the `Logic` component works:
 1. This results in a `Command` object (more precisely, an object of one of its subclasses e.g., `DeleteCommand`) which is executed by the `LogicManager`.
 1. The command can communicate with the `Model` when it is executed (e.g. to delete an employee).<br>
    Note that although this is shown as a single step in the diagram above for simplicity, the code can require several interactions between the command object and the `Model` to complete the operation.
-1. Logic saves the employee state and returns the `CommandResult` only after saving succeeds. Data-changing commands use the checkpoint and rollback boundary described below.
+1. For data-changing commands, Logic saves the employee state and returns the `CommandResult` only after saving succeeds. Read-only commands skip employee-file saving. Data-changing commands use the checkpoint and rollback boundary described below.
 
 Here are the other classes in `Logic` (omitted from the class diagram above) that are used for parsing a user command:
 
@@ -191,20 +191,23 @@ an `AccessDeniedException`. Java makes existing-target replacement implementatio
 real existing-file replacement tests must pass on each supported platform. A provider that cannot replace safely
 must fail; destructive fallback is not supported.
 
-`LogicManager` continues saving after every successfully executed command. Its generic presentation is
+`LogicManager` saves after successful data-changing commands, including undo/redo and no-op mutations. Read-only
+commands skip employee-file saving. Its generic save-error presentation is
 `Could not save data due to the following error: <exception-message>`. Its permission presentation is
 `Could not save data to file <exception-message> due to insufficient permissions to write to the file or the folder.`
 The latter substitutes `AccessDeniedException.getMessage()`, including any paths and additional diagnostic text.
 `BackupCommand` translates every `IOException` into
 `Could not save the backup to <backup-path>. Check that you are allowed to write to that folder.`.
-If backup creation succeeds but the automatic save fails, the backup remains and the automatic-save error is the
-final result, rather than the backup success message. For data-changing commands, including undo and redo,
+Backup/export commands write only their requested output files and do not trigger automatic employee-file saves.
+For data-changing commands, including undo and redo,
 `LogicManager` restores the checkpoint on save failure, preserving employee records, the complete history and the
 effective view as well as the stored file. Read-only command view changes and completed backup/export files remain.
 
 The pretty-printed UTF-8 schema remains an `employees` array containing `id`, `name`, `phone`, `email`, `department`,
-`role` and `archived`. Employee order, raw values and archive status are preserved. Missing `archived` loads as active;
-empty arrays are valid; invalid employee data and missing/null arrays are rejected; unknown properties are ignored.
+`role`, `archived` and `managerId`. Employee order, raw values, archive status and manager are preserved. Missing
+`archived` loads as active; missing or null `managerId` means no manager; empty arrays are valid; invalid employee data,
+a manager that does not exist, self-reporting, reporting cycles and missing/null arrays are rejected; unknown properties
+are ignored.
 No history, transaction or schema-version fields are added.
 
 The package-private `AtomicFileWriter.FileOperations` seam delegates to ordinary JDK operations. It exposes only
@@ -212,6 +215,18 @@ temporary creation, attribute views/writability, a write/force/close handle, ato
 Writer tests inject faults there; storage tests verify serialization ordering and payloads; focused logic/backup
 tests verify presentation. Package-private parser/storage factory hooks isolate backup test paths without changing
 public constructors or command behavior. See the repository's `tests/test-plan.md` for coverage and release gates.
+
+#### Unreadable data file
+
+`MainApp#initModelManager` loads the employees through `Storage#readAddressBook`. If that throws a
+`DataLoadingException`, such as for invalid JSON or invalid employee data, HuntR starts with an empty `ModelManager`
+instead of failing to launch. Because the next successful data-changing command would overwrite the file, it first calls
+`UnreadableDataFile#keepCopy`, which copies the file to `unreadable-` followed by its name in the same folder
+(`data/unreadable-addressbook.json`), replacing any earlier copy.
+
+`keepCopy` returns the warning that `MainApp` passes to `UiManager`, which shows it in the result box at startup.
+The warning says where the copy is, or, if the copy could not be made, asks the user to close HuntR and back up the
+file. A missing data file is not an error: HuntR starts with the sample employees and creates the file after the first successful data-changing command.
 
 ### Common classes
 
@@ -283,8 +298,9 @@ removes it. An empty manager value on `add` or `manager` is rejected.
 `ReportingStructure.reports()` scans the roster for each visited manager; recursive queries take O(nk) time for
 n employees and k visited managers. `chain()` builds an ID lookup and follows manager links in O(n + h) time for
 a chain of height h. Both traversals track visited IDs. Result messages retain traversal order, while
-`ReportingCommandSupport.show()` installs an ID-membership predicate without resetting the `SortedList` comparator.
-Employee cards therefore preserve the current sort order, or roster order when no sort is active.
+`ReportingCommandSupport.show()` installs a refreshable reporting-query predicate without resetting the `SortedList`
+comparator. Relationship changes, deletion, undo and redo recompute its ID membership against the current roster.
+Employee cards therefore stay current while preserving the current sort order, or roster order when no sort is active.
 These queries replace the current filter without modifying employee records. `Model#updateReportingEmployeeList`
 applies the membership predicate without the normal active-only restriction, so both messages and cards include
 related archived employees. Normal `list` and `find` continue to exclude archived employees.
@@ -314,13 +330,12 @@ behaviour, strict input validation and persistence; manual scenarios are provide
 `StatsCommand` reads the complete roster through `Model#getAddressBook()` and
 `ReadOnlyAddressBook#getEmployeeList()`, then excludes archived employees. It reports the active employee count
 and calls `appendBreakdown` for department and role. Each breakdown groups by the stored field value and sorts
-by count descending, with ties ordered by the stored label ascending. An empty active roster shows a total of
+by count descending, with ties ordered by label using `SortField.VALUE_ORDER`, the same order as `sort`. An empty active roster shows a total of
 zero and `(none)` under each heading.
 
 The sequence diagram below focuses on `StatsCommand#execute` after parsing. The command does not modify employee
-records, the current filter, the sort order or undo/redo history. As with other successful commands,
-`LogicManager` still saves the employee state before returning the result to the UI; that shared saving flow
-is outside this diagram.
+records, the current filter, the sort order or undo/redo history. `LogicManager` skips employee-file saving for
+this read-only command.
 
 <puml src="diagrams/StatsSequenceDiagram.puml" alt="Interactions for summarising the active workforce" />
 
@@ -330,6 +345,10 @@ is outside this diagram.
 `UniqueEmployeeList`, so case-insensitive ID uniqueness, editing and deletion naturally apply regardless of status.
 `archive id/EMPLOYEE_ID` and `unarchive id/EMPLOYEE_ID` replace the target with an otherwise identical employee whose
 status is changed. They reject unknown IDs and redundant status changes without modifying the model.
+
+Both operations preserve the installed filter predicate and sort comparator. Updating the existing observable
+employee list lets the changed employee enter or leave the current view naturally, including empty search results
+and archived-only views. `UnarchiveCommand` adds a `list` hint when the restored employee is outside the current view.
 
 `ModelManager#updateFilteredEmployeeList` combines normal predicates with an active-status check, so `list` and `find`
 never expose archived employees. `list archived` calls `Model#showArchivedEmployees` to select only archived employees
@@ -359,45 +378,218 @@ by usage; an ID without any fields produces `At least one field to edit must be 
 
 `EditCommand` searches `model.getAddressBook().getEmployeeList()` using case-insensitive `EmployeeId` equality, so filtered-out employees can be edited. It creates a replacement employee with the stored ID, including its original casing, and calls `model.setEmployee`. It then calls `updateFilteredEmployeeList(PREDICATE_SHOW_ALL_EMPLOYEES)` to show the full roster and returns `Edited employee: ` followed by the updated details. An unknown ID produces `No employee with ID X was found.` without usage, where `X` is the entered ID. Successful edits use the existing saving flow.
 
+Before changing the model, `EditCommand` passes the replacement employee through `ReportingStructure#withCanonicalManager`,
+which rewrites a manager ID to the spelling stored for that employee, so `m/e0001` is saved as `E0001`. It then compares
+the replacement with the current employee. If they are equal, the command throws a `CommandException` with
+`No changes made: the new values are the same as the existing ones for X.` and does not call `model.setEmployee`, so the
+roster is not saved again and no entry is added to the undo history. The comparison is case-sensitive, so changing only
+the letter case of a name counts as a change. An invalid manager (`An employee cannot report to themselves.`,
+`Manager does not exist: X` or `Reporting relationships cannot contain a cycle.`) is reported through the same
+`CommandException` path, leaving the roster unchanged.
+
+`EditCommand#getHistoryAction` returns `HistoryAction.COMMIT`, so a successful edit is one step of `undo`.
+The result message is built by `Messages#format`, which ends with `; Manager: ` followed by the manager ID when
+the edited employee has a manager.
+
 The sequence diagram below shows a successful `edit id/E0001 r/Manager`, adapted from the delete sequence diagram in the Logic component section. It focuses on parsing and model updates; `LogicManager` saves the address book before returning the result, as usual.
 
 <puml src="diagrams/EditSequenceDiagram.puml" alt="Interactions for editing an employee by ID" />
 
 ### Find employees by name
 
-`FindCommandParser` trims the arguments and splits them into keywords on whitespace using `split("\\s+")`. Empty or whitespace-only arguments, and arguments beginning with `/`, produce `Invalid command format.` followed by the command usage. Each keyword is then checked against the existing `Name` validation rules; an invalid keyword produces the keyword validation error. Otherwise, the parser creates a `NameContainsKeywordsPredicate` and passes it to `FindCommand`.
+`FindCommandParser` removes the spaces at both ends of the arguments and splits them into keywords at any kind of space (the characters matched by `[\\s\\p{Z}]`, which includes the non-breaking space of a web page). Empty arguments, and arguments beginning with `/`, produce `Invalid command format.` followed by the command usage. Each keyword is then checked against the existing `Name` validation rules; the first invalid keyword produces `Invalid keyword: X` followed by the keyword rules (`FindCommand#MESSAGE_INVALID_KEYWORD`). Otherwise, the parser creates a `NameContainsKeywordsPredicate` and passes it to `FindCommand`.
 
-`NameContainsKeywordsPredicate` uses `StringUtil.containsWordIgnoreCase` to match any keyword against a full, whitespace-separated word in the employee's name. Matching is case-insensitive and uses OR semantics: `find alex david` matches either name, while `find al` does not match `Alex`. It does not search employee IDs or other fields.
+`NameContainsKeywordsPredicate` splits the employee's name and each keyword into words with `StringUtil.getSearchWords`, the same method that `filter` uses. Spaces and punctuation separate words, except for `&` and `'`, which stay in a word, and letter case and accents are ignored. A keyword matches when every one of its words is a whole word of the name, so `Tan` matches `Tan, Ah Kow`, `Mary-Ann` matches `Mary-Ann O'Brien`, and `emile` matches `Émile`, while `Han` does not match `Hans`. The employee matches when any keyword matches (OR semantics): `find alex david` matches either name, while `find al` does not match `Alex`. A keyword without any letter or digit never matches. It does not search employee IDs or other fields.
+
+Because `find` and `filter` use the same word splitting, `find Tan` and `filter n/Tan` find the same employees.
 
 `FindCommand` calls `model.updateFilteredEmployeeList(predicate)` to replace the current filter over the full employee list, without changing employee records. It returns the filtered list's size through `Messages.getEmployeesListedOverview`, using `1 employee listed!` or `N employees listed!`. No matches is a successful search returning `0 employees listed!`.
+
+### Adding an employee
+
+The `add` command creates an active `Employee` with six required fields and an optional manager ID. The flow is:
+
+1. `AddressBookParser` delegates to `AddCommandParser`. `ArgumentPreprocessor` protects relation words such as
+   `s/o` and `d/o` inside the name, then rejects unknown parameter prefixes. `ArgumentTokenizer` separates fields;
+   the parser rejects missing required prefixes, a non-empty preamble and repeated prefixes, including `m/`.
+2. `ParserUtil` validates each value and constructs the immutable field objects. Names, departments and roles
+   are whitespace-normalised and Unicode NFC-normalised before validation. Invalid values raise `ParseException`
+   before a command is executed; there is no partially constructed record in the model.
+3. `AddCommand#execute` checks ID uniqueness across the full roster, then counts similar names as described below.
+   `ReportingStructure.withCanonicalManager` resolves an optional manager against the full roster and rejects
+   a missing manager or self-reporting. The model validates the candidate reporting structure before mutation.
+4. `ModelManager#addEmployee` adds the employee and resets the filtered list to all active employees. The result
+   contains `Messages.format(employeeToAdd)`, followed by a name warning only if there were existing matches.
+5. `AddCommand#getHistoryAction` returns `COMMIT`. `LogicManager` owns the checkpoint, history commit and save;
+   `AddCommand` does not save or commit directly. A command or save failure restores the checkpoint, including
+   records, history and the previous view. The success result reaches the UI only after saving succeeds.
+
+See [Employee history and in-memory rollback](#employee-history-and-in-memory-rollback) for the transaction boundary
+and [Reporting relationships and team structure](#reporting-relationships-and-team-structure) for manager validation.
 
 ### Duplicate employee detection
 
 `Employee#isSameEmployee` compares employee IDs only, using case-insensitive `EmployeeId` equality. Employees with IDs `E0001` and `e0001` are duplicates even if their other details differ. Matching names or contact details with different IDs do not make employees duplicates; `Employee#equals` separately compares all fields.
 
-`UniqueEmployeeList` enforces this identity rule for all employees regardless of archive status. An operation that would
-introduce duplicate IDs throws `DuplicateEmployeeException`. `AddCommand` first calls `model.hasEmployee(toAdd)`, which
-therefore includes archived employees. A duplicate produces `An employee with Employee ID X already exists.`, where `X` is
-the supplied ID, without adding the employee. Otherwise, it calls `model.addEmployee`; a same or similar name only adds a
-warning to the success message.
+`UniqueEmployeeList` enforces this identity rule for all employees regardless of archive status. An operation that
+would introduce duplicate IDs throws `DuplicateEmployeeException`. `AddCommand` first calls `model.hasEmployee(toAdd)`,
+which includes archived employees. On a duplicate, `model.hasArchivedEmployee(toAdd)` selects the message:
+
+* Active record: `An employee with Employee ID X already exists.`
+* Archived record: ``An employee with Employee ID X already exists in the archive. Use `list archived` to see it.``
+
+`X` is the supplied ID, preserving its case. Both outcomes throw `CommandException` before mutation. Otherwise,
+a matching name only adds a warning to a successful addition. `Name#isSimilarTo` compares cached normalised names
+using `equalsIgnoreCase`: whitespace is trimmed/collapsed and canonically equivalent Unicode accents are composed
+with NFC. Accents and punctuation are preserved, so this is not edit-distance or accent-insensitive matching.
+Matching archived employees have ` (archived)` appended to their IDs. The scan uses the underlying roster rather than
+the filtered list, so a hidden or archived match cannot be missed, and the new employee is not counted as a match.
+
+Each immutable `Name` caches its normalised form. Similar-name detection still scans the full roster, including
+archived employees, in O(N) name comparisons (string-comparison cost also depends on name length). This avoids repeated
+whitespace/Unicode normalisation during scans; it does not introduce a sublinear lookup. The warning retains at most
+five IDs in roster order and reports the full count when more match, using O(1) additional ID-preview space.
+`AddCommandPerformanceTest` exercises 10,000-employee rosters with no matches, all matches and a sixth match at the
+end of the roster, checking exact counts, bounded previews and successful additions using the real `ModelManager`.
+Its generous 10-second execution guard excludes fixture setup and is a severe-regression check, not a UI latency SLA.
+
+Run `./gradlew -I tests/performance/history-performance.gradle addPerformance` for no-match, sparse-match and
+all-match benchmarks at 100, 1,000 and 10,000 employees. The runner warms each workload and compares cached scans
+with the former per-comparison normalisation, checking that both find the same number of matches. It separately
+measures actual `AddCommand.execute` calls against the real model. Fixture setup, cleanup, disk saving, history
+commit and UI rendering are excluded. The uncached scan is an emulated baseline, not a full older-version add.
+Timing results are diagnostic and have no CI speedup threshold; see `tests/performance/results/2026-10-27-add.md`.
+
+**Design considerations:** Employee IDs are the identity key because different people can share names and contact
+details. Blocking a same-name addition would reject legitimate employees, so names produce an advisory warning.
+Caching the normalised name is safe because `Name` is immutable; it moves normalisation work to construction and
+retains an extra string per name. A maintained name index could reduce lookup work, but would need synchronisation
+on add, edit, delete, import, load and history restoration. The current scan keeps those paths simple. It deliberately
+continues after collecting five IDs to report the exact total, while the preview cap keeps the result message bounded.
+
+**Regression coverage:** `AddCommandParserTest` covers field validation and repeated prefixes;
+`NameTest` covers case/space similarity and composed/decomposed accents. `AddCommandIntegrationTest` uses the real
+model for ID conflicts (including archived records after `clear`), same-name warnings, and hidden active/archived
+matches. `AddCommandPerformanceTest` checks the exactly-five and more-than-five warning boundaries as well as
+large rosters. These checks complement the adding-an-employee scenarios in the manual testing appendix.
 
 When loading JSON, `JsonSerializableAddressBook#toModelType` converts and validates every employee. Duplicate IDs,
 including IDs differing only in case, cause an `IllegalValueException`, rejecting the file rather than returning
 partially loaded data.
+
+### Filter employees by multiple criteria
+
+`FilterCommandParser` first hides the slash in name words such as `s/o` and `d/o`, so that they are not read as
+prefixes, and rejects any prefix other than `id/`, `n/`, `d/` and `r/` with `Unknown parameter`. It then tokenizes
+the arguments and collects every value of each prefix. Text before the first prefix, or no prefix at all, produces
+`Invalid command format.` followed by the usage. Each `id/` value must be a valid `EmployeeId`. Each `n/`, `d/` and `r/`
+value is a search value, not a complete name, department or role, so it is not checked against the rules for those
+fields. It only needs one word to search for, as given by `StringUtil#getSearchWords`; otherwise the parser reports
+`The value of d/ should contain at least one letter or digit.` (or `n/`, `r/`) followed by the usage. The parser
+passes the values to `EmployeeMatchesCriteriaPredicate` and returns a `FilterCommand`.
+
+`EmployeeMatchesCriteriaPredicate` joins the criteria with `AND` and the values of one criterion with `OR`, which is
+why a prefix that is repeated widens the search while a new prefix narrows it:
+
+* An `id/` value is met when it equals the employee ID. `EmployeeId` equality ignores letter case.
+* An `n/`, `d/` or `r/` value is met when every word of the value is a whole word of that field. Words are the
+  lowercase runs of letters, digits, `&` and `'` in the text, so `d/Resources` matches `Human Resources` but
+  `d/Engineer` does not match `Engineering`. The words of a value may be in any order.
+* A criterion without values is not applied. The constructor asserts that at least one criterion has a value.
+
+The sequence diagram below shows `filter d/Sales d/Finance r/Manager`, which is met by the managers who work in Sales
+or in Finance.
+
+<puml src="diagrams/FilterSequenceDiagram.puml" alt="Interactions for filtering employees" />
+
+`FilterCommand#execute` calls `model.updateFilteredEmployeeList(predicate)`. `ModelManager` installs the predicate
+on the `FilteredList` together with a check that the employee is not archived, so archived employees are never shown
+by `filter`. The command replaces the earlier predicate of `find` or `filter` instead of adding to it. It does not
+touch the comparator of the `SortedList`, so the sort order is kept. The result is the size of the displayed list,
+reported by `Messages#getEmployeesListedOverview`. A filter with no matches succeeds with `0 employees listed!`.
+`LogicManager` skips employee-file saving for this read-only command; the filter is never written to the JSON file.
+
+#### Design considerations
+
+**Aspect: how several criteria and several values are combined**
+
+* **Alternative 1 (current choice):** `AND` between different fields, and `OR` between repeated values of one field.
+  * Pros: Both searches that HR staff ask for are possible with one command, such as `filter d/Sales d/Finance r/Manager`.
+    Repeating a prefix needs no new symbol, which is important because punctuation is a word separator in a value.
+  * Cons: Repeating the prefix is a little longer to type than a list such as `d/Sales,Finance`.
+* **Alternative 2:** Accept a separator inside a value, such as `d/Sales,Finance`.
+  * Pros: Shorter to type.
+  * Cons: The separator would also be a word separator in the value, so it would be ambiguous. Departments and roles
+    may contain `,` themselves.
+
+**Aspect: whether a new filter narrows the current list or replaces it**
+
+* **Alternative 1 (current choice):** A new filter replaces the earlier one, as `find` does.
+  * Pros: The result depends only on the last command, so it is easy to predict. All the fields are given in one
+    command.
+  * Cons: A user who wants to narrow the current list in steps must repeat the earlier criteria.
+* **Alternative 2:** A new filter is applied to the list that is already shown.
+  * Pros: Narrowing in steps is natural.
+  * Cons: A mistake in a step can only be undone with `list` or `undo`, and `find`, `filter` and the reporting
+    queries would need rules for how they combine.
+
+### Sort employees
+
+The model keeps the employees in three layers: the stored `UniqueEmployeeList`, the `FilteredList` that holds the
+employees selected by the current predicate, and a `SortedList` over the `FilteredList`. `ModelManager#getFilteredEmployeeList`
+returns the `SortedList`, so the UI, and every command that reads the displayed list, sees the filtered employees in
+the sorted order. `SortCommand` therefore changes only the comparator of the `SortedList` through
+`Model#updateEmployeeSortOrder`. The stored order and the saved file are not changed.
+
+`SortCommandParser` splits the trimmed arguments on whitespace. No argument, or more than two words, produces
+`Invalid command format.` followed by the usage. The first word is looked up with `SortField#fromString` and the
+optional second word with `SortOrder#fromString`. Both ignore letter case. An unknown word produces
+`Unknown sort field: X. The field must be one of: id, name, department, role.` or
+`Unknown sort order: X. The order must be one of: asc, desc.`, each followed by the usage. Without a second word the
+order is ascending.
+
+<puml src="diagrams/SortSequenceDiagram.puml" alt="Interactions for sorting employees" />
+
+`SortField#getComparator` builds the comparator. It compares the text of the field after removing accents and
+ignoring letter case, and reverses that comparison for `desc`. Employees with the same value are then ordered by employee ID from A to Z in
+both orders, so the order of the list never depends on the order in which employees were added. The tie-break never
+applies to the `ID` field, because employee IDs are unique.
+
+Because the `SortedList` observes the `FilteredList`, the list is kept in order without any further call. When an
+employee is added, edited or deleted, or when `find` or `filter` changes the predicate, the list is reordered
+automatically, and an employee whose name, department or role is edited moves to the correct position. Only
+`ListCommand` clears the comparator, through `Model#resetEmployeeSortOrder`, to show the stored order again. The sort
+order is not part of an undo/redo checkpoint and is not stored in the JSON file, so it is not remembered after HuntR is closed.
+
+#### Design considerations
+
+**Aspect: where the sorted order is kept**
+
+* **Alternative 1 (current choice):** A `SortedList` over the filtered list, with the comparator as view state.
+  * Pros: Sorting does not touch the stored employees, so it needs no saving, undo or rollback. The order is kept
+    when employees change or the filter changes, with no extra code.
+  * Cons: The order is lost when HuntR is closed, and is not restored by `undo`.
+* **Alternative 2:** Sort the stored `UniqueEmployeeList` itself.
+  * Pros: The order would be saved in the JSON file.
+  * Cons: Every sort would be a change of the stored data, so it would need saving, a checkpoint for `undo`, and a
+    way to get back the order in which employees were added.
 
 ### CSV import and export
 
 `ImportCommand` and `ExportCommand` extend the abstract `CsvFileCommand`, which holds the file path and the folder
 HuntR runs from. `ParserUtil.parseCsvFilePath` checks that the path is relative and ends in `.csv`, and
 `CsvFileCommand#resolveFilePath` rejects a path that leads outside that folder once symbolic links are followed.
-`CsvUtil` converts between a list of values and one CSV line, quoting values that contain commas or quotes.
+`CsvUtil` converts between a list of values and one CSV record, quoting values that contain commas, quotes or line breaks.
+`CsvUtil.splitCsvRecords` splits only at line endings outside quoted values, preserves embedded line endings and
+tracks the starting physical line of each record. `parseCsvLine` then validates each complete record's quote syntax.
 
 `ExportCommand` writes the header in `ExportCommand.CSV_HEADER`, then one line per employee in the complete stored
 roster, including archived employees. It creates missing parent folders and replaces an existing file.
 
-The sequence diagram below shows a successful `import staff.csv`. `ImportCommand` reads every line, checks the
-header against the three accepted column lists, and parses each non-blank row with the same `ParserUtil` methods as
-`add`. A row that is invalid, repeats an earlier ID or uses an existing ID stops the command with its row number.
+The sequence diagram below shows a successful `import staff.csv`. `ImportCommand` reads the UTF-8 text, splits it into
+complete records, checks the header against the three accepted column lists, and parses each non-blank record with
+the same `ParserUtil` methods as `add`. A record that is invalid, repeats an earlier ID or uses an existing ID stops
+the command with its starting physical line number, including when earlier records contain quoted line breaks.
 `ReportingStructure.validate` then checks the managers of the existing and imported employees together. Only after
 every check passes does the command change the model, so a failed import adds no one. It adds every employee without
 a manager first and then sets the managers, so a manager may appear later in the file than their reports.
@@ -409,7 +601,33 @@ a manager first and then sets the managers, so a manager may appear later in the
 `ModelManager` owns a `VersionedAddressBook`, which extends `AddressBook` and inherits its ordinary equality and
 hash-code behavior. `ModelManager` equality also remains unchanged: history is not compared.
 Construction copies the supplied data and records exactly one initial snapshot with pointer zero.
-History has no explicit capacity limit and lasts only for the session.
+History lasts only for the session. The JVM property `huntr.maxUndoHistory` configures the maximum undo steps;
+`VersionedAddressBook(initialState, maxUndoHistory)` also accepts the limit explicitly. The default, `-1`, preserves
+unlimited history. Non-negative values retain at most the limit plus one snapshots (including the current state);
+zero disables undo. Invalid values are rejected at construction.
+After a changed commit removes the redo tail and appends a snapshot, excess oldest states are removed and the pointer
+is adjusted. No-op commits never evict snapshots or discard redo. Checkpoints retain the pre-command history so a
+failed command can restore snapshots evicted by a tentative commit. Snapshots still share immutable employee objects;
+the limit bounds retained states, not bytes, and does not limit the size of the employee roster itself.
+
+The property is read by `configuredHistoryLimit()` when a `VersionedAddressBook` is constructed; it is not a JSON
+preference and cannot be changed by an in-app command. Non-integer and out-of-range values fail integer parsing;
+integers below `-1` fail constructor validation. A limit of zero retains the current snapshot for change detection
+and rollback but exposes neither undo nor redo.
+
+For a limit of two, let `S0` be the initial roster and `S1` through `S4` be distinct stored states:
+
+| Operation | Retained snapshots, oldest first | Current state |
+| --- | --- | --- |
+| Construct | `S0` | `S0` |
+| Commit `S1`, then `S2` | `S0, S1, S2` | `S2` |
+| Commit `S3` | `S1, S2, S3` | `S3` |
+| Undo | `S1, S2, S3` | `S2` |
+| Commit unchanged `S2` | `S1, S2, S3` | `S2` (redo remains available) |
+| Commit changed `S4` | `S1, S2, S4` | `S4` (redo of `S3` is discarded) |
+
+Eviction happens only on changed commits, after truncating redo and appending the new snapshot. The capacity
+applies to the entire retained sequence, including redo states, rather than a separate allocation for each direction.
 
 `addressBookStateList` contains complete immutable `List<Employee>` snapshots. Containers cannot be changed;
 immutable employee objects are shared. Every stored field, raw ID spelling, archive status and employee order is
@@ -428,8 +646,10 @@ command has returned. Low-level mutations do not commit.
 
 `UndoCommand` and `RedoCommand` check availability and move one step without committing. Snapshot data is restored
 directly; redo never executes a command again or reads a CSV. Both commands preserve the current effective view.
-Identical edits and clears with no active employees still reset to the active view and return their usual success
-messages. They create no entry and retain redo. Read-only and failed commands also retain redo.
+An identical edit throws `CommandException` with `EditCommand.MESSAGE_NO_CHANGES` before model mutation; it does
+not save, change the view or consume history. Clearing a roster with no active employees still resets to the active
+view and returns its usual success message, then attempts saving, but creates no history entry. Both retain redo.
+Read-only and failed commands also retain redo.
 
 #### Checkpoints and transaction boundary
 
@@ -442,11 +662,33 @@ Only a successful storage return permits the result to be returned. No fallible 
 
 <puml src="diagrams/CommandTransaction.puml" alt="Employee command execution, saving and rollback" />
 
-A checkpoint copies the current employee-list container and the history container, retaining references to
-immutable snapshots, the pointer and the effective predicate. Capture takes O(n + h) work for n current employees
-and h snapshots; it does not reconstruct historical address books or revalidate employee pairs. Checkpoints remain
-usable after later changes, after redo-tail removal and after repeated restoration. Restoration copies back into
-the working containers and never changes a shared snapshot.
+A checkpoint copies the current employee-list container and shares a frozen history index, immutable snapshots,
+the pointer and the effective predicate. Capture takes O(n) work for n current employees, independent of history
+length. Navigation and no-op commits reuse the same index. The first changed commit after a checkpoint copies the
+index before discarding redo or appending a snapshot; that commit still takes O(h) index-copying work for h snapshots.
+Checkpoints remain usable after later changes, redo-tail removal and repeated restoration. Restoration updates the
+working list and reinstalls the immutable history index without copying its entries. Shared snapshots never change.
+
+`historyShared` records whether a checkpoint may hold the current index. Capture wraps an unshared index with
+`Collections.unmodifiableList`; `ModelCheckpoint` retains that reference and copies only the working-list container.
+Before a changed commit mutates an index marked shared, `VersionedAddressBook` creates a new `ArrayList` and clears
+the flag. Restoring a checkpoint reinstalls its index and sets the flag again, so subsequent redo truncation or
+capacity eviction cannot alter an older checkpoint. The working list is captured separately because low-level
+mutations need not have been committed to the current snapshot yet.
+
+**Design tradeoffs:** Copying the entire history index at every checkpoint makes capture grow with session length,
+even for undo, redo and no-op commands. Sharing it moves that O(h) copy to changed commits while preserving rollback
+after truncation and eviction. Complete roster snapshots simplify redo and multi-row import recovery, at the cost
+of up to O(h × n) employee references for h snapshots of n employees; immutable employee values are shared.
+The optional history limit bounds snapshot count. It does not make changed commits or disk saves constant-time.
+
+Run `./gradlew -I tests/performance/history-performance.gradle checkpointPerformance` for an opt-in microbenchmark
+at 10, 1,000 and 10,000 history steps with a fixed one-employee roster. It compares shared-index capture with the
+former container-copying strategy and measures undo/redo command pairs using storage that performs no disk I/O.
+It warms each scenario before reporting nanoseconds per operation. These diagnostic timings isolate history costs;
+they are not end-to-end UI latency measurements and have no CI timing threshold. The recorded sample and baseline
+limitations are in `tests/performance/results/2026-10-27-checkpoint.md`; decreasing sample times are not evidence
+that a longer history makes undo/redo faster.
 
 `CommandException`, `AccessDeniedException`, other `IOException` and unexpected `RuntimeException` during execution,
 tentative commits, serialization or saving cause restoration for data-changing commands. Command exceptions and
@@ -472,20 +714,21 @@ The existing stored observable list and `FilteredList` instances are preserved. 
 predicate reference, treating installed predicates as stable. Restore applies it directly with
 `filteredEmployees.setPredicate(...)`; routing through `updateFilteredEmployeeList()` would add an active-only
 condition and corrupt archived-only views. A zero-match search retains its predicate and can reveal a matching
-employee restored by undo. Historical searches are not part of snapshots. Selection, scroll position and
-suppression of intermediate list notifications are outside scope.
+employee restored by undo. Historical searches are not part of snapshots. The `SortedList` comparator remains in
+place and is not captured in employee snapshots or checkpoints; undo/redo preserve the current sort. Selection,
+scroll position and suppression of intermediate list notifications are outside scope.
 
 #### Persistence and atomic saving
 
-All successfully executed commands still save, including read-only commands and no-ops. Read-only save failures
-retain existing behavior and are not checkpointed. Export/backup side effects are outside the transaction.
+Only successfully executed data-changing commands save, including undo/redo and no-op mutations. Read-only commands
+skip checkpointing and employee-file saving, so an unwritable employee file does not prevent help, searches or view
+changes. Export/backup commands still write their requested files; those side effects are outside the transaction.
 Only the current employee state is serialized in the existing `employees` JSON schema; there are no history,
 checkpoint, command or predicate fields. Missing `archived` fields in older valid JSON still load as active;
 validation, case-insensitive ID uniqueness, invalid-file handling, paths and preferences are unchanged. CSV export
 uses eight columns including manager IDs; import also accepts legacy six-column and seven-column CSV and rejects
 header-only files.
 
-Employee history and atomic saving share the recorded baseline `1d8b4b5eaeae6b1a102f92dd81a7befb18221ecb`.
 The combined boundary is the writer's successful atomic replacement. Employee changes and history commits are
 tentative until then; a handled failure before replacement preserves file bytes and restores the checkpoint for
 data-changing commands. No fallible work follows replacement, so a completed disk commit cannot be reported as a
@@ -497,7 +740,12 @@ External JSON editing while closed remains supported; live reload and concurrent
 
 #### Validation and performance
 
-`ModelHistoryTest`, `HistoryCommandTest` and `HistoryTransactionTest` cover history traversal, no-ops, raw IDs,
+`VersionedAddressBookTest` covers configured limits, zero/unlimited history, oldest-state eviction, no-op commits,
+redo truncation and checkpoint restoration after eviction. Its long-history case commits 10,000 changes with a
+25-step limit and checks that at most 26 snapshots remain. `ModelHistoryTest` checks shared index identity across
+capture, navigation and no-ops, and verifies that changed commits preserve previously captured checkpoints.
+
+`ModelHistoryTest`, `HistoryCommandTest` and `HistoryTransactionTest` also cover history traversal, no-ops, raw IDs,
 checkpoints, view/list identity, import grouping, execution failures and save failures. Assertions compare ordered
 stored values separately from model equality. Existing parser, storage, CSV and command tests cover compatibility.
 The detailed matrix and recorded acceptance environment are in the repository's `tests/test-plan.md`.
@@ -586,10 +834,10 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 
 **MSS**
 
-1. User requests to add an employee and provides the employee ID, name, phone number, email, department, and role.
+1. User requests to add an employee and provides the employee ID, name, phone number, email, department, and role, optionally assigning an existing employee as manager.
 2. HuntR validates the provided details.
 3. HuntR adds the employee and saves the updated employee records.
-4. HuntR displays the added employee's details.
+4. HuntR displays the added employee's details and shows all active employees.
 
    Use case ends.
 
@@ -607,15 +855,22 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 
     Use case resumes at step 1.
 
-* 2b. An employee with the same employee ID already exists.
+* 2b. An active or archived employee with the same employee ID already exists (ignoring case).
 
-  * 2b1. HuntR informs the user that an employee with the same employee ID already exists.
+  * 2b1. HuntR rejects the addition and identifies the conflicting ID. For an archived record, it also directs the user to the archived list.
 
     Use case ends.
 
 * 3a. HuntR is unable to save the updated employee records.
 
-  * 3a1. HuntR informs the user that the employee could not be saved successfully.
+  * 3a1. HuntR restores the previous records and view, and informs the user that the employee could not be saved successfully.
+
+    Use case ends.
+
+* 4a. One or more existing active or archived employees have matching names after case and space normalisation.
+
+  * 4a1. HuntR appends a warning with up to five matching IDs, marking archived matches and reporting the total
+    when more than five match. The new employee has still been added successfully.
 
     Use case ends.
 
@@ -623,50 +878,61 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 
 **MSS**
 
-1. User requests to list employees.
-2. HuntR displays the employee list.
-3. User selects an employee and provides the details to update.
-4. HuntR validates the provided details.
-5. HuntR updates the selected employee's record and saves the updated employee records.
-6. HuntR displays the updated employee's details.
+1. User requests to edit an employee using `edit id/EMPLOYEE_ID` with at least one field to change.
+2. HuntR validates the ID and the given fields.
+3. HuntR finds the employee in the complete roster, comparing IDs case-insensitively.
+4. HuntR updates the employee, saves the updated records and shows the complete roster.
+5. HuntR displays the updated employee's details as confirmation.
 
-   Use case ends.
+    Use case ends.
 
 **Extensions**
 
-* 2a. The employee list is empty.
+* 1a. The ID is missing, the command contains an unknown or repeated parameter, or it has unexpected text before the first parameter.
 
-  * 2a1. HuntR informs the user that there are no employee records.
+  * 1a1. HuntR identifies the input error and shows the command usage. Records remain unchanged.
 
-    Use case ends.
+    Use case resumes at step 1.
 
-* 3a. The selected employee index is invalid.
+* 1b. The user does not provide any field to update.
 
-  * 3a1. HuntR shows an error message.
+  * 1b1. HuntR informs the user that at least one field must be provided.
 
-    Use case resumes at step 2.
+    Use case resumes at step 1.
 
-* 3b. The user does not provide any field to update.
+* 2a. One or more provided fields are invalid.
 
-  * 3b1. HuntR informs the user that at least one field must be provided.
+  * 2a1. HuntR shows an error message describing the invalid input. Records remain unchanged.
 
-    Use case resumes at step 3.
+    Use case resumes at step 1.
 
-* 4a. One or more provided fields are invalid.
+* 3a. No employee has the specified employee ID.
 
-  * 4a1. HuntR shows an error message describing the invalid input.
+  * 3a1. HuntR displays `No employee with ID X was found.`, using the entered ID for `X`. Records remain unchanged.
 
-    Use case resumes at step 3.
+    Use case resumes at step 1.
 
-* 4b. The update would make the employee identical to another existing employee.
+* 3b. The employee is hidden by the current search.
 
-  * 4b1. HuntR informs the user that the employee already exists.
+  * 3b1. HuntR edits that employee in the complete roster.
 
-    Use case ends.
+    Use case resumes at step 4.
 
-* 5a. HuntR is unable to save the updated employee records.
+* 3c. Every given value is the same as the employee's current value.
 
-  * 5a1. HuntR informs the user that the employee changes could not be saved successfully.
+  * 3c1. HuntR displays `No changes made: the new values are the same as the existing ones for X.`. Nothing is saved or added to the undo history.
+
+    Use case resumes at step 1.
+
+* 3d. The manager in `m/` does not exist, is the employee themselves, or would create a reporting cycle.
+
+  * 3d1. HuntR shows an error message that names the problem. Records remain unchanged.
+
+    Use case resumes at step 1.
+
+* 4a. HuntR is unable to save the updated employee records.
+
+  * 4a1. HuntR informs the user that the employee changes could not be saved successfully and restores the previous records.
 
     Use case ends.
 
@@ -693,6 +959,72 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
   * 2a1. HuntR displays an empty result list and informs the user that no employees were found.
 
     Use case ends.
+
+**Use case: Filter employees**
+
+**MSS**
+
+1. User requests to filter employees by one or more of employee ID, name, department and role.
+2. HuntR finds the employees who match all the given fields.
+3. HuntR displays the matching employees as a numbered list and reports the number of matches.
+
+    Use case ends.
+
+**Extensions**
+
+* 1a. The user gives no field, gives text before the first field, or gives an unknown field.
+
+  * 1a1. HuntR shows an error message and the expected command format.
+
+    Use case resumes at step 1.
+
+* 1b. A value is empty, has no letter or digit, or is not a valid employee ID.
+
+  * 1b1. HuntR shows an error message that names the field, and the expected command format.
+
+    Use case resumes at step 1.
+
+* 1c. The user repeats a field, such as `d/Sales d/Finance`.
+
+  * 1c1. HuntR matches the employees who match any value of that field, and all the other fields.
+
+    Use case resumes at step 3.
+
+* 2a. No employee matches.
+
+  * 2a1. HuntR displays an empty list and reports `0 employees listed!`.
+
+    Use case ends.
+
+**Use case: Sort employees**
+
+**MSS**
+
+1. User requests to sort the displayed employees by a field, and optionally by an order.
+2. HuntR orders the displayed employees by the field.
+3. HuntR displays the employees in the new order and reports the field and the order.
+
+    Use case ends.
+
+**Extensions**
+
+* 1a. The field or the order is missing, unknown, or followed by extra text.
+
+  * 1a1. HuntR shows an error message and the expected command format.
+
+    Use case resumes at step 1.
+
+* 1b. The user does not give an order.
+
+  * 1b1. HuntR uses ascending order.
+
+    Use case resumes at step 2.
+
+* 2a. Several employees have the same value for the field.
+
+  * 2a1. HuntR orders them by employee ID from A to Z.
+
+    Use case resumes at step 3.
 
 **Use case: View employee data**
 
@@ -839,7 +1171,10 @@ testers are expected to do more *exploratory* testing.
 
 ### Adding an employee
 
-**Prerequisites:** Launch HuntR with the sample employees. The employee ID `E1001` must not already exist.
+**Prerequisites:** Launch HuntR in a disposable writable folder with the sample employees. IDs `E1001` through
+`E1004` and `E1101` through `E1107` must be unused in both the active and archived rosters. No existing employee
+should be named `Mary-Ann O'Brien` or `Jose Tan` (ignoring case and extra spaces). Run these steps in order.
+For each rejected command, verify that no record is added or changed.
 
 1. Enter `add id/E1001 n/Mary-Ann O'Brien p/+65 6123-4567 (HP) e/mary.ann@example.com d/Research & Development r/Software Engineer (Backend)`.<br>
    Expected: HuntR displays `New employee added:` followed by all six details. The employee appears in the list with ID `E1001`.
@@ -847,10 +1182,25 @@ testers are expected to do more *exploratory* testing.
    Expected: HuntR reports that an employee with ID `e1001` already exists. No employee is added because employee IDs are compared case-insensitively.
 3. Enter `add id/E1002 n/  mary-ann   o'brien  p/81234567 e/mary2@example.com d/Finance r/Analyst`.<br>
    Expected: HuntR adds `E1002`, normalises repeated spaces in the name, and displays a warning that an employee with the same or a very similar name already exists. `E1001` remains unchanged.
-4. Enter `add id/E1003 n/Test User p/12 e/test@example.com d/QA r/Tester`.<br>
+4. Add six employees named `Jose Tan` with IDs `E1101` through `E1106`, each with a distinct valid phone number and email. After adding `E1105`, check that its warning lists exactly `E1101` through `E1104`. After adding `E1106`, check
+   that the warning lists all five IDs `E1101` through `E1105` without the total-count wording. Then enter
+   `add id/E1107 n/ JOSE   tan p/91231107 e/jose7@example.com d/Finance r/Analyst`.<br>
+   Expected: HuntR adds `E1107` and warns that `6 employees with the same or a very similar name already exist`, showing only the first five matching employee IDs. The warning points to `find NAME` and `list archived` for the remaining matches.
+5. Enter `add id/E1003 n/Test User p/12 e/test@example.com d/QA r/Tester`.<br>
    Expected: HuntR reports that phone numbers must contain at least 3 digits. No employee is added.
-5. Enter `add id/E1003 n/Test User p/91234567 e/test@example.com d/QA`.<br>
+6. Enter `add id/E1003 n/Test User p/91234567 e/test@example.com d/QA`.<br>
    Expected: HuntR reports an invalid command format and shows the `add` command usage because the required `r/` field is missing. No employee is added.
+7. Enter `archive id/E1001`, then `find NobodyMatchesThisName`, then repeat the command from step 2.<br>
+   Expected: HuntR displays ``An employee with Employee ID e1001 already exists in the archive. Use `list archived` to see it.``
+   The empty search view is preserved. `list archived` still shows the original `E1001`.
+8. Enter `list archived`, then `add id/E1004 n/MARY-ANN O'Brien p/81234568 e/mary4@example.com d/Finance r/Analyst`.<br>
+   Expected: HuntR adds `E1004` and switches to all active employees. The warning includes `E1001 (archived)` and
+   `E1002`. `E1001` remains archived. Restart HuntR and check that the new record and archive status are retained.
+9. Enter `add id/E1003 n/Test User p/91234567 e/test@example.com d/QA r/Tester n/Other Name`.<br>
+   Expected: HuntR rejects the repeated `n/` parameter rather than silently using its last value.
+10. Enter `add id/E1003 n/Test User p/91234567 e/test@example.com d/QA r/Tester x/value`.<br>
+    Expected: HuntR reports `Unknown parameter: x/` and the command usage. Repeat without `x/value` but with an
+    empty `n/` value; HuntR reports `Name should not be blank.`
 
 ### Listing employees
 
@@ -873,12 +1223,20 @@ testers are expected to do more *exploratory* testing.
    Expected: `Alex Yeoh` and `David Li` are displayed and HuntR reports `2 employees listed!`. An employee matches when its name contains any one of the whole-word keywords.
 3. Enter `find NotPresent`.<br>
    Expected: The employee list is empty and HuntR reports `0 employees listed!`.
+
+   **With names that contain punctuation and accents:** first add `add id/T1 n/Tan, Ah Kow p/91110001 e/t1@example.com d/Sales r/Analyst` and `add id/T3 n/Émile Roux p/91110003 e/t3@example.com d/Sales r/Analyst`.
+   * Enter `find Tan`.<br>
+     Expected: `Tan, Ah Kow` is displayed (the comma does not matter) and HuntR reports `1 employee listed!`.
+   * Enter `find emile`.<br>
+     Expected: `Émile Roux` is displayed (accents are ignored).
+   * Enter `find Ah, Alex`.<br>
+     Expected: `Tan, Ah Kow` and `Alex Yeoh` are displayed, and HuntR reports `2 employees listed!`.
 4. Enter `find`, with no keyword.<br>
    Expected: HuntR reports an invalid command format and shows the `find` command usage. The previously displayed empty result remains unchanged.
 5. Enter `find /Alex`.<br>
    Expected: HuntR reports an invalid command format and shows the `find` command usage because a keyword cannot begin with `/`.
 6. Enter `find Alex valid!`.<br>
-   Expected: HuntR reports the keyword constraints because `!` is not allowed. The employee list and stored data remain unchanged.
+   Expected: HuntR reports `Invalid keyword: valid!` followed by the keyword rules because `!` is not allowed. The employee list and stored data remain unchanged.
 
 ### Editing an employee
 
@@ -896,7 +1254,65 @@ testers are expected to do more *exploratory* testing.
    Expected: HuntR reports that phone numbers must contain at least 3 digits and leaves `E0001` unchanged.
 6. Enter `edit id/E0001 p/91234567 p/81234567`.<br>
    Expected: HuntR reports multiple values for `p/` and leaves `E0001` unchanged.
+7. Enter the command of step 1 a second time.<br>
+   Expected: HuntR displays `No changes made: the new values are the same as the existing ones for E0001.` and `E0001` is unchanged. Enter `undo`: it reverts the rename of `E0002` from step 2, not a second edit of `E0001`. Enter `redo` to bring the rename back.
+8. Enter `edit id/e0002 m/e0001`.<br>
+   Expected: HuntR displays `Edited employee:` followed by the record of `E0002`, ending with `; Manager: E0001`. The manager ID is stored as `E0001`, not as typed.
+9. After step 8, enter `edit id/E0002 m/E0001`.<br>
+   Expected: HuntR displays `No changes made: the new values are the same as the existing ones for E0002.`
+10. After step 8, enter `edit id/E0001 m/E0002`, `edit id/E0001 m/E0001` and `edit id/E0002 m/E9999` separately.<br>
+    Expected: HuntR displays `Reporting relationships cannot contain a cycle.`, `An employee cannot report to themselves.` and `Manager does not exist: E9999` respectively, and no employee is changed.
+11. After step 8, enter `edit id/E0002 m/`.<br>
+    Expected: HuntR displays `Edited employee:` followed by the record of `E0002` without a `Manager:` part. Enter `undo` to restore the manager.
 
+
+### Filtering employees
+
+**Prerequisites:** Launch HuntR with the original sample employees, then enter `list`. `E0001` and `E0004` are in the
+Engineering department, `E0003` is in Finance and `E0006` is in Sales.
+
+1. Enter `filter d/Engineering`.<br>
+   Expected: `Alex Yeoh` and `David Li` are displayed and HuntR reports `2 employees listed!`.
+2. Enter `filter d/Engineering r/Manager`.<br>
+   Expected: Only `David Li` is displayed and HuntR reports `1 employee listed!`. An employee must match both fields.
+3. Enter `filter d/Sales d/Finance`.<br>
+   Expected: `Charlotte Oliveiro` and `Roy Balakrishnan` are displayed. A repeated field matches any of its values.
+4. Enter `filter d/Engineer`.<br>
+   Expected: The list is empty and HuntR reports `0 employees listed!`, because only whole words match.
+5. Enter `filter id/e0004`.<br>
+   Expected: Only `David Li` is displayed. The employee ID is not case-sensitive.
+6. Enter `filter d/Engineering`, followed by `filter d/Sales`.<br>
+   Expected: Only `Roy Balakrishnan` is displayed. The second filter replaces the first instead of narrowing it.
+7. Enter `filter`, `filter Engineering`, `filter x/foo` and `filter d/@@@`, one at a time.<br>
+   Expected: HuntR reports an invalid command format for the first two, an unknown parameter for the third, and that
+   the value of `d/` needs at least one letter or digit for the last. Each message is followed by the `filter` usage.
+   The displayed list does not change.
+8. Enter `list`.<br>
+   Expected: All six employees are displayed again.
+
+### Sorting employees
+
+**Prerequisites:** Launch HuntR with the original sample employees, then enter `list`. The employees are displayed from
+`E0001` to `E0006`.
+
+1. Enter `sort name desc`.<br>
+   Expected: HuntR reports `Sorted by name in descending order.` The employees are displayed from `Roy Balakrishnan`
+   to `Alex Yeoh`.
+2. Enter `sort department`.<br>
+   Expected: HuntR reports `Sorted by department in ascending order.` The department order is Engineering, Finance,
+   Human Resources, Operations and Sales. The two Engineering employees are in the order `E0001`, `E0004`.
+3. Enter `sort Department DESC`.<br>
+   Expected: The field and the order are not case-sensitive. The department order is reversed, but the two Engineering
+   employees are still in the order `E0001`, `E0004`.
+4. Enter `sort name desc`, followed by `filter d/Engineering`.<br>
+   Expected: `David Li` is displayed before `Alex Yeoh`. The sorted order is kept by the filter.
+5. Enter `add id/E0007 n/Zed Zhang p/91234567 e/zed@example.com d/Sales r/Analyst`.<br>
+   Expected: The new employee appears at the position that fits the sorted order, and the full list is displayed.
+6. Enter `sort salary`, `sort name down`, `sort` and `sort name asc desc`, one at a time.<br>
+   Expected: HuntR reports an unknown sort field, an unknown sort order, and an invalid command format twice. Each message
+   is followed by the `sort` usage. The displayed order does not change.
+7. Enter `list`.<br>
+   Expected: HuntR displays all employees in the order in which they were added, from `E0001` to `E0007`.
 
 ### Deleting an employee
 
@@ -946,6 +1362,78 @@ testing deletion or editing the JSON file.
    valid JSON file and load it: that employee has no manager. A missing manager reference, self-reference or
    reporting cycle in the file causes the entire file to be rejected. Restore the backup after testing.
 
+### Undoing and redoing employee changes
+
+Use disposable writable folders and the release JAR `huntr.jar`. Run each scenario in order. A restart preserves
+saved records but resets session history. These tests complement the command syntax and examples in the UG.
+
+**Navigation, no-ops and redo branching**
+
+**Prerequisites:** Start a new session with the default history setting. ID `HIST-001` must be unused in both rosters.
+
+1. Enter `undo`, then `redo`.<br>
+   Expected: `No more commands to undo.` and `No more commands to redo.` respectively. No data or view changes.
+2. Enter `add id/HIST-001 n/History Demo p/91234567 e/history@example.com d/QA r/Tester`, then
+   `edit id/HIST-001 r/Analyst`, then `undo`.<br>
+   Expected: The role changes from Analyst back to Tester; the result is `Undo successful.`
+3. Enter `edit id/HIST-001 r/Tester`, then `edit id/HIST-001 p/12`, then `find History`.<br>
+   Expected: The first edit reports unchanged details; the second reports the invalid phone number. Neither
+   consumes a history step or discards redo. The search displays History Demo.
+4. Enter `redo`, then `undo`, then `edit id/HIST-001 r/Lead`, then `redo`.<br>
+   Expected: Redo restores Analyst, undo restores Tester, and the new edit changes the role to Lead.
+   The final redo reports `No more commands to redo.` because the actual new change discarded the redo state.
+
+**Archived view and restart**
+
+**Prerequisites:** Continue from the preceding scenario with `HIST-001` active and its role Lead.
+
+1. Enter `archive id/HIST-001`, then `list archived`, then `undo`.<br>
+   Expected: Undo restores `HIST-001` to active status, but the archived-only view remains selected and hides it.
+2. Enter `redo`.<br>
+   Expected: The archived-only view is preserved and displays `HIST-001` again, with role Lead.
+3. Exit and relaunch without changing the data file. Enter `undo`, then `redo`, then `list archived`.<br>
+   Expected: Both history commands report that no more commands are available. `HIST-001` is still archived;
+   only its saved employee state, not its history, survived the restart.
+
+**Finite capacity and eviction**
+
+**Prerequisites:** Put a copy of the JAR in a fresh writable folder. Launch with
+`java -Dhuntr.maxUndoHistory=2 -jar huntr.jar`. Keep this session open for the save-failure scenario below.
+
+1. Enter `add id/LIM-001 n/Limit Demo p/91234567 e/limit@example.com d/QA r/Tester`, then
+   `edit id/LIM-001 r/Analyst`, then `edit id/LIM-001 r/Lead`.<br>
+   Expected: All three changes succeed. Only the last two changes remain undoable.
+2. Enter `undo` twice, then a third time.<br>
+   Expected: The role becomes Analyst, then Tester. The third undo reports `No more commands to undo.`;
+   `LIM-001` still exists because the pre-add snapshot was evicted.
+3. Enter `redo` twice.<br>
+   Expected: The role becomes Analyst, then Lead. A further redo reports `No more commands to redo.`
+
+**Save failure restores evicted history and redo**
+
+**Prerequisites:** Continue the finite-capacity scenario at Lead, with two available undo steps. On macOS/Linux,
+copy `data/addressbook.json` to `before-save.json`, then run `chmod a-w data/addressbook.json` in the launch folder.
+Use this permission test only on a disposable copy of the data.
+
+1. Enter `edit id/LIM-001 r/Director`.<br>
+   Expected: A save-permission error is shown. The role stays Lead, despite the tentative commit having reached
+   capacity. `cmp data/addressbook.json before-save.json` reports no differences.
+2. Run `chmod u+w data/addressbook.json`, then enter `undo` twice.<br>
+   Expected: Analyst and then Tester are restored. The failed edit did not permanently evict the oldest state.
+3. With the role still Tester, run `chmod a-w data/addressbook.json` and enter `redo`.<br>
+   Expected: A save-permission error is shown and the role stays Tester. Restore permission with
+   `chmod u+w data/addressbook.json`, then enter `redo` twice: Analyst and Lead are both still recoverable.
+
+**Disabled history and invalid configuration**
+
+1. Close the preceding session and relaunch with `java -Dhuntr.maxUndoHistory=0 -jar huntr.jar`.
+   Enter `edit id/LIM-001 r/Director`, then `undo`, then `redo`.<br>
+   Expected: The edit succeeds and is saved; undo and redo both report that no more commands are available.
+   Relaunch normally to check that the role is Director and that history starts empty again.
+2. Close HuntR and try `java -Dhuntr.maxUndoHistory=-2 -jar huntr.jar`, then
+   `java -Dhuntr.maxUndoHistory=invalid -jar huntr.jar`.<br>
+   Expected: Both launches fail because the configured history limit is invalid; neither changes the saved roster.
+
 ### Saving data
 
 The employee data file is `data/addressbook.json`, relative to the folder from which `java -jar huntr.jar` is run. Back up this file before the following tests and restore it afterwards.
@@ -967,23 +1455,23 @@ The employee data file is `data/addressbook.json`, relative to the folder from w
 
 1. Run `java -jar huntr.jar`.<br>
    Expected: HuntR starts with the six sample employees instead of failing to launch.
-2. Enter `list` and close HuntR.<br>
-   Expected: HuntR creates a new `data/addressbook.json` containing the sample employees. Restore the backup after closing the app if the original data is still needed.
+2. Enter `list`, then check that `data/addressbook.json` does not exist yet. Enter `add id/E0007 n/Test User p/91234567 e/test@example.com d/QA r/Tester` and close HuntR.<br>
+   Expected: `list` does not create the file, because it does not change data. After the `add`, HuntR creates a new `data/addressbook.json` containing the six sample employees and `Test User`. Restore the backup after closing the app if the original data is still needed.
 
 **Dealing with a corrupted data file**
 
 **Prerequisites:** Close HuntR and back up `data/addressbook.json`. Replace its contents with text that is not valid JSON, such as `{ invalid json`.
 
 1. Run `java -jar huntr.jar`.<br>
-   Expected: HuntR starts with an empty employee list. It does not load sample employees for a corrupted file, and the log records a warning that the data file could not be loaded.
-2. Enter `list`.<br>
-   Expected: HuntR remains usable, displays the empty-list guidance, and replaces the corrupted file with a valid JSON representation of the current empty roster. Close HuntR and restore the backup after the test.
+   Expected: HuntR starts with an empty employee list. It does not load sample employees for a corrupted file. The result box shows a warning that `data/addressbook.json` could not be loaded and that a copy was kept at `data/unreadable-addressbook.json`, and the log records a warning that the data file could not be loaded. The copy contains `{ invalid json`.
+2. Enter `list`, then `add id/E0001 n/Test User p/91234567 e/test@example.com d/QA r/Tester`.<br>
+   Expected: HuntR remains usable and `list` displays the empty-list guidance, without changing `data/addressbook.json`, which still contains the corrupted text. After the `add`, HuntR replaces the corrupted file with valid JSON containing only `Test User`. `data/unreadable-addressbook.json` still contains the corrupted text. Close HuntR and restore the backup after the test.
 
 **Dealing with invalid employee data**
 
 **Prerequisites:** Close HuntR and back up `data/addressbook.json`. Edit one stored employee so that its ID contains an invalid character, or duplicate an employee using the same ID with different letter case.
 
 1. Run `java -jar huntr.jar`.<br>
-   Expected: HuntR rejects the entire file and starts with an empty employee list; it does not partially load valid employees. The log records a warning describing the invalid data.
+   Expected: HuntR rejects the entire file and starts with an empty employee list; it does not partially load valid employees. The result box shows the warning with the location of `data/unreadable-addressbook.json`, which is a copy of the rejected file, and the log records a warning describing the invalid data.
 2. Close HuntR without entering a command and restore the backup.<br>
    Expected: The original employee data is available again on the next launch.

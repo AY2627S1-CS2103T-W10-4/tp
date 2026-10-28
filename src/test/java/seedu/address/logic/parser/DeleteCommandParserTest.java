@@ -74,8 +74,8 @@ public class DeleteCommandParserTest {
 
     @Test
     public void parse_unexpectedPreamble_throwsParseException() {
-        assertParseFailure(parser, "1 id/E0001", withUsage(DeleteCommand.MESSAGE_UNEXPECTED_ARGUMENTS));
-        assertParseFailure(parser, "abc id/E0001", withUsage(DeleteCommand.MESSAGE_UNEXPECTED_ARGUMENTS));
+        assertParseFailure(parser, "1 id/E0001", withUsage(Messages.MESSAGE_UNEXPECTED_ARGUMENTS));
+        assertParseFailure(parser, "abc id/E0001", withUsage(Messages.MESSAGE_UNEXPECTED_ARGUMENTS));
     }
 
     @Test
