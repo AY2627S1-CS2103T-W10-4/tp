@@ -31,7 +31,7 @@ HuntR is based on [AddressBook-Level3](https://github.com/se-edu/addressbook-lev
 1. Type a command in the command box and press Enter to execute it. For example, type **`help`** and press Enter to open the help window.<br>
    Some example commands you can try:
 
-   * `list` : Lists all employees.
+   * `list` : Lists all active employees.
 
    * `sort department` : Sorts the displayed employees by department, from A to Z.
 
@@ -162,18 +162,26 @@ Examples (use IDs that are not already stored):
 * After adding `E0123`, `add id/E0124 n/Mei Lim p/81234567 e/mei.lim@example.com d/Engineering r/Developer m/e0123`
   assigns `E0123` as Mei's manager. The success message ends with `; Manager: E0123`.
 
-### Listing all employees: `list`
+### Listing all active employees: `list`
 
-Shows all employees stored in HuntR as a numbered list. Each entry includes the employee's name, employee ID,
+Shows all active employees stored in HuntR as a numbered list. Archived employees are excluded.
+Each entry includes the employee's name, employee ID,
 phone number, email, department, and role. Employees are shown in the order in which they were added, so `list` also undoes any `sort`.
 
 Format: `list`
 
-The command takes no parameters. Leading and trailing spaces are ignored, but additional text is rejected.
+Use `list` without arguments to show active employees, or [`list archived`](#listing-archived-employees-list-archived)
+to show archived employees. Leading and trailing spaces are ignored. The `archived` argument is case-sensitive
+and must be written in lowercase: `list ARCHIVED` and `list Archived` are rejected with `Invalid command format.`
+followed by `Usage: list [archived]`. Any other argument or additional text after `archived` is also rejected.
+
+When active employees are shown, HuntR displays `Listed all active employees.`
 
 If there are no employee records, HuntR displays an empty employee list and explains how to add an employee.
+If only archived employees remain, HuntR displays an empty active list and suggests `list archived` with the
+number of archived employees.
 
-Use `list` to show every employee again after a `find` or `filter`.
+Use `list` to show every active employee again after a `find` or `filter`.
 
 ### Editing an employee: `edit`
 
@@ -192,7 +200,7 @@ Format: `edit id/EMPLOYEE_ID [n/NAME] [p/PHONE] [e/EMAIL] [d/DEPARTMENT] [r/ROLE
 * The `id/` parameter identifies the employee to edit. The employee ID itself cannot be changed.
 * Employee ID matching is case-insensitive: `edit id/e0001 ...` identifies employee `E0001`.
 * HuntR searches the complete employee roster, so an employee hidden by the current `find` result can still be edited.
-* After a successful edit, HuntR resets the list to show all employees, clearing any active `find` result.
+* After a successful edit, HuntR resets the list to show all active employees, clearing any active `find` result.
 * If every value you give is the same as the employee's current value, HuntR displays
   `No changes made: the new values are the same as the existing ones for E0001.` and nothing is saved or added to
   the `undo` history. Changing only the letter case of a name, such as `carol ng` to `Carol Ng`, counts as a change.
@@ -431,7 +439,7 @@ Format: `filter [id/EMPLOYEE_ID] [n/NAME] [d/DEPARTMENT] [r/ROLE]`
 * An employee ID must be the whole ID, such as `id/E0123`. The ID is not case-sensitive.
 * To match any of several values of the same field (an `OR` search), repeat the prefix. For example, `d/Sales d/Finance` matches employees in `Sales` or in `Finance`. Each repeated value is a separate search, so `r/Manager r/Analyst` is not the same as `r/Manager Analyst`, which needs both words.
 * A new `filter` replaces the earlier `find` or `filter`. They are not combined, so to narrow the list further, put all the fields in one `filter`.
-* Filtering only changes what is shown. Your saved data is not changed. Archived employees are not shown. Use [`list`](#listing-all-employees-list) to show all employees again.
+* Filtering only changes what is shown. Your saved data is not changed. Archived employees are not shown. Use [`list`](#listing-all-active-employees-list) to show all active employees again.
 * The order set by [`sort`](#sorting-employees-sort) is kept, so you can filter and sort in any order.
 * A filter with no matches is valid and shows an empty list with the message `0 employees listed!`.
 * Leading and trailing spaces are ignored, and the parameters can be in any order.
@@ -610,7 +618,7 @@ Format: `sort FIELD [asc|desc]`
 * Sorting only changes the order in which employees are shown. Your saved data is not changed.
 * The sorted order is kept when you use `find` or `filter`, and when you add, edit or delete employees. An employee whose name, department or role is edited moves to the correct position.
 * HuntR does not remember the sorted order after you close it. The employees are shown in the order in which they were added.
-* Use [`list`](#listing-all-employees-list) to show the employees in the order in which they were added again.
+* Use [`list`](#listing-all-active-employees-list) to show all active employees in the order in which they were added again.
 
 Examples:
 * `sort name` shows the employees in alphabetical order of their names.

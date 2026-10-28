@@ -1313,7 +1313,7 @@ For each rejected command, verify that no record is added or changed.
 1. Enter `find Alex`.<br>
    Expected: Only employees whose names contain the whole-word keyword `Alex`, ignoring case, are displayed.
 2. Enter `list`.<br>
-   Expected: HuntR displays `Listed all employees.` and shows all active employees in roster order.
+   Expected: HuntR displays `Listed all active employees.` and restores the complete active employee roster.
 3. Enter `clear`, followed by `list`.<br>
    Expected: After `clear`, all active employee records are removed. If archived records remain, `list` displays
    an empty active roster and suggests `list archived` with their count. Otherwise, the message begins with
