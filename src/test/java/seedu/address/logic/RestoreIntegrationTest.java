@@ -159,9 +159,16 @@ public class RestoreIntegrationTest {
     public void execute_backupRoundTripAndLegacyBackup_preservesSupportedData() throws Exception {
         model.setAddressBook(snapshot);
         Clock clock = Clock.fixed(Instant.parse("2026-10-20T15:30:05Z"), ZoneOffset.UTC);
-        new BackupCommand(folder, clock).execute(model);
+        Path backupFolder = folder.resolve("round-trip");
+        new BackupCommand(backupFolder, clock).execute(model);
+        Path roundTripBackup;
+        try (var backups = Files.list(backupFolder)) {
+            List<Path> backupFiles = backups.toList();
+            assertEquals(1, backupFiles.size());
+            roundTripBackup = backupFiles.getFirst();
+        }
         logic.execute("clear");
-        logic.execute("restore file/" + folder.resolve("huntr-20261020-153005.json"));
+        logic.execute("restore file/" + roundTripBackup);
         assertStoredEmployees(snapshot.getEmployeeList(), model.getAddressBook().getEmployeeList());
 
         String legacy = Files.readString(Path.of(

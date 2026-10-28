@@ -90,7 +90,7 @@ public class JsonAddressBookStorage {
             throw new DataLoadingException(e);
         }
     }
-  
+
     /**
      * Saves a new snapshot without replacing an existing file or symbolic link at this storage path.
      *
