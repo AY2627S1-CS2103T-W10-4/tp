@@ -458,7 +458,8 @@ The following input errors leave the displayed list unchanged. Each message is f
 
 ### Archiving employees: `archive`
 
-Marks an employee as archived. Archived employees remain stored but are hidden from normal `list` and `find` results.
+Marks an active employee as archived. Archived employees remain stored but are hidden from normal `list`, `find`
+and `filter` results and excluded from `stats` and `check`.
 The current list, search or filter and sort order are preserved. The employee disappears from active-only views;
 other matching employees stay visible. Use `list archived` to see the archived record.
 
@@ -466,11 +467,33 @@ Format: `archive id/EMPLOYEE_ID`
 
 Example: `archive id/E0123`
 
+* Supply exactly one `id/` parameter. The ID must contain 1 to 20 letters, digits, hyphens or underscores,
+  with no spaces. Matching ignores letter case, so `archive id/e0123` also finds `E0123`.
+* The employee need not be visible: the command searches all stored records, even from an empty search or archive view.
+* The employee keeps their ID, contact details, department, role and reporting relationships. Their ID remains
+  reserved, so archiving does not let you add another employee with that ID.
+* Successful archiving is saved automatically. Use `undo` or `redo` during the same session to reverse or repeat it;
+  the archived status survives a restart, while undo history does not.
+
+On success, the message starts with `Archived employee:` followed by the employee's details.
+
 If you run `find Alice` and then archive one matching employee, the remaining Alice records stay visible.
 If that was the last match, the search remains active with an empty result.
 
 The ID is matched case-insensitively. An unknown ID produces `No employee with ID E0123 was found.` Archiving an
 already archived employee produces `Employee with ID E0123 is already archived.` No data changes on either error.
+
+The following input errors apply to both `archive` and `unarchive`. Each error is followed by that command's usage,
+and leaves the records, view and undo/redo history unchanged.
+
+| Example input | Error message |
+| --- | --- |
+| `archive` or `archive 1` | `Missing parameter: id/EMPLOYEE_ID.` |
+| `archive id/` | `Employee ID cannot be blank.` |
+| `archive id/E0123 date/2026-10-27` | `Unknown parameter: date/. Only id/ is supported.` |
+| `archive id/E 123` or `archive id/E0123!` | `Employee ID should be 1 to 20 characters long and contain only letters, digits, hyphens and underscores.` |
+| `archive id/E0123 id/E0123` | `Multiple values specified for the following single-valued field(s): id/` |
+| `archive extra id/E0123` | `Unexpected arguments. Specify exactly one employee ID using id/EMPLOYEE_ID.` |
 
 Archiving a manager preserves their reporting relationships. If active employees still report directly to that
 manager, the success message gives their count and suggests a command to review their assignments, for example:
@@ -493,6 +516,12 @@ Format: `unarchive id/EMPLOYEE_ID`
 
 Example: `unarchive id/E0123`
 
+The same ID rules and input errors as [`archive`](#archiving-employees-archive) apply. Restoring an employee keeps
+their existing ID, other details and reporting relationships, and saves the active status automatically.
+The result starts with `Unarchived employee:` followed by their details. If they are outside the current view,
+the next line is ``The restored employee is outside the current view. Use `list` to see it.``
+Use `undo` or `redo` to reverse or repeat the restoration during the same session.
+
 If you run `list archived` and then `unarchive id/E0123`, the remaining archived records stay visible so you can
 continue restoring employees. Restoring the last archived record leaves an empty archive view. Use `list` to view
 the restored employees.
@@ -502,9 +531,27 @@ An unknown ID produces the usual employee-not-found error. Attempting to unarchi
 
 ### Listing archived employees: `list archived`
 
-Shows only archived employees. Normal `list` continues to show only active employees.
+Shows all archived employees in the employee panel, with an `Archived` label on their cards. It replaces any
+search, filter or reporting view and resets sorting to stored roster order. Normal `list` shows only active
+employees and also resets the view and sorting.
 
 Format: `list archived`
+
+When archived employees exist, the result is `Listed all archived employees.` Otherwise, the panel is empty and
+the result is `There are no archived employees.` If `list` finds no active employees but archived records exist,
+it suggests `list archived` and gives their count. For example:
+
+```text
+There are no active employees. Use `list archived` to see the 2 archived employees.
+```
+
+Use lowercase `archived` with no additional arguments. `list Archived`, `list all` and
+`list archived id/E0123` are rejected with `Invalid command format.` followed by `Usage: list [archived]`.
+Listing does not change employee records or add an undo step.
+
+Undo keeps the current view. For example, after `archive id/E0123`, `list archived`, then `undo`, the restored
+employee leaves the archive view. If no other archived employees remain, the panel is empty even though the
+message says `Undo successful.` Use `list` to see the restored employee in the active roster.
 
 Archived employees retain their IDs, can be edited with `edit`, and can be deleted with `delete` (and restored with `undo` during the same session).
 
@@ -813,7 +860,7 @@ Furthermore, certain edits can cause HuntR to behave in unexpected ways (e.g., i
 Action     | Format, Examples
 -----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 **Add**    | `add id/EMPLOYEE_ID n/NAME p/PHONE e/EMAIL d/DEPARTMENT r/ROLE [m/MANAGER_ID]`<br>e.g., `add id/E0123 n/John Tan p/91234567 e/johntan@example.com d/Engineering r/Software Engineer`
-**Archive** | `archive id/EMPLOYEE_ID`<br>e.g., `archive id/E0123`
+**[Archive](#archiving-employees-archive)** | `archive id/EMPLOYEE_ID`<br>e.g., `archive id/E0123`<br>Keeps the employee's record and marks it archived.
 **Backup** | `backup`
 **Check**  | `check`
 **Clear**  | `clear`
@@ -821,9 +868,8 @@ Action     | Format, Examples
 **Edit**   | `edit id/EMPLOYEE_ID [n/NAME] [p/PHONE] [e/EMAIL] [d/DEPARTMENT] [r/ROLE] [m/MANAGER_ID]`<br>e.g., `edit id/E0001 p/91234567 e/alex@example.com`
 **Find**   | `find KEYWORD [MORE_KEYWORDS]`<br> e.g., `find James Jake`
 **Filter** | `filter [id/EMPLOYEE_ID] [n/NAME] [d/DEPARTMENT] [r/ROLE]`<br> e.g., `filter n/John d/Sales`, `filter d/Sales d/Finance r/Manager`
-**List**   | `list` or `list archived`
+**List**   | `list` for active employees; [`list archived`](#listing-archived-employees-list-archived) for archived employees. Both reset sorting.
 **Stats**  | `stats`
-
 **Manager** | `manager id/EMPLOYEE_ID m/MANAGER_ID`
 **Unassign manager** | `unassign-manager id/EMPLOYEE_ID`
 **Team** | `team id/EMPLOYEE_ID`
@@ -831,7 +877,7 @@ Action     | Format, Examples
 **Chain** | `chain id/EMPLOYEE_ID`
 **Undo**   | `undo`
 **Redo**   | `redo`
-**Unarchive** | `unarchive id/EMPLOYEE_ID`
+**[Unarchive](#unarchiving-employees-unarchive)** | `unarchive id/EMPLOYEE_ID`<br>e.g., `unarchive id/E0123`<br>Restores an archived employee to active status.
 **Help**   | `help`
 **Sort**   | `sort FIELD [asc\|desc]`<br> e.g., `sort department desc`
 **Exit**   | `exit`
