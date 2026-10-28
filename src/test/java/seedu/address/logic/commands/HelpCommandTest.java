@@ -53,8 +53,8 @@ public class HelpCommandTest {
 
     @Test
     public void commandSummary_showsFileCommandFormats() {
-        assertTrue(COMMAND_SUMMARY.lines().anyMatch("import FILE_PATH"::equals));
-        assertTrue(COMMAND_SUMMARY.lines().anyMatch("export FILE_PATH"::equals));
+        assertTrue(COMMAND_SUMMARY.lines().anyMatch("import file/FILE_PATH"::equals));
+        assertTrue(COMMAND_SUMMARY.lines().anyMatch("export file/FILE_PATH"::equals));
         assertTrue(COMMAND_SUMMARY.lines().anyMatch("backup"::equals));
         assertTrue(COMMAND_SUMMARY.lines().anyMatch("restore file/JSON_FILE_PATH"::equals));
     }

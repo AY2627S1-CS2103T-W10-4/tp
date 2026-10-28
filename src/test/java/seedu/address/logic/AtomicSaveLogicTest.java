@@ -77,7 +77,7 @@ public class AtomicSaveLogicTest {
     @Test
     public void execute_backupWithUnavailablePrimaryStorage_reportsSuccess() throws Exception {
         Path backupFolder = folder.resolve("backups");
-        Path backupPath = backupFolder.resolve("huntr-20261020-153005.json");
+        Path backupPath = backupFolder.resolve("huntr-20261020-153005-0000000000.json");
         Clock clock = Clock.fixed(Instant.parse("2026-10-20T15:30:05Z"), ZoneOffset.UTC);
         Model model = new ModelManager(getTypicalAddressBook(), new UserPrefs());
         IOException failure = new IOException("Atomic replacement is not supported for this data file.",

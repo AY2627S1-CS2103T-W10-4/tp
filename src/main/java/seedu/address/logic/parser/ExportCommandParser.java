@@ -23,7 +23,7 @@ public class ExportCommandParser implements Parser<ExportCommand> {
         }
 
         try {
-            return new ExportCommand(ParserUtil.parseCsvFilePath(args));
+            return new ExportCommand(ParserUtil.parseCsvFileArgument(args));
         } catch (ParseException pe) {
             throw new ParseException(pe.getMessage() + "\n" + ExportCommand.MESSAGE_USAGE, pe);
         }

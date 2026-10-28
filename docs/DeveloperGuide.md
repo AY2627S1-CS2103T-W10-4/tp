@@ -138,8 +138,21 @@ serializes using `JsonUtil.toJsonString()` and encodes UTF-8 **before** invoking
 `AtomicFileWriter.write(Path, byte[])`. The generic JSON/file utilities, preferences and CSV writers are unchanged.
 JSON backups already use this storage class and therefore share its atomic writer.
 
-The writer resolves the destination and inspects its supported access attributes, creates missing parent
-directories, then creates a uniquely named sibling `.huntr-*.tmp` file. It establishes and verifies restricted
+Backups use `saveNewAddressBook`, which refuses existing destination files or symbolic links.
+After writing, forcing, closing and protecting the sibling temporary file, the writer publishes it using
+`Files.createLink(destination, temporary)`. The final name refers to complete contents as soon as it exists;
+there is no empty reservation, and an occupied name causes a collision without replacing it.
+Successful link creation is the backup commit point. Removing the temporary name is best effort: cleanup failure
+is logged but still reports backup success. Interruption can leave a `.tmp` name, but cannot expose an empty
+backup under its final name. This does not promise survival of filesystem or hardware failures.
+Backups require hard-link support; unsupported file systems fail without an unsafe copy or reservation fallback.
+`BackupCommand` always uses a ten-digit, zero-padded counter, starting at `0000000000` for each timestamp and
+retrying occupied names. New backup names therefore sort in creation order within a second, including beyond nine
+backups. Older backups without counters remain untouched; clock changes and external file changes are outside
+this ordering guarantee.
+
+For ordinary employee-file saves, the writer resolves the destination and inspects its supported access attributes,
+creates missing parent directories, then creates a uniquely named sibling `.huntr-*.tmp` file. It establishes and verifies restricted
 temporary access before writing any employee bytes, handles short writes until the entire buffer is consumed,
 forces the file and closes it. It then prepares and verifies final access protections and uses
 `Files.move` with `ATOMIC_MOVE` and `REPLACE_EXISTING`. It never pre-creates, truncates or deletes the destination,
@@ -355,26 +368,91 @@ this read-only command.
 `archive id/EMPLOYEE_ID` and `unarchive id/EMPLOYEE_ID` replace the target with an otherwise identical employee whose
 status is changed. They reject unknown IDs and redundant status changes without modifying the model.
 
+#### Parsing and status changes
+
+`ArchiveCommandParser` and `UnarchiveCommandParser` delegate to `SingleIdCommandParser`. Exactly one `id/` is
+required; missing, blank, malformed or repeated IDs, unknown prefixes and unexpected preambles are rejected with
+the corresponding command's usage. `ParserUtil.parseEmployeeId` enforces the 1-to-20-character ID format.
+Both commands use `EmployeeCommandSupport.find` to search the complete roster by case-insensitive ID, including
+employees hidden by the current view. Missing IDs produce `No employee with ID X was found.` without usage.
+`ArchiveCommand` rejects an already archived employee; `UnarchiveCommand` rejects an already active employee.
+
+`ModelManager#archiveEmployee` and `ModelManager#unarchiveEmployee` call `AddressBook#setEmployee` with a replacement
+created by `Employee#withArchived(true/false)`. All other fields, roster position and reporting relationships are
+preserved. After archiving, `ArchiveCommand` counts active direct reports across the complete roster. When the
+count is non-zero, it appends a singular/plural notice and `Use team id/X to review their assignments.`, using
+the stored manager ID. Archived and indirect reports are excluded from this count; no assignments are removed.
+
+The diagram shows successful archiving after parsing. Unarchiving follows the same lookup and replacement flow,
+using `withArchived(false)` and checking whether the employee appears in the resulting view instead of counting
+reports. The shared checkpoint, history commit and save steps are described in
+[Employee history and in-memory rollback](#employee-history-and-in-memory-rollback).
+
+<puml src="diagrams/ArchiveSequenceDiagram.puml" alt="Archiving an employee while preserving their details and reporting relationships" />
+
+#### Views and archived listing
+
 Both operations preserve the installed filter predicate and sort comparator. Updating the existing observable
 employee list lets the changed employee enter or leave the current view naturally, including empty search results
 and archived-only views. `UnarchiveCommand` adds a `list` hint when the restored employee is outside the current view.
 
-`ModelManager#updateFilteredEmployeeList` combines normal predicates with an active-status check, so `list` and `find`
+`ModelManager#updateFilteredEmployeeList` combines normal predicates with an active-status check, so `list`, `find` and `filter`
 never expose archived employees. `list archived` calls `Model#showArchivedEmployees` to select only archived employees
 in the same existing employee panel. `edit` preserves the target's archive status, while `delete` searches the complete
 stored list and can remove either status; session history can restore the removed record.
+
+`AddressBookParser` accepts only an empty argument string or the exact lowercase `archived` for `list`, after
+trimming surrounding whitespace. It constructs `ListCommand(false)` or `ListCommand(true)`. Both reset the sort
+comparator to roster order before installing their predicate. An empty archive displays
+`There are no archived employees.` An empty active list with archived records displays the archived count and a
+`list archived` hint. Listing does not commit a history step. Reporting views can include both active and archived
+employees, while `StatsCommand` and `CheckCommand` operate only on active records regardless of the displayed view.
+
+#### Persistence and history
 
 `JsonAdaptedEmployee` persists the status as `archived` in each employee object. A missing field deserializes as `false`,
 preserving compatibility with legacy data. `ClearCommand` calls `Model#clearEmployees`, which removes only active
 employees and preserves archived entries in the same list.
 
+Both status-changing commands return `HistoryAction.COMMIT`. `LogicManager` takes a checkpoint before execution,
+commits one snapshot on success and saves before returning feedback. A handled execution or save failure restores
+the data, history and view. Undo/redo preserves archive status and reporting relationships while retaining the
+view in effect when it runs. Restart loads the saved archive statuses but starts with fresh undo/redo history.
+`ArchiveCommandsTest`, `ArchiveViewIntegrationTest`, `ArchiveManagerFeedbackTest`, the individual parser tests and
+`ListCommandTest` cover status changes, saved data, view preservation, redundant requests and listing feedback.
+
 ### Delete an employee by ID
 
-`DeleteCommandParser` accepts `delete id/EMPLOYEE_ID` with exactly one `id/` parameter. It distinguishes unknown parameters, a missing parameter, a blank ID, an invalid ID format and duplicate parameters. A preamble before `id/` is rejected as unexpected arguments. Parsing errors include the command usage; see the [User Guide](UserGuide.md#deleting-an-employee-delete) for messages and examples.
+`AddressBookParser` routes `delete` to `DeleteCommandParser`, which delegates argument validation to
+`SingleIdCommandParser`. It accepts exactly one `id/` parameter and distinguishes unknown parameters, a missing
+parameter, a blank ID, an invalid ID format and duplicate parameters. A preamble before `id/` is rejected as
+unexpected arguments. Parsing errors include the command usage; see the
+[User Guide](UserGuide.md#deleting-an-employee-delete) for messages and examples.
 
 ID validation uses `ParserUtil.parseEmployeeId` and the existing `EmployeeId` rules: 1 to 20 letters, digits, hyphens or underscores, with no spaces. IDs retain their original casing and compare case-insensitively.
 
-`DeleteCommand` searches `model.getAddressBook().getEmployeeList()` for the matching `EmployeeId`, so a target can be deleted even when hidden by the current filter. It deletes that stored employee and returns all their details. The filter and remaining roster order are preserved. An absent ID produces `No employee with ID X was found.` without usage, where `X` is the entered ID. This command uses the existing saving flow.
+`DeleteCommand` calls `EmployeeCommandSupport.find(model, targetId)`, which searches the complete stored roster
+using case-insensitive `EmployeeId` equality. The target may be active, archived or hidden by the current view.
+An absent ID produces `No employee with ID X was found.` without usage, where `X` is the entered ID.
+
+Before deletion, the command counts all direct reports, including archived employees. `ModelManager#deleteEmployee`
+delegates to `AddressBook#removeEmployee`, which removes the target and replaces each direct report with
+`employee.withManager(null)`. Other employee fields and relationships remain unchanged. The command returns
+`Deleted employee:` followed by the employee's details, adding `1 direct report now has no manager.` for exactly
+one report or `N direct reports now have no manager.` for two or more reports, where `N` is the count.
+No notice is added when there are no direct reports. There is no confirmation step.
+
+The installed filter predicate and sort comparator remain in place, including an archived-only or empty view.
+The diagram below focuses on successful command execution after parsing. It omits the shared transaction wrapper:
+`DeleteCommand#getHistoryAction()` returns `COMMIT`, so `LogicManager` captures a checkpoint before execution,
+commits the whole deletion (including cleared manager assignments) as one history step, and saves before returning
+success. Execution or save failure restores the checkpoint. See
+[Employee history and in-memory rollback](#employee-history-and-in-memory-rollback) for the complete transaction.
+Undo restores the employee's original fields, archive status, roster position and affected reporting relationships
+during the same session; it preserves the view in effect when undo is run. Restart retains the saved deletion but
+starts a new history.
+
+<puml src="diagrams/DeleteSequenceDiagram.puml" alt="Deleting an employee and clearing direct reports' manager assignments" />
 
 ### Edit an employee by ID
 
@@ -586,7 +664,10 @@ order is not part of an undo/redo checkpoint and is not stored in the JSON file,
 ### CSV import and export
 
 `ImportCommand` and `ExportCommand` extend the abstract `CsvFileCommand`, which holds the file path and the folder
-HuntR runs from. `ParserUtil.parseCsvFilePath` checks that the path is relative and ends in `.csv`, and
+HuntR runs from. Both parsers use `ParserUtil.parseCsvFileArgument` to remove the `file/` parameter prefix and
+reject blank paths. Only the leading prefix is removed, so spaces and ` file/` within a path are preserved.
+Positional paths remain supported; `./file/staff.csv` explicitly addresses
+a directory named `file`. `ParserUtil.parseCsvFilePath` then checks that the path is relative and ends in `.csv`, and
 `CsvFileCommand#resolveFilePath` rejects a path that leads outside that folder once symbolic links are followed.
 `CsvUtil` converts between a list of values and one CSV record, quoting values that contain commas, quotes or line breaks.
 `CsvUtil.splitCsvRecords` splits only at line endings outside quoted values, preserves embedded line endings and
@@ -595,7 +676,7 @@ tracks the starting physical line of each record. `parseCsvLine` then validates 
 `ExportCommand` writes the header in `ExportCommand.CSV_HEADER`, then one line per employee in the complete stored
 roster, including archived employees. It creates missing parent folders and replaces an existing file.
 
-The sequence diagram below shows a successful `import staff.csv`. `ImportCommand` reads the UTF-8 text, splits it into
+The sequence diagram below shows a successful `import file/staff.csv`. `ImportCommand` reads the UTF-8 text, splits it into
 complete records, checks the header against the three accepted column lists, and parses each non-blank record with
 the same `ParserUtil` methods as `add`. A record that is invalid, repeats an earlier ID or uses an existing ID stops
 the command with its starting physical line number, including when earlier records contain quoted line breaks.
@@ -766,11 +847,6 @@ from command dispatch through saving to the first rendered UI frame showing the 
 Every operation must complete within two seconds. Record the maximum and environment; keep thresholds out of CI
 unit tests. Run the standalone UI acceptance harness described in `tests/test-plan.md` with atomic saving enabled.
 
-### \[Proposed\] Data archiving
-
-_{Explain here how the data archiving feature will be implemented}_
-
-
 --------------------------------------------------------------------------------------------------------------------
 
 ## **Documentation, logging, testing, dev-ops**
@@ -822,18 +898,22 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 | `* *` | Long-time user | Filter employees by search criteria | Gather specific organisation-wide data efficiently |
 | `* * *` | Basic user | Add an employee's information | the app reflects my company's workforce |
 | `* * *` | Basic user | List all employees | see the full roster in one place |
-| `* * *` | Basic user | Delete an employee's record | my workforce records remain current |
+| `* * *` | Basic user | Delete an active or archived employee by ID, even when hidden by a search | Remove the intended record without changing my view |
+| `* *` | Careful user | Undo a deletion and its reporting changes during the same session | Recover a mistakenly deleted employee and their relationships |
 | `* * *` | Basic user | Find an employee by name | quickly retrieve their information without browsing the whole list |
 | `* * *` | Basic user | Have my data saved automatically after every change | I don't lose records if the app closes unexpectedly |
 | `* * *` | Basic user | Exit the application with a command | close it safely knowing my data is saved |
 | `* *` | Basic user | Edit an employee's details | keep records accurate when someone's role or contact info changes |
-| `* *` | Careful user | Be asked to confirm before a record is deleted | avoid losing a record to a mistyped command |
+| `* *` | Careful user | **Coming soon:** Be asked to confirm before a record is deleted | avoid losing a record to a mistyped command |
 | `* *` | Busy user | Filter employees using multiple criteria at once (e.g. department and role) | narrow down results faster than one field at a time |
 | `* *` | Busy user | View an entire team's roster with one command | prepare for a team meeting without assembling the list myself |
 | `*` | Busy user | Sort employees by a chosen field (e.g. name or department) | scan records in the order that's useful to me |
 | `*` | Busy user | Look up an employee's leave status with one command | check quickly if they're available for a meeting |
 | `*` | Long-time user | Identify employees who don't appear connected to anyone else in the organisation | investigate whether my workforce information is incomplete |
 | `*` | Long-time user | Count employees by department | quickly see the size of each team |
+| `* *` | HR administrator | Archive an employee while retaining their details and reporting relationships | Keep former employees' records outside the active roster |
+| `* *` | HR administrator | List archived employees and restore one by ID | Bring an employee back without re-entering their information |
+| `* *` | HR administrator | Retain my search and sort order when archiving or restoring employees | Continue reviewing the same group of records |
 
 ### Use cases
 
@@ -1060,13 +1140,84 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 
     Use case resumes at step 2.
 
+**Use case: Archive an employee**
+
+**MSS**
+
+1. User enters `archive id/EMPLOYEE_ID`.
+2. HuntR validates the ID and finds an active employee in the complete roster.
+3. HuntR marks the employee archived, preserving their other fields and reporting relationships, and saves the change.
+4. HuntR displays the employee's details and any active-direct-report notice, retaining the current view and sort order.
+
+    Use case ends.
+
+**Extensions**
+
+* 1a. Input has a missing, blank, invalid or repeated ID, an unknown prefix or unexpected arguments.
+  * 1a1. HuntR reports the input error and command usage without changing data or the view.
+    Use case resumes at step 1.
+* 2a. The ID is unknown or the employee is already archived.
+  * 2a1. HuntR reports the relevant error without changing data, history or the view.
+    Use case ends.
+* 3a. Saving fails before the data file is replaced.
+  * 3a1. HuntR restores the records, history and view and displays the save error.
+    Use case ends.
+* 4a. The employee no longer matches the current view.
+  * 4a1. The employee disappears from that view; the predicate remains selected even if there are no matches.
+    Use case ends.
+
+**Use case: Restore an archived employee**
+
+**MSS**
+
+1. User enters `unarchive id/EMPLOYEE_ID`.
+2. HuntR validates the ID and finds an archived employee in the complete roster.
+3. HuntR marks the employee active, retaining their other fields and reporting relationships, and saves the change.
+4. HuntR displays the employee's details and retains the current view and sort order.
+
+    Use case ends.
+
+**Extensions**
+
+* 1a. Input is malformed.
+  * 1a1. HuntR reports the specific error and `unarchive` usage, leaving data and the view unchanged.
+    Use case resumes at step 1.
+* 2a. The ID is unknown or the employee is already active.
+  * 2a1. HuntR reports the relevant error without changing data, history or the view.
+    Use case ends.
+* 3a. Saving fails before the data file is replaced.
+  * 3a1. HuntR restores the records, history and view and displays the save error.
+    Use case ends.
+* 4a. The restored employee is outside the current view, including an archived-only view.
+  * 4a1. HuntR suggests `list` to see the employee; any remaining archived records stay visible in an archive view.
+    Use case ends.
+
+**Use case: List archived employees**
+
+**MSS**
+
+1. User enters `list archived`.
+2. HuntR replaces the current view with all archived employees in roster order.
+3. HuntR displays `Listed all archived employees.` Employee data and undo/redo history are unchanged.
+
+    Use case ends.
+
+**Extensions**
+
+* 1a. The argument differs from lowercase `archived` or includes additional text.
+  * 1a1. HuntR reports `Invalid command format.` and `Usage: list [archived]`, leaving the view unchanged.
+    Use case resumes at step 1.
+* 2a. There are no archived employees.
+  * 2a1. HuntR displays an empty panel and `There are no archived employees.`
+    Use case ends.
+
 **Use case: Delete an employee**
 
 **MSS**
 
 1. User requests to delete an employee using `delete id/EMPLOYEE_ID`.
 2. HuntR validates the ID and finds the employee in the complete roster, comparing IDs case-insensitively.
-3. HuntR deletes the specified employee record and saves the updated records, preserving the current search filter.
+3. HuntR immediately deletes the specified employee record and saves the updated records, preserving the current view and sort order.
 4. HuntR displays the deleted employee's details as confirmation.
 
     Use case ends.
@@ -1085,11 +1236,24 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 
     Use case ends.
 
-* 3a. The employee is hidden by the current search.
+* 3a. The employee is archived or hidden by the current search or filter.
 
-  * 3a1. HuntR deletes that employee from the complete roster while retaining the search filter.
+  * 3a1. HuntR deletes that employee from the complete roster while retaining the current view, even if it becomes empty.
 
     Use case resumes at step 4.
+
+* 3b. The employee has direct reports.
+
+  * 3b1. HuntR clears those employees' manager assignments, including archived reports, as part of the same change.
+  * 3b2. HuntR adds the affected direct-report count to the deletion confirmation.
+
+    Use case ends.
+
+* 3c. Saving the deletion fails before the data file is replaced.
+
+  * 3c1. HuntR restores the employee records, reporting relationships, history and view and displays the save error.
+
+    Use case ends.
 
 *{More to be added}*
 
@@ -1218,9 +1382,11 @@ For each rejected command, verify that no record is added or changed.
 1. Enter `find Alex`.<br>
    Expected: Only employees whose names contain the whole-word keyword `Alex`, ignoring case, are displayed.
 2. Enter `list`.<br>
-   Expected: HuntR displays `Listed all employees.` and restores the complete employee roster.
+   Expected: HuntR displays `Listed all active employees.` and restores the complete active employee roster.
 3. Enter `clear`, followed by `list`.<br>
-   Expected: After `clear`, all active employee records are removed. `list` displays an empty active roster and a message beginning with `You don’t have any employees yet.`, followed by the `add` command format. Any archived records remain available through `list archived`.
+   Expected: After `clear`, all active employee records are removed. If archived records remain, `list` displays
+   an empty active roster and suggests `list archived` with their count. Otherwise, the message begins with
+   `You don’t have any employees yet.`, followed by the `add` command format.
 
 ### Finding employees
 
@@ -1323,6 +1489,79 @@ Engineering department, `E0003` is in Finance and `E0006` is in Sales.
 7. Enter `list`.<br>
    Expected: HuntR displays all employees in the order in which they were added, from `E0001` to `E0007`.
 
+### Archiving and restoring employees
+
+**Prerequisites:** Start with an empty roster (no active or archived employees) in a separate test data file.
+Add these active employees in the order shown, with no managers, and restore that starting state before each
+independent test below. `A9999` must not exist.
+
+```text
+add id/A1001 n/Alice Tan p/91234561 e/alice.tan@example.com d/Engineering r/Engineer
+add id/A1002 n/Alice Lim p/91234562 e/alice.lim@example.com d/Engineering r/Manager
+add id/A1003 n/Bob Ng p/91234563 e/bob.ng@example.com d/Sales r/Engineer
+```
+
+1. Enter `archive id/a1001`, then `list archived`.<br>
+   Expected: The archive result begins with `Archived employee:` and uses stored ID `A1001`. Only `A1001` appears
+   in the archive view, with an `Archived` label. Its other details are unchanged.
+2. Archive `A1001`, then enter `list`.<br>
+   Expected: Only the active employees `A1002` and `A1003` appear.
+3. Archive `A1001`, then enter `find Alice`.<br>
+   Expected: Only `A1002` appears; the archived employee `A1001` is excluded.
+4. Archive `A1001`, then enter `filter d/Engineering`.<br>
+   Expected: Only `A1002` appears; the archived employee `A1001` is excluded.
+5. Archive `A1001`, then enter `stats`.<br>
+   Expected: The summary begins with `Total active employees: 2`. Each department has one employee, and each
+   role has one employee; the archived employee `A1001` is excluded from all counts.
+6. Archive `A1001`, then enter
+   `add id/a1001 n/Carol Lee p/91234564 e/carol.lee@example.com d/Finance r/Analyst`.<br>
+   Expected: The duplicate ID is rejected even with different letter case; no new employee is added.
+7. Enter `find Alice`, `sort id desc`, `archive id/A1001`, then `unarchive id/a1001`.<br>
+   Expected: Archiving leaves `A1002` visible. Restoration displays `A1002`, then `A1001`, without a `list` hint.
+   Repeat from the starting state with `filter d/Engineering r/Engineer`:<br>
+   Expected: Archiving leaves an empty view; unarchiving brings `A1001` back into that same filter.
+8. Enter `find Nobody`, `archive id/A1001`, then `unarchive id/A1001`.<br>
+   Expected: Both commands find the hidden employee. The view stays empty, and restoration appends
+   ``The restored employee is outside the current view. Use `list` to see it.`` Enter `list` to see all three records.
+9. Archive `A1001` and `A1002`, then enter `list archived` and `sort id desc`. Unarchive `A1001`, then `A1002`.<br>
+   Expected: The first restoration leaves `A1002` visible; the second leaves an empty archive view. Both suggest
+   `list`. Enter `undo`:<br>
+   Expected: `A1002` reappears as archived. Enter `redo`:<br>
+   Expected: It disappears again. Enter `list` to see all three active employees.
+10. Enter `archive id/A1001`, `list archived`, then `undo`.<br>
+   Expected: The message is `Undo successful.` and the archive view becomes empty. Enter `list`:<br>
+   Expected: All three employees appear as active, including the restored employee `A1001`.
+11. Enter `manager id/A1001 m/A1002`, `manager id/A1003 m/A1002`, `archive id/A1003`, then `archive id/a1002`.<br>
+   Expected: The manager's result adds `1 active employee still reports to this archived manager.` and
+   `Use team id/A1002 to review their assignments.` Enter `team id/A1002`:<br>
+   Expected: Both reports retain manager `A1002`; the cards include the archived manager and archived report.
+   Unarchive `A1002`, then undo and redo:<br>
+   Expected: Every manager assignment remains unchanged throughout.
+12. Enter `manager id/A1001 m/A1002`, `manager id/A1003 m/A1002`, then `archive id/a1002`.<br>
+   Expected: The manager's result adds `2 active employees still report to this archived manager.` and
+   `Use team id/A1002 to review their assignments.` Enter `team id/A1002`:<br>
+   Expected: The manager is archived; both reports remain active and retain manager `A1002`.
+   Unarchive `A1002`, then undo and redo:<br>
+   Expected: Every manager assignment remains unchanged throughout.
+13. Enter `archive`, `archive id/`, `archive id/A1001 id/A1001`, `archive x/A1001`, `archive extra id/A1001`
+   and `archive id/A 1001` separately; repeat each malformed form with `unarchive`.<br>
+   Expected: Each reports the corresponding input error and command-specific usage. Data and view are unchanged.
+   Enter `archive id/A9999` and `unarchive id/A9999`:<br>
+   Expected: `No employee with ID A9999 was found.` without usage.
+14. Archive `A1001`, unarchive it, then undo. Attempt `archive id/A1001` and `unarchive id/A1002`.<br>
+   Expected: The errors say that `A1001` is already archived and `A1002` is already active. Enter `redo`:<br>
+   Expected: `A1001` becomes active; neither failed request consumed the redo step.
+15. Enter `list archived` with no archived employees.<br>
+   Expected: An empty panel and `There are no archived employees.` Archive `A1002`, then `A1001`, and enter
+   `list archived`:<br>
+   Expected: `A1001`, then `A1002`, in stored roster order. After `sort id desc`, `list archived` resets that order.
+   `list Archived`, `list all` and `list archived id/A1001` report invalid format and retain the previous view.
+   Archive `A1003` and enter `list`:<br>
+   Expected: ``There are no active employees. Use `list archived` to see the 3 archived employees.``
+16. Archive `A1001`, exit and relaunch, then enter `list archived`.<br>
+   Expected: `A1001` is still archived with the same details. Unarchive it, exit and relaunch again:<br>
+   Expected: `A1001` is active. `undo` immediately after either restart reports that no commands are available to undo.
+
 ### Deleting an employee
 
 **Prerequisites:** Add employees with IDs `EMP-0042`, `E0123` and `abc`. Give `EMP-0042` and `E0123` the same name, and give `abc` a different name. Restore these records before each independent test case below.
@@ -1339,6 +1578,18 @@ Engineering department, `E0003` is in Finance and `E0006` is in Sales.
    Expected: HuntR displays `No employee with ID E9999 was found.` No usage text is appended and no record is changed.
 6. Delete the last remaining employee, enter `exit`, and relaunch HuntR.<br>
    Expected: The roster remains empty after relaunch. The deleted ID can be used again in a new `add` command.
+7. Enter `archive id/EMP-0042`, `list archived`, then `delete id/emp-0042`.<br>
+   Expected: The archived employee is deleted, and the archived-only view remains selected. Enter `undo`:<br>
+   Expected: The employee reappears with its original ID spelling and archived status. Enter `redo` to delete it again.
+8. Enter `manager id/E0123 m/EMP-0042` and `manager id/abc m/EMP-0042`, then archive `abc`.
+   Enter `delete id/EMP-0042`.<br>
+   Expected: Both reports remain, with no manager; `abc` remains archived. The result includes
+   `2 direct reports now have no manager.` Enter `undo`, then `team id/EMP-0042`:<br>
+   Expected: The manager and both reports appear with their original assignments. Enter `redo`:<br>
+   Expected: The manager is deleted again and both assignments are cleared.
+9. Enter `filter id/E0123`, `sort id desc`, then `delete id/EMP-0042`.<br>
+   Expected: `E0123` stays visible and the filter and descending ID sort remain selected. Enter `delete id/E0123`:<br>
+   Expected: The view becomes empty. Enter `undo` to restore `E0123` into the same filtered view.
 
 
 ### Reporting relationships and team structure

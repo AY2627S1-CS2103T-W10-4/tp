@@ -39,8 +39,8 @@ public class ExportCommand extends CsvFileCommand {
 
     public static final String MESSAGE_USAGE = COMMAND_WORD + ": Exports all employees to a CSV file, "
             + "replacing the file if it exists.\n"
-            + "Parameters: FILE_PATH (relative to the folder HuntR runs from, ending in .csv)\n"
-            + "Example: " + COMMAND_WORD + " exports/staff.csv";
+            + "Parameters: file/FILE_PATH (relative to the folder HuntR runs from, ending in .csv)\n"
+            + "Example: " + COMMAND_WORD + " file/exports/staff.csv";
 
     public static final String MESSAGE_SUCCESS = "Exported %1$d employee(s) to %2$s";
     public static final String MESSAGE_WRITE_FAILED = "Could not write to %1$s. Check that the file is not open in "

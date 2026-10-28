@@ -23,7 +23,7 @@ public class ImportCommandParser implements Parser<ImportCommand> {
         }
 
         try {
-            return new ImportCommand(ParserUtil.parseCsvFilePath(args));
+            return new ImportCommand(ParserUtil.parseCsvFileArgument(args));
         } catch (ParseException pe) {
             throw new ParseException(pe.getMessage() + "\n" + ImportCommand.MESSAGE_USAGE, pe);
         }
