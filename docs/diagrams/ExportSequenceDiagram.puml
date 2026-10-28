@@ -1,0 +1,46 @@
+@startuml
+!include style.puml
+skinparam ArrowFontStyle plain
+
+participant ":LogicManager" as Logic LOGIC_COLOR
+participant ":ExportCommand" as Export LOGIC_COLOR
+participant "model:Model" as Model MODEL_COLOR
+participant "roster:ReadOnlyAddressBook" as Book MODEL_COLOR
+participant "<<class>>\nCsvUtil" as Csv #A9A9A9
+participant "<<class>>\nFiles / FileUtil" as Files STORAGE_COLOR
+
+note over Logic, Export
+AddressBookParser and ExportCommandParser have parsed
+export file/exports/staff.csv into a validated relative CSV path.
+HistoryAction.NONE: no checkpoint, history commit or employee-file save.
+end note
+Logic -> Export : execute(model)
+activate Export
+Export -> Model : getAddressBook()
+Model --> Export : complete roster
+Export -> Book : getEmployeeList()
+Book --> Export : stored employee list
+Export -> Export : resolveFilePath()
+note right of Export
+Stored order, including archived and hidden employees.
+Reject locations outside the app folder after following links.
+end note
+loop each employee
+    Export -> Csv : toCsvLine(eight field values)
+    Csv --> Export : quoted CSV record
+end
+Export -> Files : createDirectories(parentFolder)
+Export -> Files : writeToFile(path, header and records)
+alt write succeeds
+    Files --> Export
+    Export --> Logic : CommandResult("Exported <count> employee(s) to <path>")
+else IOException
+    Files --> Export : exception
+    Export --> Logic : CommandException(export-specific write error)
+end
+deactivate Export
+note over Model, Files
+Employee data, view and history are unchanged.
+Output overwrites an existing CSV with an ordinary file write.
+end note
+@enduml
