@@ -12,6 +12,14 @@ public class EmployeeCardTest {
     private static final Employee EMPLOYEE = new EmployeeBuilder().build();
 
     @Test
+    public void formatDisplayIndex_singleAndDoubleDigits_usesConsistentGutterText() {
+        assertEquals("01", EmployeeCard.formatDisplayIndex(1));
+        assertEquals("09", EmployeeCard.formatDisplayIndex(9));
+        assertEquals("10", EmployeeCard.formatDisplayIndex(10));
+        assertEquals("100", EmployeeCard.formatDisplayIndex(100));
+    }
+
+    @Test
     public void getManagerText_employeeWithoutManager_returnsUnassigned() {
         assertEquals("Unassigned", EmployeeCard.getManagerText(EMPLOYEE));
         assertEquals("Unassigned", EmployeeCard.getManagerText(EMPLOYEE.withArchived(true)));
