@@ -529,12 +529,31 @@ hash-code behavior. `ModelManager` equality also remains unchanged: history is n
 Construction copies the supplied data and records exactly one initial snapshot with pointer zero.
 History lasts only for the session. The JVM property `huntr.maxUndoHistory` configures the maximum undo steps;
 `VersionedAddressBook(initialState, maxUndoHistory)` also accepts the limit explicitly. The default, `-1`, preserves
-unlimited history pending team agreement on a finite default. Non-negative values retain at most the limit plus one
-snapshots (including the current state); zero disables undo. Invalid values are rejected at construction.
+unlimited history. Non-negative values retain at most the limit plus one snapshots (including the current state);
+zero disables undo. Invalid values are rejected at construction.
 After a changed commit removes the redo tail and appends a snapshot, excess oldest states are removed and the pointer
 is adjusted. No-op commits never evict snapshots or discard redo. Checkpoints retain the pre-command history so a
 failed command can restore snapshots evicted by a tentative commit. Snapshots still share immutable employee objects;
 the limit bounds retained states, not bytes, and does not limit the size of the employee roster itself.
+
+The property is read by `configuredHistoryLimit()` when a `VersionedAddressBook` is constructed; it is not a JSON
+preference and cannot be changed by an in-app command. Non-integer and out-of-range values fail integer parsing;
+integers below `-1` fail constructor validation. A limit of zero retains the current snapshot for change detection
+and rollback but exposes neither undo nor redo.
+
+For a limit of two, let `S0` be the initial roster and `S1` through `S4` be distinct stored states:
+
+| Operation | Retained snapshots, oldest first | Current state |
+| --- | --- | --- |
+| Construct | `S0` | `S0` |
+| Commit `S1`, then `S2` | `S0, S1, S2` | `S2` |
+| Commit `S3` | `S1, S2, S3` | `S3` |
+| Undo | `S1, S2, S3` | `S2` |
+| Commit unchanged `S2` | `S1, S2, S3` | `S2` (redo remains available) |
+| Commit changed `S4` | `S1, S2, S4` | `S4` (redo of `S3` is discarded) |
+
+Eviction happens only on changed commits, after truncating redo and appending the new snapshot. The capacity
+applies to the entire retained sequence, including redo states, rather than a separate allocation for each direction.
 
 `addressBookStateList` contains complete immutable `List<Employee>` snapshots. Containers cannot be changed;
 immutable employee objects are shared. Every stored field, raw ID spelling, archive status and employee order is
@@ -553,8 +572,10 @@ command has returned. Low-level mutations do not commit.
 
 `UndoCommand` and `RedoCommand` check availability and move one step without committing. Snapshot data is restored
 directly; redo never executes a command again or reads a CSV. Both commands preserve the current effective view.
-Identical edits and clears with no active employees still reset to the active view and return their usual success
-messages. They create no entry and retain redo. Read-only and failed commands also retain redo.
+An identical edit throws `CommandException` with `EditCommand.MESSAGE_NO_CHANGES` before model mutation; it does
+not save, change the view or consume history. Clearing a roster with no active employees still resets to the active
+view and returns its usual success message, then attempts saving, but creates no history entry. Both retain redo.
+Read-only and failed commands also retain redo.
 
 #### Checkpoints and transaction boundary
 
@@ -574,11 +595,26 @@ index before discarding redo or appending a snapshot; that commit still takes O(
 Checkpoints remain usable after later changes, redo-tail removal and repeated restoration. Restoration updates the
 working list and reinstalls the immutable history index without copying its entries. Shared snapshots never change.
 
+`historyShared` records whether a checkpoint may hold the current index. Capture wraps an unshared index with
+`Collections.unmodifiableList`; `ModelCheckpoint` retains that reference and copies only the working-list container.
+Before a changed commit mutates an index marked shared, `VersionedAddressBook` creates a new `ArrayList` and clears
+the flag. Restoring a checkpoint reinstalls its index and sets the flag again, so subsequent redo truncation or
+capacity eviction cannot alter an older checkpoint. The working list is captured separately because low-level
+mutations need not have been committed to the current snapshot yet.
+
+**Design tradeoffs:** Copying the entire history index at every checkpoint makes capture grow with session length,
+even for undo, redo and no-op commands. Sharing it moves that O(h) copy to changed commits while preserving rollback
+after truncation and eviction. Complete roster snapshots simplify redo and multi-row import recovery, at the cost
+of up to O(h × n) employee references for h snapshots of n employees; immutable employee values are shared.
+The optional history limit bounds snapshot count. It does not make changed commits or disk saves constant-time.
+
 Run `./gradlew -I tests/performance/history-performance.gradle checkpointPerformance` for an opt-in microbenchmark
 at 10, 1,000 and 10,000 history steps with a fixed one-employee roster. It compares shared-index capture with the
 former container-copying strategy and measures undo/redo command pairs using storage that performs no disk I/O.
 It warms each scenario before reporting nanoseconds per operation. These diagnostic timings isolate history costs;
-they are not end-to-end UI latency measurements and have no CI timing threshold.
+they are not end-to-end UI latency measurements and have no CI timing threshold. The recorded sample and baseline
+limitations are in `tests/performance/results/2026-10-27-checkpoint.md`; decreasing sample times are not evidence
+that a longer history makes undo/redo faster.
 
 `CommandException`, `AccessDeniedException`, other `IOException` and unexpected `RuntimeException` during execution,
 tentative commits, serialization or saving cause restoration for data-changing commands. Command exceptions and
@@ -604,8 +640,9 @@ The existing stored observable list and `FilteredList` instances are preserved. 
 predicate reference, treating installed predicates as stable. Restore applies it directly with
 `filteredEmployees.setPredicate(...)`; routing through `updateFilteredEmployeeList()` would add an active-only
 condition and corrupt archived-only views. A zero-match search retains its predicate and can reveal a matching
-employee restored by undo. Historical searches are not part of snapshots. Selection, scroll position and
-suppression of intermediate list notifications are outside scope.
+employee restored by undo. Historical searches are not part of snapshots. The `SortedList` comparator remains in
+place and is not captured in employee snapshots or checkpoints; undo/redo preserve the current sort. Selection,
+scroll position and suppression of intermediate list notifications are outside scope.
 
 #### Persistence and atomic saving
 
@@ -618,7 +655,6 @@ validation, case-insensitive ID uniqueness, invalid-file handling, paths and pre
 uses eight columns including manager IDs; import also accepts legacy six-column and seven-column CSV and rejects
 header-only files.
 
-Employee history and atomic saving share the recorded baseline `1d8b4b5eaeae6b1a102f92dd81a7befb18221ecb`.
 The combined boundary is the writer's successful atomic replacement. Employee changes and history commits are
 tentative until then; a handled failure before replacement preserves file bytes and restores the checkpoint for
 data-changing commands. No fallible work follows replacement, so a completed disk commit cannot be reported as a
@@ -630,7 +666,12 @@ External JSON editing while closed remains supported; live reload and concurrent
 
 #### Validation and performance
 
-`ModelHistoryTest`, `HistoryCommandTest` and `HistoryTransactionTest` cover history traversal, no-ops, raw IDs,
+`VersionedAddressBookTest` covers configured limits, zero/unlimited history, oldest-state eviction, no-op commits,
+redo truncation and checkpoint restoration after eviction. Its long-history case commits 10,000 changes with a
+25-step limit and checks that at most 26 snapshots remain. `ModelHistoryTest` checks shared index identity across
+capture, navigation and no-ops, and verifies that changed commits preserve previously captured checkpoints.
+
+`ModelHistoryTest`, `HistoryCommandTest` and `HistoryTransactionTest` also cover history traversal, no-ops, raw IDs,
 checkpoints, view/list identity, import grouping, execution failures and save failures. Assertions compare ordered
 stored values separately from model equality. Existing parser, storage, CSV and command tests cover compatibility.
 The detailed matrix and recorded acceptance environment are in the repository's `tests/test-plan.md`.
@@ -1202,6 +1243,78 @@ testing deletion or editing the JSON file.
    Expected: The assignment is retained. With HuntR closed, remove `managerId` from a record in a copy of the
    valid JSON file and load it: that employee has no manager. A missing manager reference, self-reference or
    reporting cycle in the file causes the entire file to be rejected. Restore the backup after testing.
+
+### Undoing and redoing employee changes
+
+Use disposable writable folders and the release JAR `huntr.jar`. Run each scenario in order. A restart preserves
+saved records but resets session history. These tests complement the command syntax and examples in the UG.
+
+**Navigation, no-ops and redo branching**
+
+**Prerequisites:** Start a new session with the default history setting. ID `HIST-001` must be unused in both rosters.
+
+1. Enter `undo`, then `redo`.<br>
+   Expected: `No more commands to undo.` and `No more commands to redo.` respectively. No data or view changes.
+2. Enter `add id/HIST-001 n/History Demo p/91234567 e/history@example.com d/QA r/Tester`, then
+   `edit id/HIST-001 r/Analyst`, then `undo`.<br>
+   Expected: The role changes from Analyst back to Tester; the result is `Undo successful.`
+3. Enter `edit id/HIST-001 r/Tester`, then `edit id/HIST-001 p/12`, then `find History`.<br>
+   Expected: The first edit reports unchanged details; the second reports the invalid phone number. Neither
+   consumes a history step or discards redo. The search displays History Demo.
+4. Enter `redo`, then `undo`, then `edit id/HIST-001 r/Lead`, then `redo`.<br>
+   Expected: Redo restores Analyst, undo restores Tester, and the new edit changes the role to Lead.
+   The final redo reports `No more commands to redo.` because the actual new change discarded the redo state.
+
+**Archived view and restart**
+
+**Prerequisites:** Continue from the preceding scenario with `HIST-001` active and its role Lead.
+
+1. Enter `archive id/HIST-001`, then `list archived`, then `undo`.<br>
+   Expected: Undo restores `HIST-001` to active status, but the archived-only view remains selected and hides it.
+2. Enter `redo`.<br>
+   Expected: The archived-only view is preserved and displays `HIST-001` again, with role Lead.
+3. Exit and relaunch without changing the data file. Enter `undo`, then `redo`, then `list archived`.<br>
+   Expected: Both history commands report that no more commands are available. `HIST-001` is still archived;
+   only its saved employee state, not its history, survived the restart.
+
+**Finite capacity and eviction**
+
+**Prerequisites:** Put a copy of the JAR in a fresh writable folder. Launch with
+`java -Dhuntr.maxUndoHistory=2 -jar huntr.jar`. Keep this session open for the save-failure scenario below.
+
+1. Enter `add id/LIM-001 n/Limit Demo p/91234567 e/limit@example.com d/QA r/Tester`, then
+   `edit id/LIM-001 r/Analyst`, then `edit id/LIM-001 r/Lead`.<br>
+   Expected: All three changes succeed. Only the last two changes remain undoable.
+2. Enter `undo` twice, then a third time.<br>
+   Expected: The role becomes Analyst, then Tester. The third undo reports `No more commands to undo.`;
+   `LIM-001` still exists because the pre-add snapshot was evicted.
+3. Enter `redo` twice.<br>
+   Expected: The role becomes Analyst, then Lead. A further redo reports `No more commands to redo.`
+
+**Save failure restores evicted history and redo**
+
+**Prerequisites:** Continue the finite-capacity scenario at Lead, with two available undo steps. On macOS/Linux,
+copy `data/addressbook.json` to `before-save.json`, then run `chmod a-w data/addressbook.json` in the launch folder.
+Use this permission test only on a disposable copy of the data.
+
+1. Enter `edit id/LIM-001 r/Director`.<br>
+   Expected: A save-permission error is shown. The role stays Lead, despite the tentative commit having reached
+   capacity. `cmp data/addressbook.json before-save.json` reports no differences.
+2. Run `chmod u+w data/addressbook.json`, then enter `undo` twice.<br>
+   Expected: Analyst and then Tester are restored. The failed edit did not permanently evict the oldest state.
+3. With the role still Tester, run `chmod a-w data/addressbook.json` and enter `redo`.<br>
+   Expected: A save-permission error is shown and the role stays Tester. Restore permission with
+   `chmod u+w data/addressbook.json`, then enter `redo` twice: Analyst and Lead are both still recoverable.
+
+**Disabled history and invalid configuration**
+
+1. Close the preceding session and relaunch with `java -Dhuntr.maxUndoHistory=0 -jar huntr.jar`.
+   Enter `edit id/LIM-001 r/Director`, then `undo`, then `redo`.<br>
+   Expected: The edit succeeds and is saved; undo and redo both report that no more commands are available.
+   Relaunch normally to check that the role is Director and that history starts empty again.
+2. Close HuntR and try `java -Dhuntr.maxUndoHistory=-2 -jar huntr.jar`, then
+   `java -Dhuntr.maxUndoHistory=invalid -jar huntr.jar`.<br>
+   Expected: Both launches fail because the configured history limit is invalid; neither changes the saved roster.
 
 ### Saving data
 

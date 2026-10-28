@@ -606,9 +606,11 @@ Aliases, step counts and uppercase command words are not supported. For example:
 ```text
 Unknown command: UNDO
 Type help to see the available commands.
+Did you mean undo? Command words are written in lowercase.
 ```
 
-The same template applies to `Undo`, `REDO`, `u`, `r` and `undo2`, preserving the entered command word.
+Other unrecognised words, such as `u`, `r` and `undo2`, also produce an unknown-command error; HuntR may suggest a
+nearby command. A suggestion does not execute that command.
 Normal parsing and command errors retain your input and use the command box's existing error styling;
 they do not save or change records, history or the view. Successful commands clear the command box.
 
@@ -620,19 +622,52 @@ including employees hidden from the current view. Clear affects only active empl
 
 Undo and redo preserve the view active immediately before the command: active-only, archived-only or the current
 search, even when it matches nobody. Restored employees can remain hidden; use `list` or `list archived` to see them.
-A historical search is not restored. Selection and scroll position are not guaranteed to remain unchanged.
+A historical search is not restored. The current sort order is also preserved; undo does not reverse a `sort`.
+Selection and scroll position are not guaranteed to remain unchanged.
 
-A successful actual employee-data change after undo discards the redo states. An identical edit or an empty
-active-roster clear creates no history entry, preserves redo, and retains its existing success message and reset
-to the active view. Failed commands and `list`, `list archived`, `find`, `help`, `export`, `backup` and `exit` preserve
-redo. Exported and backup files are outside employee history. Header-only imports remain errors.
+A successful actual employee-data change after undo discards the redo states. An identical edit reports
+`No changes made: the new values are the same as the existing ones for EMPLOYEE_ID.` and preserves records, view
+and redo without saving. Clearing an already empty active roster still succeeds and resets to the active view,
+but creates no history entry and preserves redo. Commands that only change the view or inspect records, such as
+`list`, `list archived`, `find`, `filter`, `sort`, `stats` and `check`, create no employee-history step and preserve redo. Failed commands also
+preserve redo. Exported and backup files are outside employee history. Header-only imports remain errors.
 
-History is unlimited by default and exists only for this session. To limit memory used by history, launch HuntR with
-`java -Dhuntr.maxUndoHistory=100 -jar huntr.jar` to retain up to 100 undo steps. Once that limit is exceeded, the oldest
-states are discarded and cannot be restored with undo. Use `0` to disable undo history, or `-1` for unlimited history.
+**Example: undo, redo and a new change**
+
+Launch with the default history setting and ensure `HIST-001` is not already stored. Run these commands in order:
+
+| Command | Result |
+| --- | --- |
+| `add id/HIST-001 n/History Demo p/91234567 e/history@example.com d/QA r/Tester` | Adds the employee as a Tester. |
+| `edit id/HIST-001 r/Analyst` | Changes the role to Analyst. |
+| `undo` | Restores the role to Tester. |
+| `edit id/HIST-001 r/Tester` | Leaves the data unchanged, so redo is still available. |
+| `redo` | Restores the role to Analyst. |
+| `undo` | Restores the role to Tester again. |
+| `edit id/HIST-001 r/Lead` | Changes the role to Lead and discards the Analyst redo state. |
+| `redo` | Reports `No more commands to redo.`; the role remains Lead. |
+
+**Session history and its limit**
+
+History is unlimited by default and exists only for this session. To limit retained history, launch HuntR with
+`java -Dhuntr.maxUndoHistory=100 -jar huntr.jar`. Put the `-D` option before `-jar` and replace `huntr.jar` with your
+actual JAR filename if different.
+
+| Setting | Behaviour |
+| --- | --- |
+| Omitted, or `-Dhuntr.maxUndoHistory=-1` | Keeps every employee-history step in this session. |
+| `-Dhuntr.maxUndoHistory=100` | Keeps up to 100 undo steps. A new data change beyond capacity discards the oldest retained states. |
+| `-Dhuntr.maxUndoHistory=0` | Disables undo/redo history. Employee changes still work and are saved automatically. |
+
+For example, with a limit of `2`, three successive data changes leave only the last two changes undoable;
+the state before the first change is no longer available. Undo and redo themselves do not evict more states.
+The limit counts steps, not employees or bytes, so a large roster can still use substantial memory.
+An unchanged edit does not consume capacity. A failed command or failed save restores the previous history,
+including any redo states or oldest state tentatively removed by that command.
+
 The setting must be an integer from `-1` to `2147483647`; invalid values prevent startup. Restart to change the limit.
-Starting HuntR loads the saved employee
-state as one initial snapshot; neither undo nor redo is available until you make changes in that session.
+Restarting loads the last successfully saved employee state with no available undo or redo. Exit therefore ends
+the opportunity to undo earlier changes, even when history was unlimited.
 
 ### Exiting the program: `exit`
 
