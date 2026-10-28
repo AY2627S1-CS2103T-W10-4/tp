@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.logic.commands.CommandTestUtil.assertCommandFailure;
 import static seedu.address.logic.commands.CommandTestUtil.assertCommandSuccess;
 import static seedu.address.testutil.Assert.assertThrows;
+import static seedu.address.testutil.EmployeeDataAssertions.assertStoredEmployees;
 import static seedu.address.testutil.TestUtil.createSymbolicLinkOrSkip;
 import static seedu.address.testutil.TypicalEmployees.ALICE;
 import static seedu.address.testutil.TypicalEmployees.getTypicalAddressBook;
@@ -19,6 +20,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import seedu.address.logic.parser.AddressBookParser;
 import seedu.address.logic.parser.ParserUtil;
 import seedu.address.model.AddressBook;
 import seedu.address.model.Model;
@@ -64,6 +66,24 @@ public class ExportCommandTest {
         assertEquals(ExportCommand.CSV_HEADER, lines.get(0));
         assertEquals("E0001,Alice Pauline,94351253,alice@example.com,Engineering,Software Engineer,false,",
                 lines.get(1));
+    }
+
+    @Test
+    public void execute_prefixedExportAndImport_roundTripAtIntendedLocation() throws Exception {
+        Path workingFolder = Files.createTempDirectory(Paths.get(""), "csv prefix ");
+        Path output = workingFolder.resolve("employees.csv");
+        try {
+            AddressBookParser parser = new AddressBookParser();
+            parser.parseCommand("export file/" + output).execute(model);
+            assertTrue(Files.isRegularFile(output));
+            Model restored = new ModelManager();
+            parser.parseCommand("import file/" + output).execute(restored);
+            assertStoredEmployees(model.getAddressBook().getEmployeeList(),
+                    restored.getAddressBook().getEmployeeList());
+        } finally {
+            Files.deleteIfExists(output);
+            Files.delete(workingFolder);
+        }
     }
 
     @Test

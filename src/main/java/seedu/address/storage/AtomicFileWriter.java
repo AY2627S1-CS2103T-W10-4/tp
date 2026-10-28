@@ -7,6 +7,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.NoSuchFileException;
@@ -29,6 +30,9 @@ import java.nio.file.attribute.UserPrincipal;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
+import java.util.logging.Logger;
+
+import seedu.address.commons.core.LogsCenter;
 
 /**
  * Replaces one local employee file atomically, after writing and verifying a protected sibling temporary file.
@@ -37,6 +41,9 @@ import java.util.Set;
 class AtomicFileWriter {
     static final String ATOMIC_MOVE_UNSUPPORTED = "Atomic replacement is not supported for this data file.";
     static final String PROTECTION_UNSUPPORTED = "Cannot preserve the required file access protections.";
+    static final String HARD_LINK_UNSUPPORTED = "Hard links are required to publish a backup safely.";
+
+    private static final Logger logger = LogsCenter.getLogger(AtomicFileWriter.class);
 
     private static final Set<PosixFilePermission> OWNER_READ_WRITE =
             Set.of(PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE);
@@ -51,13 +58,27 @@ class AtomicFileWriter {
         this.files = requireNonNull(files);
     }
 
+    /** Writes a new file, refusing to replace any existing file or symbolic link. */
+    void writeNew(Path destination, byte[] contents) throws IOException {
+        write(destination, contents, true);
+    }
+
     /**
      * Writes all contents before atomically replacing the resolved destination. Replacement is the commit point.
      */
     void write(Path destination, byte[] contents) throws IOException {
+        write(destination, contents, false);
+    }
+
+    private void write(Path destination, byte[] contents, boolean shouldCreateNew) throws IOException {
         requireNonNull(destination);
         requireNonNull(contents);
-        Path target = resolve(destination.toAbsolutePath());
+        Path absolute = destination.toAbsolutePath();
+        Path target = shouldCreateNew
+                ? resolve(absolute.getParent()).resolve(absolute.getFileName()) : resolve(absolute);
+        if (shouldCreateNew && Files.exists(target, LinkOption.NOFOLLOW_LINKS)) {
+            throw new FileAlreadyExistsException(target.toString());
+        }
         Protection protection = inspect(target);
         Files.createDirectories(target.getParent());
         Path parent = target.getParent().toRealPath();
@@ -74,10 +95,19 @@ class AtomicFileWriter {
                 output.force();
             }
             protection.prepare(temporary);
-            try {
-                files.replace(temporary, target);
-            } catch (AtomicMoveNotSupportedException e) {
-                throw new IOException(ATOMIC_MOVE_UNSUPPORTED, e);
+            if (shouldCreateNew) {
+                // Publishing the complete file is also the collision check; no empty destination is exposed.
+                try {
+                    files.publishNew(temporary, target);
+                } catch (UnsupportedOperationException e) {
+                    throw new IOException(HARD_LINK_UNSUPPORTED, e);
+                }
+            } else {
+                try {
+                    files.replace(temporary, target);
+                } catch (AtomicMoveNotSupportedException e) {
+                    throw new IOException(ATOMIC_MOVE_UNSUPPORTED, e);
+                }
             }
         } catch (IOException | RuntimeException failure) {
             if (temporary != null) {
@@ -89,7 +119,14 @@ class AtomicFileWriter {
             }
             throw failure;
         }
-        // No fallible work after successful replacement: the saved file is now committed.
+        // Publication is committed. Cleanup failure must not turn a complete backup into a reported failure.
+        if (shouldCreateNew) {
+            try {
+                files.delete(temporary);
+            } catch (IOException | RuntimeException cleanupFailure) {
+                logger.warning("Backup saved, but temporary file cleanup failed: " + temporary + ": " + cleanupFailure);
+            }
+        }
     }
 
     /** Resolves existing links, including parents, without mistaking a dangling link for a missing file. */
@@ -277,6 +314,10 @@ class AtomicFileWriter {
 
     /** Provides the small file-operation seam used to exercise failures around the commit point. */
     static class FileOperations {
+        void publishNew(Path temporary, Path destination) throws IOException {
+            Files.createLink(destination, temporary);
+        }
+
         Path createTemporary(Path parent, FileAttribute<?>... attributes) throws IOException {
             try {
                 return Files.createTempFile(parent, ".huntr-", ".tmp", attributes);

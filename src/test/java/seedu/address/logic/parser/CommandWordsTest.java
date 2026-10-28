@@ -13,6 +13,12 @@ import org.junit.jupiter.api.Test;
 public class CommandWordsTest {
 
     @Test
+    public void closestTo_mistypedRestore_suggestsRestore() {
+        assertEquals(Optional.of("restore"), CommandWords.closestTo("restroe"));
+        assertEquals(Optional.of("restore"), CommandWords.closestTo("restor"));
+    }
+
+    @Test
     public void closestTo_null_throwsNullPointerException() {
         assertThrows(NullPointerException.class, () -> CommandWords.closestTo(null));
     }

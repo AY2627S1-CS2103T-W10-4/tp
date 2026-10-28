@@ -10,6 +10,7 @@ import java.util.logging.Logger;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
+import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -91,6 +92,22 @@ public class JsonUtil {
      */
     public static <T> T fromJsonString(String json, Class<T> instanceClass) throws IOException {
         return objectMapper.readValue(json, instanceClass);
+    }
+
+    /**
+     * Reads exactly one non-null JSON value for backup restoration, rejecting any trailing content.
+     * Normal data and preferences loading retain Jackson's default handling of trailing content.
+     *
+     * @throws IOException if the JSON is invalid, null, or contains trailing content.
+     */
+    public static <T> T fromJsonStringStrict(String json, Class<T> instanceClass) throws IOException {
+        try (JsonParser parser = objectMapper.getFactory().createParser(json)) {
+            T result = objectMapper.readValue(parser, instanceClass);
+            if (result == null || parser.nextToken() != null) {
+                throw new IOException("Expected a single non-null JSON value.");
+            }
+            return result;
+        }
     }
 
     /**

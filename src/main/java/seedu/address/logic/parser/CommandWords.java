@@ -24,6 +24,7 @@ import seedu.address.logic.commands.ListCommand;
 import seedu.address.logic.commands.ManagerCommand;
 import seedu.address.logic.commands.OrgCommand;
 import seedu.address.logic.commands.RedoCommand;
+import seedu.address.logic.commands.RestoreCommand;
 import seedu.address.logic.commands.SortCommand;
 import seedu.address.logic.commands.StatsCommand;
 import seedu.address.logic.commands.TeamCommand;
@@ -44,7 +45,7 @@ public final class CommandWords {
             ExportCommand.COMMAND_WORD, FilterCommand.COMMAND_WORD, FindCommand.COMMAND_WORD,
             HelpCommand.COMMAND_WORD, ImportCommand.COMMAND_WORD, ListCommand.COMMAND_WORD,
             ManagerCommand.COMMAND_WORD, OrgCommand.COMMAND_WORD, RedoCommand.COMMAND_WORD,
-            SortCommand.COMMAND_WORD, StatsCommand.COMMAND_WORD, TeamCommand.COMMAND_WORD,
+            RestoreCommand.COMMAND_WORD, SortCommand.COMMAND_WORD, StatsCommand.COMMAND_WORD, TeamCommand.COMMAND_WORD,
             UnarchiveCommand.COMMAND_WORD, UnassignManagerCommand.COMMAND_WORD, UndoCommand.COMMAND_WORD);
 
     /** A word of fewer letters than this must be one change away from a command, a word of this many or more two. */

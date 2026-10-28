@@ -29,6 +29,7 @@ public class CommandCompleterTest {
         assertEquals("stats ", CommandCompleter.complete("sta"));
         assertEquals("unassign-manager ", CommandCompleter.complete("unas"));
         assertEquals("delete ", CommandCompleter.complete("d"));
+        assertEquals("restore ", CommandCompleter.complete("res"));
     }
 
     @Test

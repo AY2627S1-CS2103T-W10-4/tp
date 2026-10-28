@@ -60,6 +60,9 @@ class JsonSerializableAddressBook {
         AddressBook addressBook = new AddressBook();
         List<Employee> converted = new ArrayList<>();
         for (JsonAdaptedEmployee jsonAdaptedEmployee : employees) {
+            if (jsonAdaptedEmployee == null) {
+                throw new IllegalValueException("Employees list contains a null employee.");
+            }
             Employee employee = jsonAdaptedEmployee.toModelType();
             if (converted.stream().anyMatch(employee::isSameEmployee)) {
                 throw new IllegalValueException(MESSAGE_DUPLICATE_EMPLOYEE);

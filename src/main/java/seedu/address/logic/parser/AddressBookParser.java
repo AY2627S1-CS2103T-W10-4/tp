@@ -30,6 +30,7 @@ import seedu.address.logic.commands.ListCommand;
 import seedu.address.logic.commands.ManagerCommand;
 import seedu.address.logic.commands.OrgCommand;
 import seedu.address.logic.commands.RedoCommand;
+import seedu.address.logic.commands.RestoreCommand;
 import seedu.address.logic.commands.SortCommand;
 import seedu.address.logic.commands.StatsCommand;
 import seedu.address.logic.commands.TeamCommand;
@@ -99,6 +100,7 @@ public class AddressBookParser {
             }
             case FilterCommand.COMMAND_WORD -> new FilterCommandParser().parse(arguments);
             case ImportCommand.COMMAND_WORD -> new ImportCommandParser().parse(arguments);
+            case RestoreCommand.COMMAND_WORD -> new RestoreCommandParser().parse(arguments);
             case ExportCommand.COMMAND_WORD -> new ExportCommandParser().parse(arguments);
             case ListCommand.COMMAND_WORD -> {
                 String trimmedArguments = arguments.trim();
