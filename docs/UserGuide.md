@@ -716,10 +716,11 @@ nearby command. A suggestion does not execute that command.
 Normal parsing and command errors retain your input and use the command box's existing error styling;
 they do not save or change records, history or the view. Successful commands clear the command box.
 
-One history step covers an entire successful `add`, `edit`, `delete`, `clear`, `import`, `archive`, `unarchive`,
+One history step covers an entire successful `add`, `edit`, `delete`, `clear`, `import`, `restore`, `archive`, `unarchive`,
 `manager` or `unassign-manager`.
 An import of several employees is reversed by one undo. Redo restores saved data directly, even if the original
-CSV has changed or been deleted. All employee values, ID spelling, archive status, manager assignments and stored order are restored,
+CSV has changed or been deleted. A JSON backup restore is also reversed by one undo, and redo does not reread the backup.
+All employee values, ID spelling, archive status, manager assignments and stored order are restored,
 including employees hidden from the current view. Clear affects only active employees.
 
 Undo and redo preserve the view active immediately before the command: active-only, archived-only or the current
@@ -770,6 +771,29 @@ including any redo states or oldest state tentatively removed by that command.
 The setting must be an integer from `-1` to `2147483647`; invalid values prevent startup. Restart to change the limit.
 Restarting loads the last successfully saved employee state with no available undo or redo. Exit therefore ends
 the opportunity to undo earlier changes, even when history was unlimited.
+
+### Restoring a JSON backup: `restore`
+
+Replaces the entire employee roster, including archived records, with the contents of a JSON backup created by
+`backup`. This replaces records rather than merging them. A valid empty backup clears the entire roster.
+
+Format: `restore file/JSON_FILE_PATH`
+
+Example: `restore file/data/backups/huntr-20261020-153005.json`
+
+* Supply exactly one `file/` path ending in `.json`. Paths with spaces and absolute paths are supported.
+  Relative paths are resolved from the folder where HuntR runs. Do not surround the path with quotes.
+  Only the leading `file/` is a prefix: `restore file/my file/staff.json` reads `my file/staff.json`.
+* HuntR reads and validates the complete backup before replacing any records. Employee IDs must be unique,
+  all employee fields must be valid, and manager references must exist without self-reporting or reporting cycles.
+* Archived status, manager assignments, ID spelling and stored employee order are preserved. Older backups without
+  archive status or manager assignments remain supported. After restoration, the active employees are shown with
+  the current sort order; use `list archived` to see restored archived records.
+* Success displays `Restored <count> employee(s) from <path>` and automatically saves the restored roster.
+  Use `undo` to recover the previous roster during the same session. `redo` restores the saved snapshot even if
+  the backup file has since changed or been deleted. Restoring identical data creates no history step and preserves redo.
+* A missing file displays `Backup file not found: <path>`. An unreadable or invalid backup is rejected without
+  changing the roster. Failed restoration or automatic saving preserves the previous records, view and undo/redo history.
 
 ### Exiting the program: `exit`
 
@@ -895,6 +919,7 @@ Action     | Format, Examples
 **Add**    | `add id/EMPLOYEE_ID n/NAME p/PHONE e/EMAIL d/DEPARTMENT r/ROLE [m/MANAGER_ID]`<br>e.g., `add id/E0123 n/John Tan p/91234567 e/johntan@example.com d/Engineering r/Software Engineer`
 **[Archive](#archiving-employees-archive)** | `archive id/EMPLOYEE_ID`<br>e.g., `archive id/E0123`<br>Keeps the employee's record and marks it archived.
 **Backup** | `backup`
+**Restore JSON backup** | `restore file/JSON_FILE_PATH`
 **Import CSV** | `import file/FILE_PATH`
 **Export CSV** | `export file/FILE_PATH`
 **Check**  | `check`
