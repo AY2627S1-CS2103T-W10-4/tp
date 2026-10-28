@@ -650,7 +650,10 @@ order is not part of an undo/redo checkpoint and is not stored in the JSON file,
 ### CSV import and export
 
 `ImportCommand` and `ExportCommand` extend the abstract `CsvFileCommand`, which holds the file path and the folder
-HuntR runs from. `ParserUtil.parseCsvFilePath` checks that the path is relative and ends in `.csv`, and
+HuntR runs from. Both parsers use `ParserUtil.parseCsvFileArgument` to remove the `file/` parameter prefix and
+reject blank paths. Only the leading prefix is removed, so spaces and ` file/` within a path are preserved.
+Positional paths remain supported; `./file/staff.csv` explicitly addresses
+a directory named `file`. `ParserUtil.parseCsvFilePath` then checks that the path is relative and ends in `.csv`, and
 `CsvFileCommand#resolveFilePath` rejects a path that leads outside that folder once symbolic links are followed.
 `CsvUtil` converts between a list of values and one CSV record, quoting values that contain commas, quotes or line breaks.
 `CsvUtil.splitCsvRecords` splits only at line endings outside quoted values, preserves embedded line endings and
@@ -659,7 +662,7 @@ tracks the starting physical line of each record. `parseCsvLine` then validates 
 `ExportCommand` writes the header in `ExportCommand.CSV_HEADER`, then one line per employee in the complete stored
 roster, including archived employees. It creates missing parent folders and replaces an existing file.
 
-The sequence diagram below shows a successful `import staff.csv`. `ImportCommand` reads the UTF-8 text, splits it into
+The sequence diagram below shows a successful `import file/staff.csv`. `ImportCommand` reads the UTF-8 text, splits it into
 complete records, checks the header against the three accepted column lists, and parses each non-blank record with
 the same `ParserUtil` methods as `add`. A record that is invalid, repeats an earlier ID or uses an existing ID stops
 the command with its starting physical line number, including when earlier records contain quoted line breaks.
