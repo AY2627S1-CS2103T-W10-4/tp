@@ -139,12 +139,20 @@ serializes using `JsonUtil.toJsonString()` and encodes UTF-8 **before** invoking
 JSON backups already use this storage class and therefore share its atomic writer.
 
 Backups use `saveNewAddressBook`, which refuses existing destination files or symbolic links.
-After preparing the protected temporary file, the writer atomically reserves the destination with `CREATE_NEW`
-before replacing that empty reservation. A handled failure removes the reservation and temporary file.
-`BackupCommand` retries occupied names with numeric suffixes, preserving snapshots created within the same second.
+After writing, forcing, closing and protecting the sibling temporary file, the writer publishes it using
+`Files.createLink(destination, temporary)`. The final name refers to complete contents as soon as it exists;
+there is no empty reservation, and an occupied name causes a collision without replacing it.
+Successful link creation is the backup commit point. Removing the temporary name is best effort: cleanup failure
+is logged but still reports backup success. Interruption can leave a `.tmp` name, but cannot expose an empty
+backup under its final name. This does not promise survival of filesystem or hardware failures.
+Backups require hard-link support; unsupported file systems fail without an unsafe copy or reservation fallback.
+`BackupCommand` always uses a ten-digit, zero-padded counter, starting at `0000000000` for each timestamp and
+retrying occupied names. New backup names therefore sort in creation order within a second, including beyond nine
+backups. Older backups without counters remain untouched; clock changes and external file changes are outside
+this ordering guarantee.
 
-The writer resolves the destination and inspects its supported access attributes, creates missing parent
-directories, then creates a uniquely named sibling `.huntr-*.tmp` file. It establishes and verifies restricted
+For ordinary employee-file saves, the writer resolves the destination and inspects its supported access attributes,
+creates missing parent directories, then creates a uniquely named sibling `.huntr-*.tmp` file. It establishes and verifies restricted
 temporary access before writing any employee bytes, handles short writes until the entire buffer is consumed,
 forces the file and closes it. It then prepares and verifies final access protections and uses
 `Files.move` with `ATOMIC_MOVE` and `REPLACE_EXISTING`. It never pre-creates, truncates or deletes the destination,

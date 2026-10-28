@@ -21,6 +21,7 @@ import java.nio.file.Paths;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
@@ -37,7 +38,7 @@ import seedu.address.storage.JsonAddressBookStorage;
 public class BackupCommandTest {
 
     private static final Clock FIXED_CLOCK = Clock.fixed(Instant.parse("2026-10-20T15:30:05Z"), ZoneOffset.UTC);
-    private static final String EXPECTED_FILE_NAME = "huntr-20261020-153005.json";
+    private static final String EXPECTED_FILE_NAME = "huntr-20261020-153005-0000000000.json";
 
     @TempDir
     public Path testFolder;
@@ -93,7 +94,7 @@ public class BackupCommandTest {
     public void execute_sameTimestampDifferentStates_preservesBothSnapshots() throws Exception {
         BackupCommand command = new BackupCommand(testFolder, FIXED_CLOCK);
         Path firstPath = testFolder.resolve(EXPECTED_FILE_NAME);
-        Path secondPath = testFolder.resolve("huntr-20261020-153005-1.json");
+        Path secondPath = testFolder.resolve("huntr-20261020-153005-0000000001.json");
         AddressBook original = new AddressBook(model.getAddressBook());
 
         command.execute(model);
@@ -113,8 +114,8 @@ public class BackupCommandTest {
     @Test
     public void execute_existingBackupAndSuffix_skipsOccupiedNamesAcrossCommandInstances() throws Exception {
         new BackupCommand(testFolder, FIXED_CLOCK).execute(model);
-        Path occupiedSuffix = Files.createDirectory(testFolder.resolve("huntr-20261020-153005-1.json"));
-        Path backupPath = testFolder.resolve("huntr-20261020-153005-2.json");
+        Path occupiedSuffix = Files.createDirectory(testFolder.resolve("huntr-20261020-153005-0000000001.json"));
+        Path backupPath = testFolder.resolve("huntr-20261020-153005-0000000002.json");
 
         CommandResult result = new BackupCommand(testFolder, FIXED_CLOCK).execute(model);
 
@@ -122,6 +123,29 @@ public class BackupCommandTest {
                 model.getAddressBook().getEmployeeList().size(), backupPath), result.getFeedbackToUser());
         assertEquals(model.getAddressBook(), new JsonAddressBookStorage(backupPath).readAddressBook().orElseThrow());
         assertTrue(Files.isDirectory(occupiedSuffix));
+    }
+
+    @Test
+    public void execute_manyBackupsInSameSecond_nameOrderMatchesCreationOrder() throws Exception {
+        List<Path> creationOrder = new ArrayList<>();
+        for (int i = 0; i < 12; i++) {
+            CommandResult result = new BackupCommand(testFolder, FIXED_CLOCK).execute(model);
+            try (var entries = Files.list(testFolder)) {
+                Path created = entries.filter(path -> !creationOrder.contains(path)).findFirst().orElseThrow();
+                creationOrder.add(created);
+                assertEquals(String.format(BackupCommand.MESSAGE_SUCCESS,
+                        model.getAddressBook().getEmployeeList().size(), created), result.getFeedbackToUser());
+            }
+        }
+        try (var entries = Files.list(testFolder)) {
+            assertEquals(creationOrder, entries.sorted().toList());
+        }
+        Clock nextSecond = Clock.offset(FIXED_CLOCK, java.time.Duration.ofSeconds(1));
+        new BackupCommand(testFolder, nextSecond).execute(model);
+        try (var entries = Files.list(testFolder)) {
+            assertEquals("huntr-20261020-153006-0000000000.json",
+                    entries.sorted().toList().getLast().getFileName().toString());
+        }
     }
 
     @Test

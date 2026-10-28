@@ -69,13 +69,13 @@ public class AtomicFileWriterTest {
     }
 
     @Test
-    public void writeNew_destinationAppearsBeforeReservation_preservesOtherSnapshot() throws Exception {
+    public void writeNew_destinationAppearsBeforePublication_preservesOtherSnapshot() throws Exception {
         Path destination = folder.resolve("backup.json");
         AtomicFileWriter.FileOperations files = new AtomicFileWriter.FileOperations() {
             @Override
-            void createNew(Path target, FileAttribute<?>... attributes) throws IOException {
+            void publishNew(Path temporary, Path target) throws IOException {
                 Files.write(target, ORIGINAL);
-                super.createNew(target, attributes);
+                super.publishNew(temporary, target);
             }
         };
 
@@ -87,7 +87,7 @@ public class AtomicFileWriterTest {
     }
 
     @Test
-    public void writeNew_eachPreReplacementFault_removesTemporaryAndReservation() throws Exception {
+    public void writeNew_eachPrePublicationFault_leavesDestinationAbsentAndCleansTemporary() throws Exception {
         for (Fault fault : Fault.values()) {
             if (fault == Fault.NONE) {
                 continue;
@@ -100,6 +100,62 @@ public class AtomicFileWriterTest {
             assertTrue(Files.notExists(destination));
             assertTrue(files.temporary == null || Files.notExists(files.temporary));
         }
+    }
+
+    @Test
+    public void writeNew_interruptionAtPublication_neverExposesEmptyDestination() throws Exception {
+        for (boolean afterPublication : List.of(false, true)) {
+            Path destination = newDestination("interrupted" + afterPublication, false);
+            Error interruption = new Error("Simulated process termination");
+            AtomicFileWriter.FileOperations files = new AtomicFileWriter.FileOperations() {
+                @Override
+                void publishNew(Path temporary, Path target) throws IOException {
+                    assertTrue(Files.notExists(target));
+                    assertArrayEquals(UPDATED, Files.readAllBytes(temporary));
+                    assertRestricted(temporary);
+                    if (afterPublication) {
+                        super.publishNew(temporary, target);
+                    }
+                    throw interruption;
+                }
+            };
+            assertSame(interruption, assertThrows(Error.class, () ->
+                    new AtomicFileWriter(files).writeNew(destination, UPDATED)));
+            if (afterPublication) {
+                assertArrayEquals(UPDATED, Files.readAllBytes(destination));
+                assertRestricted(destination);
+            } else {
+                assertTrue(Files.notExists(destination));
+            }
+        }
+    }
+
+    @Test
+    public void writeNew_hardLinksUnsupported_failsWithoutCreatingDestination() throws Exception {
+        Path destination = folder.resolve("backup.json");
+        AtomicFileWriter.FileOperations files = new AtomicFileWriter.FileOperations() {
+            @Override
+            void publishNew(Path temporary, Path target) {
+                throw new UnsupportedOperationException("Hard links unavailable");
+            }
+        };
+        IOException failure = assertThrows(IOException.class, () ->
+                new AtomicFileWriter(files).writeNew(destination, UPDATED));
+        assertEquals(AtomicFileWriter.HARD_LINK_UNSUPPORTED, failure.getMessage());
+        try (var entries = Files.list(folder)) {
+            assertEquals(0, entries.count());
+        }
+    }
+
+    @Test
+    public void writeNew_cleanupFailure_keepsCompleteBackupAndReportsSuccess() throws Exception {
+        Path destination = folder.resolve("backup.json");
+        FaultyFiles files = new FaultyFiles(Fault.NONE);
+        files.cleanupFailure = new IOException("Cannot delete temporary name");
+        new AtomicFileWriter(files).writeNew(destination, UPDATED);
+        assertArrayEquals(UPDATED, Files.readAllBytes(destination));
+        assertTrue(Files.isSameFile(destination, files.temporary));
+        assertRestricted(destination);
     }
 
     @Test
@@ -495,6 +551,14 @@ public class AtomicFileWriterTest {
                     }
                 }
             };
+        }
+
+        @Override
+        void publishNew(Path source, Path target) throws IOException {
+            assertTrue(forced && closed);
+            failAt(Fault.REPLACE);
+            failAt(Fault.ATOMIC_UNSUPPORTED);
+            super.publishNew(source, target);
         }
 
         @Override
