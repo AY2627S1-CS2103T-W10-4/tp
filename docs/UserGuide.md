@@ -31,7 +31,7 @@ HuntR is based on [AddressBook-Level3](https://github.com/se-edu/addressbook-lev
 1. Type a command in the command box and press Enter to execute it. For example, type **`help`** and press Enter to open the help window.<br>
    Some example commands you can try:
 
-   * `list` : Lists all employees.
+   * `list` : Lists all active employees.
 
    * `sort department` : Sorts the displayed employees by department, from A to Z.
 
@@ -162,18 +162,26 @@ Examples (use IDs that are not already stored):
 * After adding `E0123`, `add id/E0124 n/Mei Lim p/81234567 e/mei.lim@example.com d/Engineering r/Developer m/e0123`
   assigns `E0123` as Mei's manager. The success message ends with `; Manager: E0123`.
 
-### Listing all employees: `list`
+### Listing all active employees: `list`
 
-Shows all employees stored in HuntR as a numbered list. Each entry includes the employee's name, employee ID,
+Shows all active employees stored in HuntR as a numbered list. Archived employees are excluded.
+Each entry includes the employee's name, employee ID,
 phone number, email, department, and role. Employees are shown in the order in which they were added, so `list` also undoes any `sort`.
 
 Format: `list`
 
-The command takes no parameters. Leading and trailing spaces are ignored, but additional text is rejected.
+Use `list` without arguments to show active employees, or [`list archived`](#listing-archived-employees-list-archived)
+to show archived employees. Leading and trailing spaces are ignored. The `archived` argument is case-sensitive
+and must be written in lowercase: `list ARCHIVED` and `list Archived` are rejected with `Invalid command format.`
+followed by `Usage: list [archived]`. Any other argument or additional text after `archived` is also rejected.
+
+When active employees are shown, HuntR displays `Listed all active employees.`
 
 If there are no employee records, HuntR displays an empty employee list and explains how to add an employee.
+If only archived employees remain, HuntR displays an empty active list and suggests `list archived` with the
+number of archived employees.
 
-Use `list` to show every employee again after a `find` or `filter`.
+Use `list` to show every active employee again after a `find` or `filter`.
 
 ### Editing an employee: `edit`
 
@@ -192,7 +200,7 @@ Format: `edit id/EMPLOYEE_ID [n/NAME] [p/PHONE] [e/EMAIL] [d/DEPARTMENT] [r/ROLE
 * The `id/` parameter identifies the employee to edit. The employee ID itself cannot be changed.
 * Employee ID matching is case-insensitive: `edit id/e0001 ...` identifies employee `E0001`.
 * HuntR searches the complete employee roster, so an employee hidden by the current `find` result can still be edited.
-* After a successful edit, HuntR resets the list to show all employees, clearing any active `find` result.
+* After a successful edit, HuntR resets the list to show all active employees, clearing any active `find` result.
 * If every value you give is the same as the employee's current value, HuntR displays
   `No changes made: the new values are the same as the existing ones for E0001.` and nothing is saved or added to
   the `undo` history. Changing only the letter case of a name, such as `carol ng` to `Carol Ng`, counts as a change.
@@ -431,7 +439,7 @@ Format: `filter [id/EMPLOYEE_ID] [n/NAME] [d/DEPARTMENT] [r/ROLE]`
 * An employee ID must be the whole ID, such as `id/E0123`. The ID is not case-sensitive.
 * To match any of several values of the same field (an `OR` search), repeat the prefix. For example, `d/Sales d/Finance` matches employees in `Sales` or in `Finance`. Each repeated value is a separate search, so `r/Manager r/Analyst` is not the same as `r/Manager Analyst`, which needs both words.
 * A new `filter` replaces the earlier `find` or `filter`. They are not combined, so to narrow the list further, put all the fields in one `filter`.
-* Filtering only changes what is shown. Your saved data is not changed. Archived employees are not shown. Use [`list`](#listing-all-employees-list) to show all employees again.
+* Filtering only changes what is shown. Your saved data is not changed. Archived employees are not shown. Use [`list`](#listing-all-active-employees-list) to show all active employees again.
 * The order set by [`sort`](#sorting-employees-sort) is kept, so you can filter and sort in any order.
 * A filter with no matches is valid and shows an empty list with the message `0 employees listed!`.
 * Leading and trailing spaces are ignored, and the parameters can be in any order.
@@ -458,7 +466,8 @@ The following input errors leave the displayed list unchanged. Each message is f
 
 ### Archiving employees: `archive`
 
-Marks an employee as archived. Archived employees remain stored but are hidden from normal `list` and `find` results.
+Marks an active employee as archived. Archived employees remain stored but are hidden from normal `list`, `find`
+and `filter` results and excluded from `stats` and `check`.
 The current list, search or filter and sort order are preserved. The employee disappears from active-only views;
 other matching employees stay visible. Use `list archived` to see the archived record.
 
@@ -466,11 +475,33 @@ Format: `archive id/EMPLOYEE_ID`
 
 Example: `archive id/E0123`
 
+* Supply exactly one `id/` parameter. The ID must contain 1 to 20 letters, digits, hyphens or underscores,
+  with no spaces. Matching ignores letter case, so `archive id/e0123` also finds `E0123`.
+* The employee need not be visible: the command searches all stored records, even from an empty search or archive view.
+* The employee keeps their ID, contact details, department, role and reporting relationships. Their ID remains
+  reserved, so archiving does not let you add another employee with that ID.
+* Successful archiving is saved automatically. Use `undo` or `redo` during the same session to reverse or repeat it;
+  the archived status survives a restart, while undo history does not.
+
+On success, the message starts with `Archived employee:` followed by the employee's details.
+
 If you run `find Alice` and then archive one matching employee, the remaining Alice records stay visible.
 If that was the last match, the search remains active with an empty result.
 
 The ID is matched case-insensitively. An unknown ID produces `No employee with ID E0123 was found.` Archiving an
 already archived employee produces `Employee with ID E0123 is already archived.` No data changes on either error.
+
+The following input errors apply to both `archive` and `unarchive`. Each error is followed by that command's usage,
+and leaves the records, view and undo/redo history unchanged.
+
+| Example input | Error message |
+| --- | --- |
+| `archive` or `archive 1` | `Missing parameter: id/EMPLOYEE_ID.` |
+| `archive id/` | `Employee ID cannot be blank.` |
+| `archive id/E0123 date/2026-10-27` | `Unknown parameter: date/. Only id/ is supported.` |
+| `archive id/E 123` or `archive id/E0123!` | `Employee ID should be 1 to 20 characters long and contain only letters, digits, hyphens and underscores.` |
+| `archive id/E0123 id/E0123` | `Multiple values specified for the following single-valued field(s): id/` |
+| `archive extra id/E0123` | `Unexpected arguments. Specify exactly one employee ID using id/EMPLOYEE_ID.` |
 
 Archiving a manager preserves their reporting relationships. If active employees still report directly to that
 manager, the success message gives their count and suggests a command to review their assignments, for example:
@@ -493,6 +524,12 @@ Format: `unarchive id/EMPLOYEE_ID`
 
 Example: `unarchive id/E0123`
 
+The same ID rules and input errors as [`archive`](#archiving-employees-archive) apply. Restoring an employee keeps
+their existing ID, other details and reporting relationships, and saves the active status automatically.
+The result starts with `Unarchived employee:` followed by their details. If they are outside the current view,
+the next line is ``The restored employee is outside the current view. Use `list` to see it.``
+Use `undo` or `redo` to reverse or repeat the restoration during the same session.
+
 If you run `list archived` and then `unarchive id/E0123`, the remaining archived records stay visible so you can
 continue restoring employees. Restoring the last archived record leaves an empty archive view. Use `list` to view
 the restored employees.
@@ -502,9 +539,27 @@ An unknown ID produces the usual employee-not-found error. Attempting to unarchi
 
 ### Listing archived employees: `list archived`
 
-Shows only archived employees. Normal `list` continues to show only active employees.
+Shows all archived employees in the employee panel, with an `Archived` label on their cards. It replaces any
+search, filter or reporting view and resets sorting to stored roster order. Normal `list` shows only active
+employees and also resets the view and sorting.
 
 Format: `list archived`
+
+When archived employees exist, the result is `Listed all archived employees.` Otherwise, the panel is empty and
+the result is `There are no archived employees.` If `list` finds no active employees but archived records exist,
+it suggests `list archived` and gives their count. For example:
+
+```text
+There are no active employees. Use `list archived` to see the 2 archived employees.
+```
+
+Use lowercase `archived` with no additional arguments. `list Archived`, `list all` and
+`list archived id/E0123` are rejected with `Invalid command format.` followed by `Usage: list [archived]`.
+Listing does not change employee records or add an undo step.
+
+Undo keeps the current view. For example, after `archive id/E0123`, `list archived`, then `undo`, the restored
+employee leaves the archive view. If no other archived employees remain, the panel is empty even though the
+message says `Undo successful.` Use `list` to see the restored employee in the active roster.
 
 Archived employees retain their IDs, can be edited with `edit`, and can be deleted with `delete` (and restored with `undo` during the same session).
 
@@ -563,7 +618,7 @@ Format: `sort FIELD [asc|desc]`
 * Sorting only changes the order in which employees are shown. Your saved data is not changed.
 * The sorted order is kept when you use `find` or `filter`, and when you add, edit or delete employees. An employee whose name, department or role is edited moves to the correct position.
 * HuntR does not remember the sorted order after you close it. The employees are shown in the order in which they were added.
-* Use [`list`](#listing-all-employees-list) to show the employees in the order in which they were added again.
+* Use [`list`](#listing-all-active-employees-list) to show all active employees in the order in which they were added again.
 
 Examples:
 * `sort name` shows the employees in alphabetical order of their names.
@@ -777,8 +832,14 @@ existing UI does not provide ordinary command-box handling for those exceptions.
 Read-only commands do not attempt an automatic employee-file save, so an unwritable employee file does not prevent
 view changes, searches or help. Export and backup still require write access to their own output destinations.
 
-JSON backups use the same safer writer and keep their existing location and naming. A backup write failure,
-including unsupported atomic movement or protection, keeps its backup-specific message:
+JSON backups are saved in `data/backups` as `huntr-yyyyMMdd-HHmmss-0000000000.json`.
+Every filename includes a ten-digit counter, increasing to `0000000001`, `0000000002` and so on when a name is taken.
+Sorting new backup names alphabetically keeps backups made within the same second in creation order.
+Existing backup snapshots are never overwritten, including when multiple backups are created within the same second.
+The backup folder must support hard links as well as the access protections described above. If hard links are
+unavailable, backup fails without creating an empty backup file. Older backup filenames remain valid.
+A backup write failure,
+including unsupported hard links or protection, keeps its backup-specific message:
 
 ```text
 Could not save the backup to <backup-path>. Check that you are allowed to write to that folder.
@@ -827,7 +888,7 @@ Furthermore, certain edits can cause HuntR to behave in unexpected ways (e.g., i
 Action     | Format, Examples
 -----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 **Add**    | `add id/EMPLOYEE_ID n/NAME p/PHONE e/EMAIL d/DEPARTMENT r/ROLE [m/MANAGER_ID]`<br>e.g., `add id/E0123 n/John Tan p/91234567 e/johntan@example.com d/Engineering r/Software Engineer`
-**Archive** | `archive id/EMPLOYEE_ID`<br>e.g., `archive id/E0123`
+**[Archive](#archiving-employees-archive)** | `archive id/EMPLOYEE_ID`<br>e.g., `archive id/E0123`<br>Keeps the employee's record and marks it archived.
 **Backup** | `backup`
 **Import CSV** | `import file/FILE_PATH`
 **Export CSV** | `export file/FILE_PATH`
@@ -837,9 +898,8 @@ Action     | Format, Examples
 **Edit**   | `edit id/EMPLOYEE_ID [n/NAME] [p/PHONE] [e/EMAIL] [d/DEPARTMENT] [r/ROLE] [m/MANAGER_ID]`<br>e.g., `edit id/E0001 p/91234567 e/alex@example.com`
 **Find**   | `find KEYWORD [MORE_KEYWORDS]`<br> e.g., `find James Jake`
 **Filter** | `filter [id/EMPLOYEE_ID] [n/NAME] [d/DEPARTMENT] [r/ROLE]`<br> e.g., `filter n/John d/Sales`, `filter d/Sales d/Finance r/Manager`
-**List**   | `list` or `list archived`
+**List**   | `list` for active employees; [`list archived`](#listing-archived-employees-list-archived) for archived employees. Both reset sorting.
 **Stats**  | `stats`
-
 **Manager** | `manager id/EMPLOYEE_ID m/MANAGER_ID`
 **Unassign manager** | `unassign-manager id/EMPLOYEE_ID`
 **Team** | `team id/EMPLOYEE_ID`
@@ -847,7 +907,7 @@ Action     | Format, Examples
 **Chain** | `chain id/EMPLOYEE_ID`
 **Undo**   | `undo`
 **Redo**   | `redo`
-**Unarchive** | `unarchive id/EMPLOYEE_ID`
+**[Unarchive](#unarchiving-employees-unarchive)** | `unarchive id/EMPLOYEE_ID`<br>e.g., `unarchive id/E0123`<br>Restores an archived employee to active status.
 **Help**   | `help`
 **Sort**   | `sort FIELD [asc\|desc]`<br> e.g., `sort department desc`
 **Exit**   | `exit`

@@ -4,11 +4,15 @@ import static java.util.Objects.requireNonNull;
 import static seedu.address.commons.util.CollectionUtil.requireAllNonNull;
 
 import java.io.IOException;
+import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 import java.util.logging.Logger;
 
 import seedu.address.commons.core.LogsCenter;
@@ -35,7 +39,7 @@ public class BackupCommand extends Command {
 
     public static final Path DEFAULT_BACKUP_FOLDER = Paths.get("data", "backups");
 
-    private static final String FILE_NAME_FORMAT = "huntr-%1$s.json";
+    private static final String FILE_NAME_FORMAT = "huntr-%1$s-%2$010d.json";
     private static final DateTimeFormatter TIMESTAMP_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss");
 
     private static final Logger logger = LogsCenter.getLogger(BackupCommand.class);
@@ -64,10 +68,25 @@ public class BackupCommand extends Command {
         requireNonNull(model);
         ReadOnlyAddressBook addressBook = model.getAddressBook();
         String timestamp = LocalDateTime.now(clock).format(TIMESTAMP_FORMATTER);
-        Path backupPath = backupFolder.resolve(String.format(FILE_NAME_FORMAT, timestamp));
+        Path backupPath = backupFolder.resolve(String.format(Locale.ROOT, FILE_NAME_FORMAT, timestamp, 0));
 
         try {
-            createStorage(backupPath).saveAddressBook(addressBook);
+            int suffix = 0;
+            while (true) {
+                try {
+                    createStorage(backupPath).saveNewAddressBook(addressBook);
+                    break;
+                } catch (FileAlreadyExistsException collision) {
+                    if (!Files.exists(backupPath, LinkOption.NOFOLLOW_LINKS)) {
+                        throw collision;
+                    }
+                    if (suffix == Integer.MAX_VALUE) {
+                        throw new IOException("No available backup sequence number for " + timestamp, collision);
+                    }
+                    suffix++;
+                    backupPath = backupFolder.resolve(String.format(Locale.ROOT, FILE_NAME_FORMAT, timestamp, suffix));
+                }
+            }
         } catch (IOException ioe) {
             logger.warning("Failed to save backup to " + backupPath + ": " + ioe);
             throw new CommandException(String.format(MESSAGE_WRITE_FAILED, backupPath), ioe);
