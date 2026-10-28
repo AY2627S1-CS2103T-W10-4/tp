@@ -336,7 +336,7 @@ active employees, the result is `No data-quality issues found.`
 
 `AddressBookParser` rejects any text after `check` or `stats` with `Invalid command format.` followed by `Usage: check`
 or `Usage: stats`. Like `stats`, `check` reports only: it does not modify employee records, the current filter, the
-sort order or the undo/redo history, and `LogicManager` still saves the employee state after it succeeds.
+sort order or the undo/redo history, and `LogicManager` does not save the employee file after it.
 
 ### Employee archiving
 
@@ -1235,7 +1235,7 @@ Engineering department, `E0003` is in Finance and `E0006` is in Sales.
 4. Enter `stats d/Ops`.<br>
    Expected: HuntR displays `Invalid command format.` followed by `Usage: stats`, and nothing changes.
 5. Enter `clear`, then `stats`.<br>
-   Expected: HuntR displays `Total active employees: 0` with `(none)` under both headings. Enter `undo` to bring the employees back.
+   Expected: HuntR displays `Total active employees: 0` with `(none)` under both headings. Enter `undo` to bring back the five active employees.
 
 ### Checking data quality
 
@@ -1247,9 +1247,11 @@ Engineering department, `E0003` is in Finance and `E0006` is in Sales.
    Expected: HuntR displays `Found 2 active employee(s) with data-quality issues:` followed by `E0003 (Charlotte Oliveiro): shared phone 93210283` and `E0007 (Dup Phone): shared phone 93210283`.
 3. Enter `add id/E0008 n/Dup Mail p/80000001 e/CHARLOTTE@example.com d/Finance r/Accountant`, then `check`.<br>
    Expected: HuntR displays `Found 3 active employee(s) with data-quality issues:`. `E0003` appears once with `shared phone 93210283; shared email charlotte@example.com`, and `E0008 (Dup Mail): shared email CHARLOTTE@example.com` is added. The emails differ only in letter case and are still flagged.
-4. Enter `archive id/E0007`, then `check`.<br>
+4. Enter `find Alex`, then `check`.<br>
+   Expected: HuntR displays the same `Found 3 active employee(s) with data-quality issues:` report as in step 3, listing `E0003`, `E0007` and `E0008`, while the displayed list still shows only `Alex Yeoh`. The search does not limit the check.
+5. Enter `list`, `archive id/E0007`, then `check`.<br>
    Expected: HuntR displays `Found 2 active employee(s) with data-quality issues:`, listing `E0003` and `E0008` for the shared email only. The archived employee is not reported and no longer causes `E0003` to be flagged for the phone number.
-5. Enter `check x`.<br>
+6. Enter `check x`.<br>
    Expected: HuntR displays `Invalid command format.` followed by `Usage: check`, and nothing changes.
 
 ### Deleting an employee
