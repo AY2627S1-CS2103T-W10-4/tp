@@ -140,7 +140,7 @@
         "typing-commands-faster": "Typing commands faster",
         "viewing-help-help": "Viewing help: help",
         "adding-an-employee-add": "Adding an employee: add",
-        "listing-all-employees-list": "Listing all employees: list",
+        "listing-all-active-employees-list": "Listing all active employees: list",
         "editing-an-employee-edit": "Editing an employee: edit",
         "assigning-a-manager-manager": "Assigning a manager: manager",
         "removing-a-manager-unassign-manager": "Removing a manager: unassign-manager",
