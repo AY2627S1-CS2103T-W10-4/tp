@@ -160,6 +160,7 @@
         "clearing-active-employees-clear": "Clearing active employees: clear",
         "importing-and-exporting-csv-files-import-export": "Importing and exporting CSV files: import, export",
         "undoing-and-redoing-employee-changes-undo-redo": "Undoing and redoing employee changes: undo, redo",
+        "restoring-a-json-backup-restore": "Restoring a JSON backup: restore",
         "exiting-the-program-exit": "Exiting the program: exit",
         "saving-the-data": "Saving the data",
         "editing-the-data-file": "Editing the data file",
