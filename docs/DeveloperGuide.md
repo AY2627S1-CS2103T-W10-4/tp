@@ -373,16 +373,45 @@ Because `find` and `filter` use the same word splitting, `find Tan` and `filter 
 
 `FindCommand` calls `model.updateFilteredEmployeeList(predicate)` to replace the current filter over the full employee list, without changing employee records. It returns the filtered list's size through `Messages.getEmployeesListedOverview`, using `1 employee listed!` or `N employees listed!`. No matches is a successful search returning `0 employees listed!`.
 
+### Adding an employee
+
+The `add` command creates an active `Employee` with six required fields and an optional manager ID. The flow is:
+
+1. `AddressBookParser` delegates to `AddCommandParser`. `ArgumentPreprocessor` protects relation words such as
+   `s/o` and `d/o` inside the name, then rejects unknown parameter prefixes. `ArgumentTokenizer` separates fields;
+   the parser rejects missing required prefixes, a non-empty preamble and repeated prefixes, including `m/`.
+2. `ParserUtil` validates each value and constructs the immutable field objects. Names, departments and roles
+   are whitespace-normalised and Unicode NFC-normalised before validation. Invalid values raise `ParseException`
+   before a command is executed; there is no partially constructed record in the model.
+3. `AddCommand#execute` checks ID uniqueness across the full roster, then counts similar names as described below.
+   `ReportingStructure.withCanonicalManager` resolves an optional manager against the full roster and rejects
+   a missing manager or self-reporting. The model validates the candidate reporting structure before mutation.
+4. `ModelManager#addEmployee` adds the employee and resets the filtered list to all active employees. The result
+   contains `Messages.format(employeeToAdd)`, followed by a name warning only if there were existing matches.
+5. `AddCommand#getHistoryAction` returns `COMMIT`. `LogicManager` owns the checkpoint, history commit and save;
+   `AddCommand` does not save or commit directly. A command or save failure restores the checkpoint, including
+   records, history and the previous view. The success result reaches the UI only after saving succeeds.
+
+See [Employee history and in-memory rollback](#employee-history-and-in-memory-rollback) for the transaction boundary
+and [Reporting relationships and team structure](#reporting-relationships-and-team-structure) for manager validation.
+
 ### Duplicate employee detection
 
 `Employee#isSameEmployee` compares employee IDs only, using case-insensitive `EmployeeId` equality. Employees with IDs `E0001` and `e0001` are duplicates even if their other details differ. Matching names or contact details with different IDs do not make employees duplicates; `Employee#equals` separately compares all fields.
 
-`UniqueEmployeeList` enforces this identity rule for all employees regardless of archive status. An operation that would
-introduce duplicate IDs throws `DuplicateEmployeeException`. `AddCommand` first calls `model.hasEmployee(toAdd)`, which
-therefore includes archived employees. A duplicate produces `An employee with Employee ID X already exists.`, where `X` is
-the supplied ID, without adding the employee. Otherwise, it calls `model.addEmployee`; a same or similar name only adds a
-warning to the success message. Matching archived employees have ` (archived)` appended to their IDs, so users
-can distinguish historical matches from active employees. Both statuses are checked regardless of the current view.
+`UniqueEmployeeList` enforces this identity rule for all employees regardless of archive status. An operation that
+would introduce duplicate IDs throws `DuplicateEmployeeException`. `AddCommand` first calls `model.hasEmployee(toAdd)`,
+which includes archived employees. On a duplicate, `model.hasArchivedEmployee(toAdd)` selects the message:
+
+* Active record: `An employee with Employee ID X already exists.`
+* Archived record: ``An employee with Employee ID X already exists in the archive. Use `list archived` to see it.``
+
+`X` is the supplied ID, preserving its case. Both outcomes throw `CommandException` before mutation. Otherwise,
+a matching name only adds a warning to a successful addition. `Name#isSimilarTo` compares cached normalised names
+using `equalsIgnoreCase`: whitespace is trimmed/collapsed and canonically equivalent Unicode accents are composed
+with NFC. Accents and punctuation are preserved, so this is not edit-distance or accent-insensitive matching.
+Matching archived employees have ` (archived)` appended to their IDs. The scan uses the underlying roster rather than
+the filtered list, so a hidden or archived match cannot be missed, and the new employee is not counted as a match.
 
 Each immutable `Name` caches its normalised form. Similar-name detection still scans the full roster, including
 archived employees, in O(N) name comparisons (string-comparison cost also depends on name length). This avoids repeated
@@ -398,6 +427,19 @@ with the former per-comparison normalisation, checking that both find the same n
 measures actual `AddCommand.execute` calls against the real model. Fixture setup, cleanup, disk saving, history
 commit and UI rendering are excluded. The uncached scan is an emulated baseline, not a full older-version add.
 Timing results are diagnostic and have no CI speedup threshold; see `tests/performance/results/2026-10-27-add.md`.
+
+**Design considerations:** Employee IDs are the identity key because different people can share names and contact
+details. Blocking a same-name addition would reject legitimate employees, so names produce an advisory warning.
+Caching the normalised name is safe because `Name` is immutable; it moves normalisation work to construction and
+retains an extra string per name. A maintained name index could reduce lookup work, but would need synchronisation
+on add, edit, delete, import, load and history restoration. The current scan keeps those paths simple. It deliberately
+continues after collecting five IDs to report the exact total, while the preview cap keeps the result message bounded.
+
+**Regression coverage:** `AddCommandParserTest` covers field validation and repeated prefixes;
+`NameTest` covers case/space similarity and composed/decomposed accents. `AddCommandIntegrationTest` uses the real
+model for ID conflicts (including archived records after `clear`), same-name warnings, and hidden active/archived
+matches. `AddCommandPerformanceTest` checks the exactly-five and more-than-five warning boundaries as well as
+large rosters. These checks complement the adding-an-employee scenarios in the manual testing appendix.
 
 When loading JSON, `JsonSerializableAddressBook#toModelType` converts and validates every employee. Duplicate IDs,
 including IDs differing only in case, cause an `IllegalValueException`, rejecting the file rather than returning
@@ -719,10 +761,10 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 
 **MSS**
 
-1. User requests to add an employee and provides the employee ID, name, phone number, email, department, and role.
+1. User requests to add an employee and provides the employee ID, name, phone number, email, department, and role, optionally assigning an existing employee as manager.
 2. HuntR validates the provided details.
 3. HuntR adds the employee and saves the updated employee records.
-4. HuntR displays the added employee's details.
+4. HuntR displays the added employee's details and shows all active employees.
 
    Use case ends.
 
@@ -740,15 +782,22 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 
     Use case resumes at step 1.
 
-* 2b. An employee with the same employee ID already exists.
+* 2b. An active or archived employee with the same employee ID already exists (ignoring case).
 
-  * 2b1. HuntR informs the user that an employee with the same employee ID already exists.
+  * 2b1. HuntR rejects the addition and identifies the conflicting ID. For an archived record, it also directs the user to the archived list.
 
     Use case ends.
 
 * 3a. HuntR is unable to save the updated employee records.
 
-  * 3a1. HuntR informs the user that the employee could not be saved successfully.
+  * 3a1. HuntR restores the previous records and view, and informs the user that the employee could not be saved successfully.
+
+    Use case ends.
+
+* 4a. One or more existing active or archived employees have matching names after case and space normalisation.
+
+  * 4a1. HuntR appends a warning with up to five matching IDs, marking archived matches and reporting the total
+    when more than five match. The new employee has still been added successfully.
 
     Use case ends.
 
@@ -1038,7 +1087,10 @@ testers are expected to do more *exploratory* testing.
 
 ### Adding an employee
 
-**Prerequisites:** Launch HuntR with the sample employees. The employee ID `E1001` must not already exist.
+**Prerequisites:** Launch HuntR in a disposable writable folder with the sample employees. IDs `E1001` through
+`E1004` and `E1101` through `E1107` must be unused in both the active and archived rosters. No existing employee
+should be named `Mary-Ann O'Brien` or `Jose Tan` (ignoring case and extra spaces). Run these steps in order.
+For each rejected command, verify that no record is added or changed.
 
 1. Enter `add id/E1001 n/Mary-Ann O'Brien p/+65 6123-4567 (HP) e/mary.ann@example.com d/Research & Development r/Software Engineer (Backend)`.<br>
    Expected: HuntR displays `New employee added:` followed by all six details. The employee appears in the list with ID `E1001`.
@@ -1046,12 +1098,25 @@ testers are expected to do more *exploratory* testing.
    Expected: HuntR reports that an employee with ID `e1001` already exists. No employee is added because employee IDs are compared case-insensitively.
 3. Enter `add id/E1002 n/  mary-ann   o'brien  p/81234567 e/mary2@example.com d/Finance r/Analyst`.<br>
    Expected: HuntR adds `E1002`, normalises repeated spaces in the name, and displays a warning that an employee with the same or a very similar name already exists. `E1001` remains unchanged.
-4. Add six employees named `Jose Tan` with IDs `E1101` through `E1106`, each with a distinct valid phone number and email. Then enter `add id/E1107 n/ JOSE   tan p/91231107 e/jose7@example.com d/Finance r/Analyst`.<br>
+4. Add six employees named `Jose Tan` with IDs `E1101` through `E1106`, each with a distinct valid phone number and email. After adding `E1105`, check that its warning lists exactly `E1101` through `E1104`. After adding `E1106`, check
+   that the warning lists all five IDs `E1101` through `E1105` without the total-count wording. Then enter
+   `add id/E1107 n/ JOSE   tan p/91231107 e/jose7@example.com d/Finance r/Analyst`.<br>
    Expected: HuntR adds `E1107` and warns that `6 employees with the same or a very similar name already exist`, showing only the first five matching employee IDs. The warning points to `find NAME` and `list archived` for the remaining matches.
 5. Enter `add id/E1003 n/Test User p/12 e/test@example.com d/QA r/Tester`.<br>
    Expected: HuntR reports that phone numbers must contain at least 3 digits. No employee is added.
 6. Enter `add id/E1003 n/Test User p/91234567 e/test@example.com d/QA`.<br>
    Expected: HuntR reports an invalid command format and shows the `add` command usage because the required `r/` field is missing. No employee is added.
+7. Enter `archive id/E1001`, then `find NobodyMatchesThisName`, then repeat the command from step 2.<br>
+   Expected: HuntR displays ``An employee with Employee ID e1001 already exists in the archive. Use `list archived` to see it.``
+   The empty search view is preserved. `list archived` still shows the original `E1001`.
+8. Enter `list archived`, then `add id/E1004 n/MARY-ANN O'Brien p/81234568 e/mary4@example.com d/Finance r/Analyst`.<br>
+   Expected: HuntR adds `E1004` and switches to all active employees. The warning includes `E1001 (archived)` and
+   `E1002`. `E1001` remains archived. Restart HuntR and check that the new record and archive status are retained.
+9. Enter `add id/E1003 n/Test User p/91234567 e/test@example.com d/QA r/Tester n/Other Name`.<br>
+   Expected: HuntR rejects the repeated `n/` parameter rather than silently using its last value.
+10. Enter `add id/E1003 n/Test User p/91234567 e/test@example.com d/QA r/Tester x/value`.<br>
+    Expected: HuntR reports `Unknown parameter: x/` and the command usage. Repeat without `x/value` but with an
+    empty `n/` value; HuntR reports `Name should not be blank.`
 
 ### Listing employees
 
