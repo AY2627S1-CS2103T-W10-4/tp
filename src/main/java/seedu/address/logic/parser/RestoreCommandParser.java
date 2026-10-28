@@ -18,10 +18,12 @@ public class RestoreCommandParser implements Parser<RestoreCommand> {
     @Override
     public RestoreCommand parse(String args) throws ParseException {
         requireNonNull(args);
-        ArgumentMultimap arguments = ArgumentTokenizer.tokenize(args, PREFIX_FILE);
-        String pathText = arguments.getValue(PREFIX_FILE).orElse("");
-        if (!arguments.getPreamble().isEmpty() || arguments.getAllValues(PREFIX_FILE).size() != 1
-                || pathText.isBlank()) {
+        String trimmedArgs = args.trim();
+        if (!trimmedArgs.startsWith(PREFIX_FILE.getPrefix())) {
+            throw invalidFormat();
+        }
+        String pathText = trimmedArgs.substring(PREFIX_FILE.getPrefix().length()).trim();
+        if (pathText.isBlank()) {
             throw invalidFormat();
         }
         try {

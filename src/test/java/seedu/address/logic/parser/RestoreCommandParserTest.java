@@ -29,10 +29,19 @@ public class RestoreCommandParserTest {
     }
 
     @Test
+    public void parse_pathContainingFilePrefix_preservesEntirePath() throws Exception {
+        for (String path : List.of("my file/staff.json", "my file/nested file/staff.json", "a.json file/b.json")) {
+            RestoreCommand expected = new RestoreCommand(Path.of(path));
+            assertParseSuccess(parser, " file/" + path + " ", expected);
+            assertEquals(expected, new AddressBookParser().parseCommand("restore file/" + path));
+        }
+    }
+
+    @Test
     public void parse_invalidArguments_rejected() {
         String message = String.format(MESSAGE_INVALID_COMMAND_FORMAT, RestoreCommand.MESSAGE_USAGE);
         for (String input : List.of("", " ", "backup.json", "file/", "file/  ", "file/staff.csv",
-                "extra file/staff.json", "file/a.json file/b.json", "file/a\u0000.json")) {
+                "extra file/staff.json", "file/a\u0000.json")) {
             assertParseFailure(parser, input, message);
         }
         assertThrows(NullPointerException.class, () -> parser.parse(null));

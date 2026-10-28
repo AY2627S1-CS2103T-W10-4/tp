@@ -40,7 +40,7 @@ public class RestoreCommand extends Command {
         requireNonNull(model);
         ReadOnlyAddressBook restored;
         try {
-            restored = new JsonAddressBookStorage(filePath).readAddressBook().orElseThrow(() ->
+            restored = new JsonAddressBookStorage(filePath).readBackup().orElseThrow(() ->
                     new CommandException(String.format(MESSAGE_FILE_NOT_FOUND, filePath)));
         } catch (DataLoadingException e) {
             throw new CommandException(String.format(MESSAGE_READ_FAILED, filePath), e);

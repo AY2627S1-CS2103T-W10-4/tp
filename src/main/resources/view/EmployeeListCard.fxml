@@ -34,10 +34,10 @@
       <padding>
         <Insets top="3" bottom="0" />
       </padding>
-      <Label fx:id="department" styleClass="chip" text="\$department" />
+      <Label fx:id="department" styleClass="chip" text="\$department" minWidth="0" />
       <Label fx:id="archivedBadge" styleClass="chip, chip-archived" text="Archived" visible="false"
-             managed="false" />
-      <Label fx:id="manager" styleClass="chip, chip-manager" visible="false" managed="false" />
+             managed="false" minWidth="-Infinity" />
     </HBox>
+    <Label fx:id="manager" styleClass="chip, chip-manager" text="Unassigned" minWidth="0" />
   </VBox>
 </HBox>

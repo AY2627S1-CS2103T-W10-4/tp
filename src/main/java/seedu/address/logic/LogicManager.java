@@ -58,7 +58,9 @@ public class LogicManager implements Logic {
                 model.commitAddressBook();
             }
             try {
-                storage.saveAddressBook(model.getAddressBook());
+                if (command.isDataChanging()) {
+                    storage.saveAddressBook(model.getAddressBook());
+                }
             } catch (AccessDeniedException e) {
                 throw new CommandException(String.format(FILE_OPS_PERMISSION_ERROR_FORMAT, e.getMessage()), e);
             } catch (IOException e) {

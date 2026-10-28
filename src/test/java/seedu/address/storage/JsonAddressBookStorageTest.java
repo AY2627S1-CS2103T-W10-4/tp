@@ -47,6 +47,20 @@ public class JsonAddressBookStorageTest {
     public Path testFolder;
 
     @Test
+    public void readAddressBook_trailingContent_preservesStartupCompatibility() throws Exception {
+        Path filePath = testFolder.resolve("TrailingContentAddressBook.json");
+        AddressBook expected = getTypicalAddressBook();
+        JsonAddressBookStorage storage = new JsonAddressBookStorage(filePath);
+        storage.saveAddressBook(expected);
+        String json = Files.readString(filePath);
+        for (String suffix : List.of("{}", "trailing")) {
+            Files.writeString(filePath, json + suffix);
+            assertEquals(expected, new AddressBook(storage.readAddressBook().orElseThrow()));
+            assertThrows(DataLoadingException.class, storage::readBackup);
+        }
+    }
+
+    @Test
     public void readAddressBook_nullFilePath_throwsNullPointerException() {
         assertThrows(NullPointerException.class, () -> readAddressBook(null));
     }
@@ -331,7 +345,7 @@ public class JsonAddressBookStorageTest {
     private AddressBook orderedBook() {
         AddressBook book = new AddressBook();
         book.addEmployee(new EmployeeBuilder().withId("e0123").withName("李  Mei").withPhone("91234567")
-                .withEmail("Mei@example.COM").withDepartment("R&D ").withRole("Engineer (Senior)")
+                .withEmail("Mei@example.COM").withDepartment("R&D").withRole("Engineer (Senior)")
                 .withArchived(true).build());
         book.addEmployee(HOON);
         return book;

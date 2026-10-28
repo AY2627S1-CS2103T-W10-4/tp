@@ -89,10 +89,10 @@ public interface Model {
      */
     void setEmployee(Employee target, Employee editedEmployee);
 
-    /** Replaces an employee with an archived copy. */
+    /** Replaces an employee with an archived copy, preserving the current view and sort order. */
     void archiveEmployee(Employee employee);
 
-    /** Replaces an employee with an active copy. */
+    /** Replaces an employee with an active copy, preserving the current view and sort order. */
     void unarchiveEmployee(Employee employee);
 
     /** Returns an unmodifiable view of the filtered employee list, in the current sort order */

@@ -76,7 +76,7 @@ public class AddCommand extends Command {
         // Employees may share a name, so a similar name only produces a warning and does not stop the add.
         String similarEmployeeIds = model.getAddressBook().getEmployeeList().stream()
                 .filter(employee -> employee.getName().isSimilarTo(toAdd.getName()))
-                .map(employee -> employee.getId().toString())
+                .map(employee -> employee.getId() + (employee.isArchived() ? " (archived)" : ""))
                 .collect(Collectors.joining(", "));
 
         Employee employeeToAdd;

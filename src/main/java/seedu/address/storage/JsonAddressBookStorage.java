@@ -4,6 +4,7 @@ import static java.util.Objects.requireNonNull;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
 import java.util.logging.Logger;
@@ -11,6 +12,7 @@ import java.util.logging.Logger;
 import seedu.address.commons.core.LogsCenter;
 import seedu.address.commons.exceptions.DataLoadingException;
 import seedu.address.commons.exceptions.IllegalValueException;
+import seedu.address.commons.util.FileUtil;
 import seedu.address.commons.util.JsonUtil;
 import seedu.address.model.ReadOnlyAddressBook;
 
@@ -67,6 +69,25 @@ public class JsonAddressBookStorage {
         } catch (IllegalValueException ive) {
             logger.info("Illegal values found in " + filePath + ": " + ive.getMessage());
             throw new DataLoadingException(ive);
+        }
+    }
+
+    /**
+     * Reads a backup using strict JSON validation, without changing normal startup loading.
+     * Returns {@code Optional.empty()} if the backup does not exist.
+     *
+     * @throws DataLoadingException if the backup cannot be read or validated.
+     */
+    public Optional<ReadOnlyAddressBook> readBackup() throws DataLoadingException {
+        if (!Files.exists(filePath)) {
+            return Optional.empty();
+        }
+        try {
+            JsonSerializableAddressBook backup = JsonUtil.fromJsonStringStrict(
+                    FileUtil.readFromFile(filePath), JsonSerializableAddressBook.class);
+            return Optional.of(backup.toModelType());
+        } catch (IOException | IllegalValueException e) {
+            throw new DataLoadingException(e);
         }
     }
 

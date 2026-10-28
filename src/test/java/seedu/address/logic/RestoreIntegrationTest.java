@@ -63,6 +63,15 @@ public class RestoreIntegrationTest {
     }
 
     @Test
+    public void execute_pathContainingFilePrefixAndTrailingWhitespace_restoresBackup() throws Exception {
+        Path directory = Files.createDirectory(folder.resolve("my file"));
+        Path nestedBackup = directory.resolve("staff.json");
+        Files.writeString(nestedBackup, Files.readString(backup) + " \n\t");
+        logic.execute("restore file/" + nestedBackup.toString().replace('\\', '/'));
+        assertStoredEmployees(snapshot.getEmployeeList(), model.getAddressBook().getEmployeeList());
+    }
+
+    @Test
     public void execute_validBackup_replacesRosterAndSupportsUndoRedoWithoutSource() throws Exception {
         logic.execute("edit id/" + ALICE.getId() + " r/Before restore");
         logic.execute("undo");
