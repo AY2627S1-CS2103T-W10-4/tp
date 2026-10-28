@@ -813,8 +813,14 @@ existing UI does not provide ordinary command-box handling for those exceptions.
 Read-only commands do not attempt an automatic employee-file save, so an unwritable employee file does not prevent
 view changes, searches or help. Export and backup still require write access to their own output destinations.
 
-JSON backups use the same safer writer and keep their existing location and naming. A backup write failure,
-including unsupported atomic movement or protection, keeps its backup-specific message:
+JSON backups are saved in `data/backups` as `huntr-yyyyMMdd-HHmmss-0000000000.json`.
+Every filename includes a ten-digit counter, increasing to `0000000001`, `0000000002` and so on when a name is taken.
+Sorting new backup names alphabetically keeps backups made within the same second in creation order.
+Existing backup snapshots are never overwritten, including when multiple backups are created within the same second.
+The backup folder must support hard links as well as the access protections described above. If hard links are
+unavailable, backup fails without creating an empty backup file. Older backup filenames remain valid.
+A backup write failure,
+including unsupported hard links or protection, keeps its backup-specific message:
 
 ```text
 Could not save the backup to <backup-path>. Check that you are allowed to write to that folder.
