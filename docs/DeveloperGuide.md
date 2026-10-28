@@ -96,7 +96,7 @@ How the `Logic` component works:
 1. This results in a `Command` object (more precisely, an object of one of its subclasses e.g., `DeleteCommand`) which is executed by the `LogicManager`.
 1. The command can communicate with the `Model` when it is executed (e.g. to delete an employee).<br>
    Note that although this is shown as a single step in the diagram above for simplicity, the code can require several interactions between the command object and the `Model` to complete the operation.
-1. Logic saves the employee state and returns the `CommandResult` only after saving succeeds. Data-changing commands use the checkpoint and rollback boundary described below.
+1. For data-changing commands, Logic saves the employee state and returns the `CommandResult` only after saving succeeds. Read-only commands skip employee-file saving. Data-changing commands use the checkpoint and rollback boundary described below.
 
 Here are the other classes in `Logic` (omitted from the class diagram above) that are used for parsing a user command:
 
@@ -186,14 +186,15 @@ an `AccessDeniedException`. Java makes existing-target replacement implementatio
 real existing-file replacement tests must pass on each supported platform. A provider that cannot replace safely
 must fail; destructive fallback is not supported.
 
-`LogicManager` continues saving after every successfully executed command. Its generic presentation is
+`LogicManager` saves after successful data-changing commands, including undo/redo and no-op mutations. Read-only
+commands skip employee-file saving. Its generic save-error presentation is
 `Could not save data due to the following error: <exception-message>`. Its permission presentation is
 `Could not save data to file <exception-message> due to insufficient permissions to write to the file or the folder.`
 The latter substitutes `AccessDeniedException.getMessage()`, including any paths and additional diagnostic text.
 `BackupCommand` translates every `IOException` into
 `Could not save the backup to <backup-path>. Check that you are allowed to write to that folder.`.
-If backup creation succeeds but the automatic save fails, the backup remains and the automatic-save error is the
-final result, rather than the backup success message. For data-changing commands, including undo and redo,
+Backup/export commands write only their requested output files and do not trigger automatic employee-file saves.
+For data-changing commands, including undo and redo,
 `LogicManager` restores the checkpoint on save failure, preserving employee records, the complete history and the
 effective view as well as the stored file. Read-only command view changes and completed backup/export files remain.
 
@@ -314,9 +315,8 @@ by count descending, with ties ordered by label using `SortField.VALUE_ORDER`, t
 zero and `(none)` under each heading.
 
 The sequence diagram below focuses on `StatsCommand#execute` after parsing. The command does not modify employee
-records, the current filter, the sort order or undo/redo history. As with other successful commands,
-`LogicManager` still saves the employee state before returning the result to the UI; that shared saving flow
-is outside this diagram.
+records, the current filter, the sort order or undo/redo history. `LogicManager` skips employee-file saving for
+this read-only command.
 
 <puml src="diagrams/StatsSequenceDiagram.puml" alt="Interactions for summarising the active workforce" />
 
@@ -399,7 +399,23 @@ Because `find` and `filter` use the same word splitting, `find Tan` and `filter 
 introduce duplicate IDs throws `DuplicateEmployeeException`. `AddCommand` first calls `model.hasEmployee(toAdd)`, which
 therefore includes archived employees. A duplicate produces `An employee with Employee ID X already exists.`, where `X` is
 the supplied ID, without adding the employee. Otherwise, it calls `model.addEmployee`; a same or similar name only adds a
-warning to the success message.
+warning to the success message. Matching archived employees have ` (archived)` appended to their IDs, so users
+can distinguish historical matches from active employees. Both statuses are checked regardless of the current view.
+
+Each immutable `Name` caches its normalised form. Similar-name detection still scans the full roster, including
+archived employees, in O(N) name comparisons (string-comparison cost also depends on name length). This avoids repeated
+whitespace/Unicode normalisation during scans; it does not introduce a sublinear lookup. The warning retains at most
+five IDs in roster order and reports the full count when more match, using O(1) additional ID-preview space.
+`AddCommandPerformanceTest` exercises 10,000-employee rosters with no matches, all matches and a sixth match at the
+end of the roster, checking exact counts, bounded previews and successful additions using the real `ModelManager`.
+Its generous 10-second execution guard excludes fixture setup and is a severe-regression check, not a UI latency SLA.
+
+Run `./gradlew -I tests/performance/history-performance.gradle addPerformance` for no-match, sparse-match and
+all-match benchmarks at 100, 1,000 and 10,000 employees. The runner warms each workload and compares cached scans
+with the former per-comparison normalisation, checking that both find the same number of matches. It separately
+measures actual `AddCommand.execute` calls against the real model. Fixture setup, cleanup, disk saving, history
+commit and UI rendering are excluded. The uncached scan is an emulated baseline, not a full older-version add.
+Timing results are diagnostic and have no CI speedup threshold; see `tests/performance/results/2026-10-27-add.md`.
 
 When loading JSON, `JsonSerializableAddressBook#toModelType` converts and validates every employee. Duplicate IDs,
 including IDs differing only in case, cause an `IllegalValueException`, rejecting the file rather than returning
@@ -435,8 +451,7 @@ on the `FilteredList` together with a check that the employee is not archived, s
 by `filter`. The command replaces the earlier predicate of `find` or `filter` instead of adding to it. It does not
 touch the comparator of the `SortedList`, so the sort order is kept. The result is the size of the displayed list,
 reported by `Messages#getEmployeesListedOverview`. A filter with no matches succeeds with `0 employees listed!`.
-Like all successful commands, it is followed by the shared saving flow in `LogicManager`; the filter itself is
-never written to the JSON file.
+`LogicManager` skips employee-file saving for this read-only command; the filter is never written to the JSON file.
 
 #### Design considerations
 
@@ -570,11 +585,18 @@ Only a successful storage return permits the result to be returned. No fallible 
 
 <puml src="diagrams/CommandTransaction.puml" alt="Employee command execution, saving and rollback" />
 
-A checkpoint copies the current employee-list container and the history container, retaining references to
-immutable snapshots, the pointer and the effective predicate. Capture takes O(n + h) work for n current employees
-and h snapshots; it does not reconstruct historical address books or revalidate employee pairs. Checkpoints remain
-usable after later changes, after redo-tail removal and after repeated restoration. Restoration copies back into
-the working containers and never changes a shared snapshot.
+A checkpoint copies the current employee-list container and shares a frozen history index, immutable snapshots,
+the pointer and the effective predicate. Capture takes O(n) work for n current employees, independent of history
+length. Navigation and no-op commits reuse the same index. The first changed commit after a checkpoint copies the
+index before discarding redo or appending a snapshot; that commit still takes O(h) index-copying work for h snapshots.
+Checkpoints remain usable after later changes, redo-tail removal and repeated restoration. Restoration updates the
+working list and reinstalls the immutable history index without copying its entries. Shared snapshots never change.
+
+Run `./gradlew -I tests/performance/history-performance.gradle checkpointPerformance` for an opt-in microbenchmark
+at 10, 1,000 and 10,000 history steps with a fixed one-employee roster. It compares shared-index capture with the
+former container-copying strategy and measures undo/redo command pairs using storage that performs no disk I/O.
+It warms each scenario before reporting nanoseconds per operation. These diagnostic timings isolate history costs;
+they are not end-to-end UI latency measurements and have no CI timing threshold.
 
 `CommandException`, `AccessDeniedException`, other `IOException` and unexpected `RuntimeException` during execution,
 tentative commits, serialization or saving cause restoration for data-changing commands. Command exceptions and
@@ -605,8 +627,9 @@ suppression of intermediate list notifications are outside scope.
 
 #### Persistence and atomic saving
 
-All successfully executed commands still save, including read-only commands and no-ops. Read-only save failures
-retain existing behavior and are not checkpointed. Export/backup side effects are outside the transaction.
+Only successfully executed data-changing commands save, including undo/redo and no-op mutations. Read-only commands
+skip checkpointing and employee-file saving, so an unwritable employee file does not prevent help, searches or view
+changes. Export/backup commands still write their requested files; those side effects are outside the transaction.
 Only the current employee state is serialized in the existing `employees` JSON schema; there are no history,
 checkpoint, command or predicate fields. Missing `archived` fields in older valid JSON still load as active;
 validation, case-insensitive ID uniqueness, invalid-file handling, paths and preferences are unchanged. CSV export
@@ -1090,9 +1113,11 @@ testers are expected to do more *exploratory* testing.
    Expected: HuntR reports that an employee with ID `e1001` already exists. No employee is added because employee IDs are compared case-insensitively.
 3. Enter `add id/E1002 n/  mary-ann   o'brien  p/81234567 e/mary2@example.com d/Finance r/Analyst`.<br>
    Expected: HuntR adds `E1002`, normalises repeated spaces in the name, and displays a warning that an employee with the same or a very similar name already exists. `E1001` remains unchanged.
-4. Enter `add id/E1003 n/Test User p/12 e/test@example.com d/QA r/Tester`.<br>
+4. Add six employees named `Jose Tan` with IDs `E1101` through `E1106`, each with a distinct valid phone number and email. Then enter `add id/E1107 n/ JOSE   tan p/91231107 e/jose7@example.com d/Finance r/Analyst`.<br>
+   Expected: HuntR adds `E1107` and warns that `6 employees with the same or a very similar name already exist`, showing only the first five matching employee IDs. The warning points to `find NAME` and `list archived` for the remaining matches.
+5. Enter `add id/E1003 n/Test User p/12 e/test@example.com d/QA r/Tester`.<br>
    Expected: HuntR reports that phone numbers must contain at least 3 digits. No employee is added.
-5. Enter `add id/E1003 n/Test User p/91234567 e/test@example.com d/QA`.<br>
+6. Enter `add id/E1003 n/Test User p/91234567 e/test@example.com d/QA`.<br>
    Expected: HuntR reports an invalid command format and shows the `add` command usage because the required `r/` field is missing. No employee is added.
 
 ### Listing employees

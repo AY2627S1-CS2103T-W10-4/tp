@@ -28,6 +28,8 @@ public class Name {
 
     public final String fullName;
 
+    private final String similarityName;
+
     /**
      * Constructs a {@code Name}.
      *
@@ -37,6 +39,7 @@ public class Name {
         requireNonNull(name);
         checkArgument(isValidName(name), MESSAGE_CONSTRAINTS);
         fullName = Normalizer.normalize(name, Normalizer.Form.NFC);
+        similarityName = normalise(fullName);
     }
 
     /**
@@ -58,10 +61,11 @@ public class Name {
     /**
      * Returns true if both names are the same apart from letter case and extra spaces,
      * e.g. "John Doe", "john doe" and "John  Doe".
+     * Uses the cached normalised form because names are immutable.
      */
     public boolean isSimilarTo(Name otherName) {
         return otherName != null
-                && normalise(fullName).equalsIgnoreCase(normalise(otherName.fullName));
+                && similarityName.equalsIgnoreCase(otherName.similarityName);
     }
 
     @Override
