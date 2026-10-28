@@ -359,6 +359,19 @@ by usage; an ID without any fields produces `At least one field to edit must be 
 
 `EditCommand` searches `model.getAddressBook().getEmployeeList()` using case-insensitive `EmployeeId` equality, so filtered-out employees can be edited. It creates a replacement employee with the stored ID, including its original casing, and calls `model.setEmployee`. It then calls `updateFilteredEmployeeList(PREDICATE_SHOW_ALL_EMPLOYEES)` to show the full roster and returns `Edited employee: ` followed by the updated details. An unknown ID produces `No employee with ID X was found.` without usage, where `X` is the entered ID. Successful edits use the existing saving flow.
 
+Before changing the model, `EditCommand` passes the replacement employee through `ReportingStructure#withCanonicalManager`,
+which rewrites a manager ID to the spelling stored for that employee, so `m/e0001` is saved as `E0001`. It then compares
+the replacement with the current employee. If they are equal, the command throws a `CommandException` with
+`No changes made: the new values are the same as the existing ones for X.` and does not call `model.setEmployee`, so the
+roster is not saved again and no entry is added to the undo history. The comparison is case-sensitive, so changing only
+the letter case of a name counts as a change. An invalid manager (`An employee cannot report to themselves.`,
+`Manager does not exist: X` or `Reporting relationships cannot contain a cycle.`) is reported through the same
+`CommandException` path, leaving the roster unchanged.
+
+`EditCommand#getHistoryAction` returns `HistoryAction.COMMIT`, so a successful edit is one step of `undo`.
+The result message is built by `Messages#format`, which ends with `; Manager: ` followed by the manager ID when
+the edited employee has a manager.
+
 The sequence diagram below shows a successful `edit id/E0001 r/Manager`, adapted from the delete sequence diagram in the Logic component section. It focuses on parsing and model updates; `LogicManager` saves the address book before returning the result, as usual.
 
 <puml src="diagrams/EditSequenceDiagram.puml" alt="Interactions for editing an employee by ID" />
@@ -846,50 +859,61 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 
 **MSS**
 
-1. User requests to list employees.
-2. HuntR displays the employee list.
-3. User selects an employee and provides the details to update.
-4. HuntR validates the provided details.
-5. HuntR updates the selected employee's record and saves the updated employee records.
-6. HuntR displays the updated employee's details.
+1. User requests to edit an employee using `edit id/EMPLOYEE_ID` with at least one field to change.
+2. HuntR validates the ID and the given fields.
+3. HuntR finds the employee in the complete roster, comparing IDs case-insensitively.
+4. HuntR updates the employee, saves the updated records and shows the complete roster.
+5. HuntR displays the updated employee's details as confirmation.
 
-   Use case ends.
+    Use case ends.
 
 **Extensions**
 
-* 2a. The employee list is empty.
+* 1a. The ID is missing, the command contains an unknown or repeated parameter, or it has unexpected text before the first parameter.
 
-  * 2a1. HuntR informs the user that there are no employee records.
+  * 1a1. HuntR identifies the input error and shows the command usage. Records remain unchanged.
 
-    Use case ends.
+    Use case resumes at step 1.
 
-* 3a. The selected employee index is invalid.
+* 1b. The user does not provide any field to update.
 
-  * 3a1. HuntR shows an error message.
+  * 1b1. HuntR informs the user that at least one field must be provided.
 
-    Use case resumes at step 2.
+    Use case resumes at step 1.
 
-* 3b. The user does not provide any field to update.
+* 2a. One or more provided fields are invalid.
 
-  * 3b1. HuntR informs the user that at least one field must be provided.
+  * 2a1. HuntR shows an error message describing the invalid input. Records remain unchanged.
 
-    Use case resumes at step 3.
+    Use case resumes at step 1.
 
-* 4a. One or more provided fields are invalid.
+* 3a. No employee has the specified employee ID.
 
-  * 4a1. HuntR shows an error message describing the invalid input.
+  * 3a1. HuntR displays `No employee with ID X was found.`, using the entered ID for `X`. Records remain unchanged.
 
-    Use case resumes at step 3.
+    Use case resumes at step 1.
 
-* 4b. The update would make the employee identical to another existing employee.
+* 3b. The employee is hidden by the current search.
 
-  * 4b1. HuntR informs the user that the employee already exists.
+  * 3b1. HuntR edits that employee in the complete roster.
 
-    Use case ends.
+    Use case resumes at step 4.
 
-* 5a. HuntR is unable to save the updated employee records.
+* 3c. Every given value is the same as the employee's current value.
 
-  * 5a1. HuntR informs the user that the employee changes could not be saved successfully.
+  * 3c1. HuntR displays `No changes made: the new values are the same as the existing ones for X.`. Nothing is saved or added to the undo history.
+
+    Use case resumes at step 1.
+
+* 3d. The manager in `m/` does not exist, is the employee themselves, or would create a reporting cycle.
+
+  * 3d1. HuntR shows an error message that names the problem. Records remain unchanged.
+
+    Use case resumes at step 1.
+
+* 4a. HuntR is unable to save the updated employee records.
+
+  * 4a1. HuntR informs the user that the employee changes could not be saved successfully and restores the previous records.
 
     Use case ends.
 
@@ -1211,6 +1235,16 @@ For each rejected command, verify that no record is added or changed.
    Expected: HuntR reports that phone numbers must contain at least 3 digits and leaves `E0001` unchanged.
 6. Enter `edit id/E0001 p/91234567 p/81234567`.<br>
    Expected: HuntR reports multiple values for `p/` and leaves `E0001` unchanged.
+7. Enter the command of step 1 a second time.<br>
+   Expected: HuntR displays `No changes made: the new values are the same as the existing ones for E0001.` and `E0001` is unchanged. Enter `undo`: it reverts the rename of `E0002` from step 2, not a second edit of `E0001`. Enter `redo` to bring the rename back.
+8. Enter `edit id/e0002 m/e0001`.<br>
+   Expected: HuntR displays `Edited employee:` followed by the record of `E0002`, ending with `; Manager: E0001`. The manager ID is stored as `E0001`, not as typed.
+9. After step 8, enter `edit id/E0002 m/E0001`.<br>
+   Expected: HuntR displays `No changes made: the new values are the same as the existing ones for E0002.`
+10. After step 8, enter `edit id/E0001 m/E0002`, `edit id/E0001 m/E0001` and `edit id/E0002 m/E9999` separately.<br>
+    Expected: HuntR displays `Reporting relationships cannot contain a cycle.`, `An employee cannot report to themselves.` and `Manager does not exist: E9999` respectively, and no employee is changed.
+11. After step 8, enter `edit id/E0002 m/`.<br>
+    Expected: HuntR displays `Edited employee:` followed by the record of `E0002` without a `Manager:` part. Enter `undo` to restore the manager.
 
 
 ### Filtering employees
