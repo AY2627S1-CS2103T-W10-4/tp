@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import seedu.address.commons.exceptions.IllegalValueException;
 import seedu.address.model.employee.Department;
 import seedu.address.model.employee.Email;
+import seedu.address.model.employee.Employee;
 import seedu.address.model.employee.EmployeeId;
 import seedu.address.model.employee.Name;
 import seedu.address.model.employee.Phone;
@@ -39,6 +40,15 @@ public class JsonAdaptedEmployeeTest {
     public void toModelType_validEmployeeDetails_returnsEmployee() throws Exception {
         JsonAdaptedEmployee employee = new JsonAdaptedEmployee(BENSON);
         assertEquals(BENSON, employee.toModelType());
+    }
+
+    @Test
+    public void toModelType_repeatedSpacesInDepartmentAndRole_collapsedToOneSpace() throws Exception {
+        JsonAdaptedEmployee employee =
+                build(VALID_ID, VALID_NAME, VALID_PHONE, VALID_EMAIL, "Human  Resources", "HR   Executive");
+        Employee modelEmployee = employee.toModelType();
+        assertEquals("Human Resources", modelEmployee.getDepartment().value);
+        assertEquals("HR Executive", modelEmployee.getRole().value);
     }
 
     @Test

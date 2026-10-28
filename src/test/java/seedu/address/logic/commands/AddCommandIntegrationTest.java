@@ -89,4 +89,34 @@ public class AddCommandIntegrationTest {
                 String.format(AddCommand.MESSAGE_SUCCESS, Messages.format(validEmployee)), expectedModel);
     }
 
+    @Test
+    public void execute_archivedSimilarName_identifiesArchivedMatch() {
+        Employee original = model.getAddressBook().getEmployeeList().getFirst();
+        model.archiveEmployee(original);
+        Employee sameName = new EmployeeBuilder(original).withId("E7777").build();
+        Model expectedModel = new ModelManager(model.getAddressBook(), new UserPrefs());
+        expectedModel.addEmployee(sameName);
+
+        String expectedMessage = String.format(AddCommand.MESSAGE_SUCCESS, Messages.format(sameName))
+                + "\n" + String.format(AddCommand.MESSAGE_SIMILAR_NAME_WARNING, original.getId() + " (archived)");
+        assertCommandSuccess(new AddCommand(sameName), model, expectedMessage, expectedModel);
+    }
+
+    @Test
+    public void execute_activeAndArchivedSimilarNames_identifiesArchivedMatchRegardlessOfView() {
+        Employee original = model.getAddressBook().getEmployeeList().getFirst();
+        Employee archivedMatch = new EmployeeBuilder(original).withId("ARCHIVED-MATCH").withArchived(true).build();
+        model.addEmployee(archivedMatch);
+        model.updateFilteredEmployeeList(employee -> false);
+        Employee sameName = new EmployeeBuilder(original).withId("E7777")
+                .withName(original.getName().fullName.toUpperCase()).build();
+        Model expectedModel = new ModelManager(model.getAddressBook(), new UserPrefs());
+        expectedModel.addEmployee(sameName);
+
+        String expectedMessage = String.format(AddCommand.MESSAGE_SUCCESS, Messages.format(sameName))
+                + "\n" + String.format(AddCommand.MESSAGE_SIMILAR_NAME_WARNING,
+                        original.getId() + ", ARCHIVED-MATCH (archived)");
+        assertCommandSuccess(new AddCommand(sameName), model, expectedMessage, expectedModel);
+    }
+
 }

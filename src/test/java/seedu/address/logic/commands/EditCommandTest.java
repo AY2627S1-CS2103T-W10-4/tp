@@ -15,6 +15,8 @@ import static seedu.address.testutil.TypicalEmployees.BENSON;
 import static seedu.address.testutil.TypicalEmployees.getTypicalAddressBook;
 import static seedu.address.testutil.TypicalIndexes.INDEX_FIRST_EMPLOYEE;
 
+import java.util.Locale;
+
 import org.junit.jupiter.api.Test;
 
 import seedu.address.logic.Messages;
@@ -73,16 +75,22 @@ public class EditCommandTest {
     }
 
     @Test
-    public void execute_noFieldSpecifiedUnfilteredList_success() {
-        Employee editedEmployee = model.getFilteredEmployeeList().get(0);
-        EditCommand editCommand = new EditCommand(editedEmployee.getId(), new EditEmployeeDescriptor());
+    public void execute_noFieldSpecified_throwsCommandException() {
+        Employee employee = model.getFilteredEmployeeList().get(0);
+        EditCommand editCommand = new EditCommand(employee.getId(), new EditEmployeeDescriptor());
 
-        String expectedMessage = String.format(EditCommand.MESSAGE_EDIT_EMPLOYEE_SUCCESS,
-                Messages.format(editedEmployee));
+        assertCommandFailure(editCommand, model, String.format(EditCommand.MESSAGE_NO_CHANGES, employee.getId()));
+    }
 
-        Model expectedModel = new ModelManager(new AddressBook(model.getAddressBook()), new UserPrefs());
+    @Test
+    public void execute_sameValuesAsExisting_throwsCommandException() {
+        Employee employee = model.getFilteredEmployeeList().get(0);
+        EditEmployeeDescriptor descriptor = new EditEmployeeDescriptorBuilder().withName(employee.getName().fullName)
+                .withPhone(employee.getPhone().value).build();
+        EmployeeId lowerCaseId = new EmployeeId(employee.getId().value.toLowerCase(Locale.ROOT));
+        EditCommand editCommand = new EditCommand(lowerCaseId, descriptor);
 
-        assertCommandSuccess(editCommand, model, expectedMessage, expectedModel);
+        assertCommandFailure(editCommand, model, String.format(EditCommand.MESSAGE_NO_CHANGES, employee.getId()));
     }
 
     @Test

@@ -279,16 +279,18 @@ public class HistoryTransactionTest {
     }
 
     @Test
-    public void execute_noOpsAndReadOnlyCommands_preserveRedoAndStillSave() throws Exception {
-        logic.execute("edit id/" + ALICE.getId() + " r/First edit");
-        for (String command : List.of("list", "list archived", "find Nobody", "help", "exit")) {
+    public void execute_readOnlyCommands_preserveRedoWithoutSaving() throws Exception {
+        assertThrows(CommandException.class, () -> logic.execute("edit id/" + ALICE.getId() + " r/First edit"));
+        assertTrue(model.canRedoAddressBook());
+        for (String command : List.of("list", "list archived", "find Nobody", "help", "exit", "stats", "check")) {
             logic.execute(command);
             assertTrue(model.canRedoAddressBook());
         }
-        assertEquals(6, storage.saves);
+        assertEquals(0, storage.saves);
         Path exported = temporaryFolder.resolve("export.csv");
         logicFor(new ExportCommand(temporaryFolder, Path.of("export.csv"))).execute("export");
         logicFor(new BackupCommand(temporaryFolder.resolve("backups"), Clock.systemUTC())).execute("backup");
+        assertEquals(0, storage.saves);
         assertTrue(model.canRedoAddressBook());
         logic.execute("redo");
         logic.execute("undo");
@@ -359,18 +361,19 @@ public class HistoryTransactionTest {
     }
 
     @Test
-    public void execute_readOnlySaveFailure_keepsViewChangeAndExternalFiles() throws Exception {
+    public void execute_readOnlyCommandsWithUnavailableStorage_stillSucceed() throws Exception {
         storage.failure = new IOException("save failed");
-        assertThrows(CommandException.class, () -> logic.execute("list archived"));
+        logic.execute("list archived");
         assertStoredEmployees(List.of(ARCHIVED), filtered());
         LogicManager exportLogic = logicFor(new ExportCommand(temporaryFolder, Path.of("export.csv")));
-        assertThrows(CommandException.class, () -> exportLogic.execute("export"));
+        exportLogic.execute("export");
         assertTrue(Files.exists(temporaryFolder.resolve("export.csv")));
         LogicManager backupLogic = logicFor(new BackupCommand(temporaryFolder.resolve("backups"), Clock.systemUTC()));
-        assertThrows(CommandException.class, () -> backupLogic.execute("backup"));
+        backupLogic.execute("backup");
         try (var backups = Files.list(temporaryFolder.resolve("backups"))) {
             assertEquals(1, backups.count());
         }
+        assertEquals(0, storage.saves);
         assertEntireHistoryRestored();
     }
 

@@ -40,7 +40,7 @@ public class HelpCommand extends Command {
             ManagerCommand.COMMAND_WORD + " id/EMPLOYEE_ID m/MANAGER_ID",
             UnassignManagerCommand.COMMAND_WORD + " id/EMPLOYEE_ID",
             TeamCommand.COMMAND_WORD + " id/EMPLOYEE_ID (employee, manager and direct reports)",
-            OrgCommand.COMMAND_WORD + " id/MANAGER_ID (full team)",
+            OrgCommand.COMMAND_WORD + " id/EMPLOYEE_ID (full team)",
             ChainCommand.COMMAND_WORD + " id/EMPLOYEE_ID (reporting chain)",
             ArchiveCommand.COMMAND_WORD + " " + PREFIX_ID + "EMPLOYEE_ID",
             UnarchiveCommand.COMMAND_WORD + " " + PREFIX_ID + "EMPLOYEE_ID",

@@ -2,7 +2,6 @@ package seedu.address.logic.parser;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static seedu.address.logic.Messages.MESSAGE_INVALID_COMMAND_FORMAT;
-import static seedu.address.logic.parser.CliSyntax.PREFIX_FILE;
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseFailure;
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseSuccess;
 
@@ -11,7 +10,6 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
-import seedu.address.logic.Messages;
 import seedu.address.logic.commands.ImportCommand;
 
 public class ImportCommandParserTest {
@@ -40,12 +38,20 @@ public class ImportCommandParserTest {
     }
 
     @Test
+    public void parse_pathContainingFilePrefix_preservesEntirePath() throws Exception {
+        for (String path : List.of("my file/staff.csv", "my file/nested file/staff.csv", "a.csv file/b.csv")) {
+            ImportCommand expected = new ImportCommand(Paths.get(path));
+            assertParseSuccess(parser, " file/" + path + " ", expected);
+            assertParseSuccess(parser, " " + path + " ", expected);
+            assertEquals(expected, new AddressBookParser().parseCommand("import file/" + path));
+        }
+    }
+
+    @Test
     public void parse_invalidPrefixedPath_rejectedWithUsage() {
         for (String path : List.of("file/", "file/   ")) {
             assertParseFailure(parser, path, ParserUtil.MESSAGE_BLANK_FILE_PATH + "\n" + ImportCommand.MESSAGE_USAGE);
         }
-        assertParseFailure(parser, "file/a.csv file/b.csv",
-                Messages.getErrorMessageForDuplicatePrefixes(PREFIX_FILE) + "\n" + ImportCommand.MESSAGE_USAGE);
         assertParseFailure(parser, "file/../staff.csv",
                 ParserUtil.MESSAGE_FILE_PATH_OUTSIDE_APP_FOLDER + "\n" + ImportCommand.MESSAGE_USAGE);
         assertParseFailure(parser, "file/staff.txt",

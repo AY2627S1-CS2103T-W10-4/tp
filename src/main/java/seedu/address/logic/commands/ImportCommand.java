@@ -17,6 +17,7 @@ import java.util.logging.Logger;
 import seedu.address.commons.core.LogsCenter;
 import seedu.address.commons.exceptions.IllegalValueException;
 import seedu.address.commons.util.CsvUtil;
+import seedu.address.commons.util.CsvUtil.CsvRecord;
 import seedu.address.logic.commands.exceptions.CommandException;
 import seedu.address.logic.parser.ParserUtil;
 import seedu.address.model.Model;
@@ -57,8 +58,6 @@ public class ImportCommand extends CsvFileCommand {
 
     /** Excel adds this invisible character to the start of files saved as "CSV UTF-8". */
     private static final String BYTE_ORDER_MARK = "\uFEFF";
-    /** Row numbers count from 1 and include the header, as a spreadsheet program shows them. */
-    private static final int FIRST_DATA_ROW_NUMBER = 2;
 
     private static final Logger logger = LogsCenter.getLogger(ImportCommand.class);
 
@@ -87,9 +86,9 @@ public class ImportCommand extends CsvFileCommand {
     public CommandResult execute(Model model) throws CommandException {
         requireNonNull(model);
         Path resolvedPath = resolveFilePath();
-        List<String> lines = readLines(resolvedPath);
-        List<String> columns = readColumns(lines);
-        List<Employee> employees = parseEmployees(lines.subList(1, lines.size()), columns, model);
+        List<CsvRecord> records = readRecords(resolvedPath);
+        List<String> columns = readColumns(records);
+        List<Employee> employees = parseEmployees(records.subList(1, records.size()), columns, model);
 
         // Add every identity before assigning managers, so CSV row order does not restrict references.
         employees.forEach(employee -> model.addEmployee(employee.withManager(null)));
@@ -101,12 +100,12 @@ public class ImportCommand extends CsvFileCommand {
         return new CommandResult(String.format(MESSAGE_SUCCESS, employees.size(), getFilePath()));
     }
 
-    private List<String> readLines(Path resolvedPath) throws CommandException {
+    private List<CsvRecord> readRecords(Path resolvedPath) throws CommandException {
         if (!Files.isRegularFile(resolvedPath)) {
             throw new CommandException(String.format(MESSAGE_FILE_NOT_FOUND, getFilePath()));
         }
         try {
-            return Files.readAllLines(resolvedPath, StandardCharsets.UTF_8);
+            return CsvUtil.splitCsvRecords(Files.readString(resolvedPath, StandardCharsets.UTF_8));
         } catch (CharacterCodingException cce) {
             throw new CommandException(String.format(MESSAGE_NOT_UTF8, getFilePath()), cce);
         } catch (IOException ioe) {
@@ -121,13 +120,13 @@ public class ImportCommand extends CsvFileCommand {
      * @throws CommandException unless the header matches the current eight-column format or a legacy
      *     six-column or seven-column format.
      */
-    private List<String> readColumns(List<String> lines) throws CommandException {
-        boolean isEmpty = lines.stream().allMatch(String::isBlank);
+    private List<String> readColumns(List<CsvRecord> records) throws CommandException {
+        boolean isEmpty = records.stream().allMatch(record -> record.text().isBlank());
         if (isEmpty) {
             throw new CommandException(String.format(MESSAGE_EMPTY_FILE, getFilePath()));
         }
 
-        String headerLine = lines.get(0).replace(BYTE_ORDER_MARK, "");
+        String headerLine = records.getFirst().text().replace(BYTE_ORDER_MARK, "");
         List<String> columns;
         try {
             columns = CsvUtil.parseCsvLine(headerLine).stream()
@@ -147,21 +146,21 @@ public class ImportCommand extends CsvFileCommand {
     }
 
     /**
-     * Returns the employees in {@code rows}, skipping blank rows.
+     * Returns the employees in {@code rows}, skipping blank records. Errors use the record's starting physical line.
      *
      * @throws CommandException naming the row number if a row is invalid or its employee ID is already used,
      *     either by an earlier row or by an employee in {@code model}.
      */
-    private List<Employee> parseEmployees(List<String> rows, List<String> columns, Model model)
+    private List<Employee> parseEmployees(List<CsvRecord> rows, List<String> columns, Model model)
             throws CommandException {
         List<Employee> employees = new ArrayList<>();
         Map<EmployeeId, Integer> rowNumbersById = new HashMap<>();
-        for (int i = 0; i < rows.size(); i++) {
-            if (rows.get(i).isBlank()) {
+        for (CsvRecord row : rows) {
+            if (row.text().isBlank()) {
                 continue;
             }
-            int rowNumber = i + FIRST_DATA_ROW_NUMBER;
-            Employee employee = parseRow(rows.get(i), columns, rowNumber);
+            int rowNumber = row.lineNumber();
+            Employee employee = parseRow(row.text(), columns, rowNumber);
             checkNotDuplicate(employee, rowNumber, rowNumbersById, model);
             rowNumbersById.put(employee.getId(), rowNumber);
             employees.add(employee);

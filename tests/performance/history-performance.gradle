@@ -19,5 +19,10 @@ allprojects {
             jvmArgs '--enable-native-access=ALL-UNNAMED'
             doFirst { workingDir.mkdirs() }
         }
+        tasks.register('checkpointPerformance', JavaExec) {
+            dependsOn tasks.named('compileHistoryPerformance')
+            classpath = files(acceptanceClasses) + sourceSets.main.runtimeClasspath
+            mainClass = 'seedu.address.model.CheckpointPerformance'
+        }
     }
 }

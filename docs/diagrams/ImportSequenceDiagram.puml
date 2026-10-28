@@ -29,7 +29,7 @@ activate ImportCommandParser
 ImportCommandParser --> AddressBookParser
 deactivate ImportCommandParser
 
-AddressBookParser -> ImportCommandParser : parse(" staff.csv")
+AddressBookParser -> ImportCommandParser : parse(" file/staff.csv")
 activate ImportCommandParser
 
 create ImportCommand
@@ -51,14 +51,14 @@ LogicManager -> ImportCommand : execute(m)
 activate ImportCommand
 
 ImportCommand -> ImportCommand : resolveFilePath()
-ImportCommand -> ImportCommand : readLines(path)
+ImportCommand -> ImportCommand : readRecords(path)
 
 ImportCommand -> CsvUtil : parseCsvLine(header)
 activate CsvUtil
 CsvUtil --> ImportCommand : columns
 deactivate CsvUtil
 
-loop each non-blank row
+loop each non-blank record
     ImportCommand -> CsvUtil : parseCsvLine(row)
     activate CsvUtil
     CsvUtil --> ImportCommand : values

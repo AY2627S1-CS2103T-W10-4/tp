@@ -40,14 +40,13 @@ public class ParserUtil {
     /**
      * Parses the file/ argument shared by import and export. Positional paths remain supported for compatibility.
      * Use ./file/ for a positional path whose first directory is literally named file.
+     * Only the leading prefix is removed; the remaining text is a single path and may contain spaces or file/.
      */
     public static Path parseCsvFileArgument(String args) throws ParseException {
         requireNonNull(args);
         String pathText = args.trim();
         if (pathText.startsWith(PREFIX_FILE.getPrefix())) {
-            ArgumentMultimap arguments = ArgumentTokenizer.tokenize(" " + pathText, PREFIX_FILE);
-            arguments.verifyNoDuplicatePrefixesFor(PREFIX_FILE);
-            pathText = arguments.getValue(PREFIX_FILE).orElse("");
+            pathText = pathText.substring(PREFIX_FILE.getPrefix().length()).trim();
         }
         if (pathText.isBlank()) {
             throw new ParseException(MESSAGE_BLANK_FILE_PATH);
@@ -129,42 +128,42 @@ public class ParserUtil {
 
     /**
      * Parses a {@code String department} into a {@code Department}.
-     * Leading and trailing whitespaces will be trimmed.
+     * Leading and trailing whitespaces will be trimmed, and runs of whitespace inside will be reduced to one space.
      *
      * @throws ParseException if the given {@code department} is invalid.
      */
     public static Department parseDepartment(String department) throws ParseException {
         requireNonNull(department);
-        String trimmedDepartment = department.trim();
-        if (trimmedDepartment.isEmpty()) {
+        String normalisedDepartment = Department.normalise(department);
+        if (normalisedDepartment.isEmpty()) {
             throw new ParseException(Department.MESSAGE_BLANK);
         }
-        if (!Department.isValidDepartment(trimmedDepartment)) {
-            boolean onlyTooLong = trimmedDepartment.length() > Department.MAX_LENGTH
-                    && Department.isValidDepartment(trimmedDepartment.substring(0, Department.MAX_LENGTH));
-            throw new ParseException(onlyTooLong ? Department.MESSAGE_TOO_LONG : Department.MESSAGE_CONSTRAINTS);
+        if (!Department.isValidDepartment(normalisedDepartment)) {
+            boolean isOnlyTooLong = normalisedDepartment.length() > Department.MAX_LENGTH
+                    && Department.isValidDepartment(normalisedDepartment.substring(0, Department.MAX_LENGTH));
+            throw new ParseException(isOnlyTooLong ? Department.MESSAGE_TOO_LONG : Department.MESSAGE_CONSTRAINTS);
         }
-        return new Department(trimmedDepartment);
+        return new Department(normalisedDepartment);
     }
 
     /**
      * Parses a {@code String role} into a {@code Role}.
-     * Leading and trailing whitespaces will be trimmed.
+     * Leading and trailing whitespaces will be trimmed, and runs of whitespace inside will be reduced to one space.
      *
      * @throws ParseException if the given {@code role} is invalid.
      */
     public static Role parseRole(String role) throws ParseException {
         requireNonNull(role);
-        String trimmedRole = role.trim();
-        if (trimmedRole.isEmpty()) {
+        String normalisedRole = Role.normalise(role);
+        if (normalisedRole.isEmpty()) {
             throw new ParseException(Role.MESSAGE_BLANK);
         }
-        if (!Role.isValidRole(trimmedRole)) {
-            boolean onlyTooLong = trimmedRole.length() > Role.MAX_LENGTH
-                    && Role.isValidRole(trimmedRole.substring(0, Role.MAX_LENGTH));
-            throw new ParseException(onlyTooLong ? Role.MESSAGE_TOO_LONG : Role.MESSAGE_CONSTRAINTS);
+        if (!Role.isValidRole(normalisedRole)) {
+            boolean isOnlyTooLong = normalisedRole.length() > Role.MAX_LENGTH
+                    && Role.isValidRole(normalisedRole.substring(0, Role.MAX_LENGTH));
+            throw new ParseException(isOnlyTooLong ? Role.MESSAGE_TOO_LONG : Role.MESSAGE_CONSTRAINTS);
         }
-        return new Role(trimmedRole);
+        return new Role(normalisedRole);
     }
 
     /**

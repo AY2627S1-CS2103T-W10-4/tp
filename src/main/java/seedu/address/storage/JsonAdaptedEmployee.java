@@ -119,18 +119,20 @@ class JsonAdaptedEmployee {
             throw new IllegalValueException(
                     String.format(MISSING_FIELD_MESSAGE_FORMAT, Department.class.getSimpleName()));
         }
-        if (!Department.isValidDepartment(department)) {
+        String normalisedDepartment = Department.normalise(department);
+        if (!Department.isValidDepartment(normalisedDepartment)) {
             throw new IllegalValueException(Department.MESSAGE_CONSTRAINTS);
         }
-        final Department modelDepartment = new Department(department);
+        final Department modelDepartment = new Department(normalisedDepartment);
 
         if (role == null) {
             throw new IllegalValueException(String.format(MISSING_FIELD_MESSAGE_FORMAT, Role.class.getSimpleName()));
         }
-        if (!Role.isValidRole(role)) {
+        String normalisedRole = Role.normalise(role);
+        if (!Role.isValidRole(normalisedRole)) {
             throw new IllegalValueException(Role.MESSAGE_CONSTRAINTS);
         }
-        final Role modelRole = new Role(role);
+        final Role modelRole = new Role(normalisedRole);
 
         if (managerId != null && !EmployeeId.isValidEmployeeId(managerId)) {
             throw new IllegalValueException(EmployeeId.MESSAGE_CONSTRAINTS);

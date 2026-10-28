@@ -215,6 +215,16 @@ public class EmployeeMatchesCriteriaPredicateTest {
     }
 
     @Test
+    public void test_ignoresAccentsInTheName() {
+        Employee accented = new EmployeeBuilder().withName("\u00C9mile Roux").build();
+
+        assertTrue(namesOf("emile").test(accented));
+        assertTrue(namesOf("\u00C9mile").test(accented));
+        assertTrue(namesOf("E\u0301mile").test(accented));
+        assertFalse(namesOf("emil").test(accented));
+    }
+
+    @Test
     public void test_nameWithRelationWord() {
         Employee ravi = new EmployeeBuilder().withName("Ravi s/o Kumar").build();
         assertTrue(namesOf("Ravi").test(ravi));
