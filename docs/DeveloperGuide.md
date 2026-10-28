@@ -356,8 +356,9 @@ An absent ID produces `No employee with ID X was found.` without usage, where `X
 Before deletion, the command counts all direct reports, including archived employees. `ModelManager#deleteEmployee`
 delegates to `AddressBook#removeEmployee`, which removes the target and replaces each direct report with
 `employee.withManager(null)`. Other employee fields and relationships remain unchanged. The command returns
-`Deleted employee:` followed by the employee's details, adding `N direct report(s) now have no manager.` when
-the count is non-zero. There is no confirmation step.
+`Deleted employee:` followed by the employee's details, adding `1 direct report now has no manager.` for exactly
+one report or `N direct reports now have no manager.` for two or more reports, where `N` is the count.
+No notice is added when there are no direct reports. There is no confirmation step.
 
 The installed filter predicate and sort comparator remain in place, including an archived-only or empty view.
 The diagram below focuses on successful command execution after parsing. It omits the shared transaction wrapper:
@@ -1189,7 +1190,7 @@ Engineering department, `E0003` is in Finance and `E0006` is in Sales.
 8. Enter `manager id/E0123 m/EMP-0042` and `manager id/abc m/EMP-0042`, then archive `abc`.
    Enter `delete id/EMP-0042`.<br>
    Expected: Both reports remain, with no manager; `abc` remains archived. The result includes
-   `2 direct report(s) now have no manager.` Enter `undo`, then `team id/EMP-0042`:<br>
+   `2 direct reports now have no manager.` Enter `undo`, then `team id/EMP-0042`:<br>
    Expected: The manager and both reports appear with their original assignments. Enter `redo`:<br>
    Expected: The manager is deleted again and both assignments are cleared.
 9. Enter `filter id/E0123`, `sort id desc`, then `delete id/EMP-0042`.<br>

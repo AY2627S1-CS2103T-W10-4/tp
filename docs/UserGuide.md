@@ -493,7 +493,8 @@ Examples, assuming the target employee exists:
 On success, the message starts with `Deleted employee:` and includes the deleted employee's ID, name, phone, email, department and role.
 
 If the employee has direct reports, the message also includes their count, for example
-`2 direct report(s) now have no manager.` Those employees remain in the roster with their other details unchanged.
+`2 direct reports now have no manager.` For exactly one report, it says `1 direct report now has no manager.`
+Those employees remain in the roster with their other details unchanged.
 
 The following input errors leave the records unchanged. Each message is followed by the usage block below.
 

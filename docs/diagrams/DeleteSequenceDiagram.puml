@@ -20,11 +20,7 @@ note over Support, Book
 Lookup includes active, archived and hidden employees.
 An unknown ID throws CommandException before mutation.
 end note
-Command -> Model : getAddressBook()
-Model --> Command : addressBook
-Command -> Book : getEmployeeList()
-Book --> Command : complete roster
-Command -> Command : count all direct reports
+Command -> Command : count direct reports of the target\n(including archived reports)
 Command -> Model : deleteEmployee(employeeToDelete)
 Model -> Book : removeEmployee(employeeToDelete)
 activate Book
