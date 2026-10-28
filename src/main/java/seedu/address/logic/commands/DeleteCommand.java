@@ -23,11 +23,8 @@ public class DeleteCommand extends Command {
             + "Example: " + COMMAND_WORD + " id/EMP-0042";
 
     public static final String MESSAGE_DELETE_EMPLOYEE_SUCCESS = "Deleted employee: %1$s";
-    public static final String MESSAGE_MISSING_ID = "Missing parameter: id/EMPLOYEE_ID.";
-    public static final String MESSAGE_BLANK_ID = "Employee ID cannot be blank.";
-    public static final String MESSAGE_UNKNOWN_PARAMETER = "Unknown parameter: %1$s. Only id/ is supported.";
-    public static final String MESSAGE_UNEXPECTED_ARGUMENTS =
-            "Unexpected arguments. Specify exactly one employee ID using id/EMPLOYEE_ID.";
+    public static final String MESSAGE_ONE_REPORT_UNASSIGNED = "1 direct report now has no manager.";
+    public static final String MESSAGE_MULTIPLE_REPORTS_UNASSIGNED = "%1$d direct reports now have no manager.";
 
     private final EmployeeId targetId;
 
@@ -50,17 +47,16 @@ public class DeleteCommand extends Command {
     @Override
     public CommandResult execute(Model model) throws CommandException {
         requireNonNull(model);
-        Employee employeeToDelete = model.getAddressBook().getEmployeeList().stream()
-                .filter(employee -> employee.getId().equals(targetId))
-                .findFirst()
-                .orElseThrow(() -> new CommandException(String.format(Messages.MESSAGE_EMPLOYEE_NOT_FOUND, targetId)));
+        Employee employeeToDelete = EmployeeCommandSupport.find(model, targetId);
         long reports = model.getAddressBook().getEmployeeList().stream()
                 .filter(employee -> employee.getManagerId().filter(employeeToDelete.getId()::equals).isPresent())
                 .count();
         model.deleteEmployee(employeeToDelete);
         String message = String.format(MESSAGE_DELETE_EMPLOYEE_SUCCESS, Messages.format(employeeToDelete));
-        if (reports > 0) {
-            message += "\n" + reports + " direct report(s) now have no manager.";
+        if (reports == 1) {
+            message += "\n" + MESSAGE_ONE_REPORT_UNASSIGNED;
+        } else if (reports > 1) {
+            message += "\n" + String.format(MESSAGE_MULTIPLE_REPORTS_UNASSIGNED, reports);
         }
         return new CommandResult(message);
     }
@@ -77,6 +73,11 @@ public class DeleteCommand extends Command {
         }
 
         return targetId.equals(otherDeleteCommand.targetId);
+    }
+
+    @Override
+    public int hashCode() {
+        return targetId.hashCode();
     }
 
     @Override

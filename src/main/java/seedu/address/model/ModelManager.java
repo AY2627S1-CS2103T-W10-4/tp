@@ -13,6 +13,7 @@ import javafx.collections.transformation.SortedList;
 import seedu.address.commons.core.GuiSettings;
 import seedu.address.commons.core.LogsCenter;
 import seedu.address.model.employee.Employee;
+import seedu.address.model.employee.ReportingEmployeePredicate;
 
 /**
  * Represents the in-memory model of the address book data.
@@ -91,11 +92,13 @@ public class ModelManager implements Model {
     @Override
     public void undoAddressBook() {
         addressBook.undo();
+        refreshReportingEmployeeList();
     }
 
     @Override
     public void redoAddressBook() {
         addressBook.redo();
+        refreshReportingEmployeeList();
     }
 
     @Override
@@ -127,6 +130,7 @@ public class ModelManager implements Model {
     @Override
     public void deleteEmployee(Employee target) {
         addressBook.removeEmployee(target);
+        refreshReportingEmployeeList();
     }
 
     @Override
@@ -146,18 +150,17 @@ public class ModelManager implements Model {
         requireAllNonNull(target, editedEmployee);
 
         addressBook.setEmployee(target, editedEmployee);
+        refreshReportingEmployeeList();
     }
 
     @Override
     public void archiveEmployee(Employee employee) {
         addressBook.setEmployee(employee, employee.withArchived(true));
-        updateFilteredEmployeeList(PREDICATE_SHOW_ALL_EMPLOYEES);
     }
 
     @Override
     public void unarchiveEmployee(Employee employee) {
         addressBook.setEmployee(employee, employee.withArchived(false));
-        updateFilteredEmployeeList(PREDICATE_SHOW_ALL_EMPLOYEES);
     }
 
     //=========== Filtered Employee List Accessors =============================================================
@@ -191,6 +194,12 @@ public class ModelManager implements Model {
     public void updateReportingEmployeeList(Predicate<Employee> predicate) {
         requireNonNull(predicate);
         filteredEmployees.setPredicate(predicate);
+    }
+
+    private void refreshReportingEmployeeList() {
+        if (filteredEmployees.getPredicate() instanceof ReportingEmployeePredicate reportingPredicate) {
+            filteredEmployees.setPredicate(reportingPredicate.refreshed());
+        }
     }
 
     @Override

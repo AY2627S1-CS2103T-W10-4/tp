@@ -8,7 +8,8 @@ import static seedu.address.logic.parser.CliSyntax.PREFIX_NAME;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_PHONE;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_ROLE;
 
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.List;
 
 import seedu.address.commons.util.ToStringBuilder;
 import seedu.address.logic.Messages;
@@ -46,6 +47,11 @@ public class AddCommand extends Command {
             + "exists in the archive. Use `list archived` to see it.";
     public static final String MESSAGE_SIMILAR_NAME_WARNING = "Warning: an employee with the same or a very similar "
             + "name already exists (Employee ID %1$s). Please check that this is not a duplicate.";
+    public static final String MESSAGE_MANY_SIMILAR_NAMES_WARNING = "Warning: %1$d employees with the same or a very "
+            + "similar name already exist (showing first %2$d Employee IDs: %3$s). "
+            + "Please check that this is not a duplicate. Use `find NAME` and `list archived` to see them all.";
+
+    private static final int MAX_SIMILAR_EMPLOYEE_IDS = 5;
 
     private final Employee toAdd;
 
@@ -74,10 +80,17 @@ public class AddCommand extends Command {
         }
 
         // Employees may share a name, so a similar name only produces a warning and does not stop the add.
-        String similarEmployeeIds = model.getAddressBook().getEmployeeList().stream()
-                .filter(employee -> employee.getName().isSimilarTo(toAdd.getName()))
-                .map(employee -> employee.getId().toString())
-                .collect(Collectors.joining(", "));
+        // Scan the full roster for an accurate total; Name caches normalisation and only five IDs are retained.
+        List<String> similarEmployeeIds = new ArrayList<>(MAX_SIMILAR_EMPLOYEE_IDS);
+        int similarEmployeeCount = 0;
+        for (Employee employee : model.getAddressBook().getEmployeeList()) {
+            if (employee.getName().isSimilarTo(toAdd.getName())) {
+                similarEmployeeCount++;
+                if (similarEmployeeIds.size() < MAX_SIMILAR_EMPLOYEE_IDS) {
+                    similarEmployeeIds.add(employee.getId() + (employee.isArchived() ? " (archived)" : ""));
+                }
+            }
+        }
 
         Employee employeeToAdd;
         try {
@@ -88,8 +101,11 @@ public class AddCommand extends Command {
         }
 
         String message = String.format(MESSAGE_SUCCESS, Messages.format(employeeToAdd));
-        if (!similarEmployeeIds.isEmpty()) {
-            message += "\n" + String.format(MESSAGE_SIMILAR_NAME_WARNING, similarEmployeeIds);
+        if (similarEmployeeCount > MAX_SIMILAR_EMPLOYEE_IDS) {
+            message += "\n" + String.format(MESSAGE_MANY_SIMILAR_NAMES_WARNING, similarEmployeeCount,
+                    MAX_SIMILAR_EMPLOYEE_IDS, String.join(", ", similarEmployeeIds));
+        } else if (similarEmployeeCount > 0) {
+            message += "\n" + String.format(MESSAGE_SIMILAR_NAME_WARNING, String.join(", ", similarEmployeeIds));
         }
         return new CommandResult(message);
     }

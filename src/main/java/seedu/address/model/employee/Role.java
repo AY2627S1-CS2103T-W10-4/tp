@@ -3,6 +3,10 @@ package seedu.address.model.employee;
 import static java.util.Objects.requireNonNull;
 import static seedu.address.commons.util.AppUtil.checkArgument;
 
+import java.text.Normalizer;
+
+import seedu.address.commons.util.StringUtil;
+
 /**
  * Represents an Employee's role in the address book.
  * Guarantees: immutable; is valid as declared in {@link #isValidRole(String)}
@@ -20,10 +24,12 @@ public class Role {
                     + "spaces and the symbols & ' ( ) , . - (up to 100 characters).";
 
     /*
-     * The first character must be alphanumeric, otherwise " " (a blank string) becomes a valid input.
+     * The first character must be a letter or a digit, otherwise " " (a blank string) becomes a valid input.
+     * Letters are any letters, with or without accents, as for a name (\p{L}), and not only the letters of English
+     * (\p{Alnum}), so that entries such as "Soporte técnico" are accepted.
      * Common punctuation is allowed so that entries such as "R&D" or "Software Engineer (Backend)" are accepted.
      */
-    public static final String VALIDATION_REGEX = "[\\p{Alnum}][\\p{Alnum} &'(),.\\-]{0,99}";
+    public static final String VALIDATION_REGEX = "[\\p{L}\\p{N}][\\p{L}\\p{M}\\p{N} &'(),.\\-]{0,99}";
 
     public final String value;
 
@@ -35,7 +41,16 @@ public class Role {
     public Role(String role) {
         requireNonNull(role);
         checkArgument(isValidRole(role), MESSAGE_CONSTRAINTS);
-        value = role;
+        value = normalise(role);
+    }
+
+    /**
+     * Returns {@code role} with leading and trailing spaces removed, runs of whitespace replaced by one space,
+     * and characters composed into their standard Unicode form, so that values that look the same are the same
+     * role.
+     */
+    public static String normalise(String role) {
+        return Normalizer.normalize(StringUtil.collapseWhitespace(role), Normalizer.Form.NFC);
     }
 
     /**
