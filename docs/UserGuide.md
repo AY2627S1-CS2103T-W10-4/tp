@@ -325,9 +325,9 @@ reporting result remains displayed, relationship changes, deletion, undo and red
 reporting structure.
 Use `list` to return to all active employees, or `list archived` to show only archived employees.
 
-Reporting relationships are also preserved by CSV export and import. `export FILE_PATH` writes the header
+Reporting relationships are also preserved by CSV export and import. `export file/FILE_PATH` writes the header
 `id,name,phone,email,department,role,archived,managerId`; a blank `managerId` means no manager. For example,
-use `export exports/staff.csv` and then `import exports/staff.csv` into an empty roster. Import accepts the older
+use `export file/exports/staff.csv` and then `import file/exports/staff.csv` into an empty roster. Import accepts the older
 six-column format and seven-column format ending in `archived`, treating those rows as having no manager.
 A manager may appear later in the file or already exist in HuntR. Invalid IDs, missing managers, self-reporting
 and cycles reject the import without adding any employees. Existing employee IDs are rejected rather than overwritten.
@@ -647,6 +647,25 @@ saved immediately. Use `undo` to restore the active roster during the same sessi
 active roster still succeeds and shows the active view, but creates no history entry.
 </box>
 
+### Importing and exporting CSV files: `import`, `export`
+
+Format: `import file/FILE_PATH` or `export file/FILE_PATH`
+
+Examples: `import file/employees.csv`, `export file/output.csv`
+
+`file/` is a parameter prefix: these examples read `employees.csv` and write `output.csv` directly in the folder
+where HuntR runs. The prefix is not part of the filesystem path.
+
+* Supply one non-empty path ending in `.csv`. Spaces are supported without quotes, for example
+  `export file/my exports/staff.csv`. Only the leading `file/` is treated as a prefix; the rest is one path,
+  so `import file/my file/staff.csv` reads `my file/staff.csv`.
+* Paths must be relative to the folder HuntR runs from and remain inside it, including after symbolic links are
+  followed. Absolute paths and paths such as `file/../staff.csv` are rejected.
+* Positional paths such as `import employees.csv` and `export output.csv` remain supported for compatibility.
+  To access a directory literally named `file`, use `import file/file/employees.csv` or `import ./file/employees.csv`.
+* Import adds employees and validates the complete CSV before changing the roster; existing IDs are rejected.
+  Export writes all employees, including archived records, creates missing parent folders and replaces an existing file.
+
 ### Undoing and redoing employee changes: `undo`, `redo`
 
 Format: `undo` or `redo`. Use lowercase command words without parameters. Surrounding spaces and tabs are accepted.
@@ -871,6 +890,8 @@ Action     | Format, Examples
 **Add**    | `add id/EMPLOYEE_ID n/NAME p/PHONE e/EMAIL d/DEPARTMENT r/ROLE [m/MANAGER_ID]`<br>e.g., `add id/E0123 n/John Tan p/91234567 e/johntan@example.com d/Engineering r/Software Engineer`
 **[Archive](#archiving-employees-archive)** | `archive id/EMPLOYEE_ID`<br>e.g., `archive id/E0123`<br>Keeps the employee's record and marks it archived.
 **Backup** | `backup`
+**Import CSV** | `import file/FILE_PATH`
+**Export CSV** | `export file/FILE_PATH`
 **Check**  | `check`
 **Clear**  | `clear`
 **Delete** | `delete id/EMPLOYEE_ID`<br> e.g., `delete id/EMP-0042`
