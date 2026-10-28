@@ -165,23 +165,65 @@ Examples (use IDs that are not already stored):
 ### Listing all active employees: `list`
 
 Shows all active employees stored in HuntR as a numbered list. Archived employees are excluded.
-Each entry includes the employee's name, employee ID,
-phone number, email, department, and role. Employees are shown in the order in which they were added, so `list` also undoes any `sort`.
+Each card shows the employee's name, employee ID, phone number, email, department, role and manager
+(`Reports to MANAGER_ID` or `Unassigned`). Scroll the employee panel to see records below the visible area;
+hover over shortened details to see their full values.
 
 Format: `list`
 
+Example: `list`
+
 Use `list` without arguments to show active employees, or [`list archived`](#listing-archived-employees-list-archived)
-to show archived employees. Leading and trailing spaces are ignored. The `archived` argument is case-sensitive
-and must be written in lowercase: `list ARCHIVED` and `list Archived` are rejected with `Invalid command format.`
-followed by `Usage: list [archived]`. Any other argument or additional text after `archived` is also rejected.
+to show archived employees. Leading and trailing whitespace is ignored. Both the command word `list` and the
+optional argument `archived` must be lowercase.
 
-When active employees are shown, HuntR displays `Listed all active employees.`
+* Replaces the current search, filter, archived-only or reporting view with **all active employees**.
+* Resets any `sort` to the stored roster order, normally the order employees were added or imported.
+  It does not change the saved order or any employee's details.
+* The numbers on the cards start at 1 for the current view and may change when the view changes.
+  Use the employee ID, such as `E0001`, to identify an employee in commands that require `id/`.
+* Does not save employee data or add an undo step, and preserves any available redo. `undo` reverses the last
+  employee-data change while keeping the current view; it does not bring back the search or sorting cleared by `list`.
 
-If there are no employee records, HuntR displays an empty employee list and explains how to add an employee.
-If only archived employees remain, HuntR displays an empty active list and suggests `list archived` with the
-number of archived employees.
+The result depends on the records stored:
 
-Use `list` to show every active employee again after a `find` or `filter`.
+| Roster state | Result |
+| --- | --- |
+| At least one active employee | Shows all active cards and `Listed all active employees.` |
+| Only archived employees remain | Shows an empty active panel and suggests `list archived`, with the number of archived employees. |
+| No active or archived employees | Shows an empty panel and the guidance below. |
+
+```text
+You don’t have any employees yet.
+Add employees by using
+add id/EMPLOYEE_ID n/NAME p/PHONE e/EMAIL d/DEPARTMENT r/ROLE
+to get a start!
+```
+
+For example, if two archived employees are the only remaining records, `list` displays:
+
+```text
+There are no active employees. Use `list archived` to see the 2 archived employees.
+```
+
+Arguments such as `list 1`, `list all`, `list d/Engineering`, `list ARCHIVED` and `list archived extra` are rejected
+with `Invalid command format.` followed by `Usage: list [archived]`. The previous view and sorting remain unchanged.
+Use [`filter`](#filtering-employees-filter) to narrow the roster by employee details.
+
+Examples:
+
+* `find Alex`, then `list`: shows every active employee again, including those hidden by the search.
+* `sort id desc`, then `list`: restores the stored roster order.
+* `list archived`, then `list`: returns to the active roster.
+
+The following example contains two active employees and one archived employee. `list` shows the active employees
+in their stored order, with their manager information:
+
+![Listing all active employees in stored order](images/list-active-employees.jpg)
+
+After all three employees are archived, the active panel is empty and `list` gives their archived count:
+
+![Empty active list with a hint to view the three archived employees](images/list-no-active-employees.jpg)
 
 ### Editing an employee: `edit`
 
@@ -928,7 +970,7 @@ Action     | Format, Examples
 **Edit**   | `edit id/EMPLOYEE_ID [n/NAME] [p/PHONE] [e/EMAIL] [d/DEPARTMENT] [r/ROLE] [m/MANAGER_ID]`<br>e.g., `edit id/E0001 p/91234567 e/alex@example.com`
 **Find**   | `find KEYWORD [MORE_KEYWORDS]`<br> e.g., `find James Jake`
 **Filter** | `filter [id/EMPLOYEE_ID] [n/NAME] [d/DEPARTMENT] [r/ROLE]`<br> e.g., `filter n/John d/Sales`, `filter d/Sales d/Finance r/Manager`
-**List**   | `list` for active employees; [`list archived`](#listing-archived-employees-list-archived) for archived employees. Both reset sorting.
+**[List](#listing-all-active-employees-list)** | `list`<br>Shows all active employees, clears the current view restriction and resets sorting to stored roster order.<br>Use [`list archived`](#listing-archived-employees-list-archived) for archived employees.
 **Stats**  | `stats`
 **Manager** | `manager id/EMPLOYEE_ID m/MANAGER_ID`
 **Unassign manager** | `unassign-manager id/EMPLOYEE_ID`
