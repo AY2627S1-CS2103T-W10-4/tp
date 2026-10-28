@@ -1130,14 +1130,14 @@ testers are expected to do more *exploratory* testing.
 6. Enter `edit id/E0001 p/91234567 p/81234567`.<br>
    Expected: HuntR reports multiple values for `p/` and leaves `E0001` unchanged.
 7. Enter the command of step 1 a second time.<br>
-   Expected: HuntR displays `No changes made: the new values are the same as the existing ones for E0001.` and nothing is saved or added to the `undo` history.
+   Expected: HuntR displays `No changes made: the new values are the same as the existing ones for E0001.` and `E0001` is unchanged. Enter `undo`: it reverts the rename of `E0002` from step 2, not a second edit of `E0001`. Enter `redo` to bring the rename back.
 8. Enter `edit id/e0002 m/e0001`.<br>
    Expected: HuntR displays `Edited employee:` followed by the record of `E0002`, ending with `; Manager: E0001`. The manager ID is stored as `E0001`, not as typed.
-9. Enter `edit id/E0002 m/E0001`.<br>
+9. After step 8, enter `edit id/E0002 m/E0001`.<br>
    Expected: HuntR displays `No changes made: the new values are the same as the existing ones for E0002.`
-10. Enter `edit id/E0001 m/E0002`, `edit id/E0001 m/E0001` and `edit id/E0002 m/E9999` separately.<br>
+10. After step 8, enter `edit id/E0001 m/E0002`, `edit id/E0001 m/E0001` and `edit id/E0002 m/E9999` separately.<br>
     Expected: HuntR displays `Reporting relationships cannot contain a cycle.`, `An employee cannot report to themselves.` and `Manager does not exist: E9999` respectively, and no employee is changed.
-11. Enter `edit id/E0002 m/`.<br>
+11. After step 8, enter `edit id/E0002 m/`.<br>
     Expected: HuntR displays `Edited employee:` followed by the record of `E0002` without a `Manager:` part. Enter `undo` to restore the manager.
 
 
