@@ -1,401 +1,355 @@
-.background {
-    -fx-background-color: derive(#1d1d1d, 20%);
-    background-color: #383838; /* Used in the default.html file */
+/* HuntR's terminal-inspired dark design system. Visual state belongs here; behaviour remains in controllers. */
+.root {
+    -fx-font-family: "JetBrains Mono", "SFMono-Regular", "Cascadia Mono", "Consolas", "Liberation Mono", "Monospaced";
+    -fx-font-size: 13px;
+    -fx-font-weight: 500;
+    -fx-base: #0d1010;
+    -fx-background: #080a0a;
+    -fx-control-inner-background: #0d1010;
+    -fx-focus-color: #00b8b5;
+    -fx-faint-focus-color: rgba(0, 184, 181, 0.10);
+    -fx-accent: #168e8d;
+}
+
+.app-shell,
+.background,
+.stack-pane,
+.employee-section,
+.employee-list-panel {
+    -fx-background-color: #080a0a;
 }
 
 .label {
-    -fx-font-size: 11pt;
-    -fx-font-family: "Segoe UI Semibold";
-    -fx-text-fill: #555555;
-    -fx-opacity: 0.9;
-}
-
-.label-bright {
-    -fx-font-size: 11pt;
-    -fx-font-family: "Segoe UI Semibold";
-    -fx-text-fill: white;
+    -fx-text-fill: #929896;
     -fx-opacity: 1;
-}
-
-.label-header {
-    -fx-font-size: 32pt;
-    -fx-font-family: "Segoe UI Light";
-    -fx-text-fill: white;
-    -fx-opacity: 1;
-}
-
-.text-field {
-    -fx-font-size: 12pt;
-    -fx-font-family: "Segoe UI Semibold";
-}
-
-.tab-pane {
-    -fx-padding: 0 0 0 1;
-}
-
-.tab-pane .tab-header-area {
-    -fx-padding: 0 0 0 0;
-    -fx-min-height: 0;
-    -fx-max-height: 0;
-}
-
-.table-view {
-    -fx-base: #1d1d1d;
-    -fx-control-inner-background: #1d1d1d;
-    -fx-background-color: #1d1d1d;
-    -fx-table-cell-border-color: transparent;
-    -fx-table-header-border-color: transparent;
-    -fx-padding: 5;
-}
-
-.table-view .column-header-background {
-    -fx-background-color: transparent;
-}
-
-.table-view .column-header, .table-view .filler {
-    -fx-size: 35;
-    -fx-border-width: 0 0 1 0;
-    -fx-background-color: transparent;
-    -fx-border-color:
-        transparent
-        transparent
-        derive(-fx-base, 80%)
-        transparent;
-    -fx-border-insets: 0 10 1 0;
-}
-
-.table-view .column-header .label {
-    -fx-font-size: 20pt;
-    -fx-font-family: "Segoe UI Light";
-    -fx-text-fill: white;
-    -fx-alignment: center-left;
-    -fx-opacity: 1;
-}
-
-.table-view:focused .table-row-cell:filled:focused:selected {
-    -fx-background-color: -fx-focus-color;
-}
-
-.split-pane:horizontal .split-pane-divider {
-    -fx-background-color: derive(#1d1d1d, 20%);
-    -fx-border-color: transparent transparent transparent #4d4d4d;
-}
-
-.split-pane {
-    -fx-border-radius: 1;
-    -fx-border-width: 1;
-    -fx-background-color: derive(#1d1d1d, 20%);
-}
-
-.list-view {
-    -fx-background-insets: 0;
-    -fx-padding: 0;
-    -fx-background-color: derive(#1d1d1d, 20%);
-}
-
-.list-cell {
-    -fx-label-padding: 0 0 0 0;
-    -fx-graphic-text-gap : 0;
-    -fx-padding: 0 0 0 0;
-}
-
-.list-cell:filled:even {
-    -fx-background-color: #3c3e3f;
-}
-
-.list-cell:filled:odd {
-    -fx-background-color: #515658;
-}
-
-.list-cell:filled:selected {
-    -fx-background-color: #424d5f;
-}
-
-.list-cell:filled:selected #cardPane {
-    -fx-border-color: #3e7b91;
-    -fx-border-width: 1;
-}
-
-.list-cell .label {
-    -fx-text-fill: white;
-}
-
-.chip {
-    -fx-font-family: "Segoe UI Semibold";
-    -fx-font-size: 11px;
-    -fx-background-radius: 10;
-    -fx-padding: 2 9 2 9;
-}
-
-.list-cell .chip-archived {
-    -fx-background-color: rgba(143, 152, 173, 0.30);
-    -fx-text-fill: #d7dce8;
-}
-
-.list-cell .chip-manager {
-    -fx-background-color: rgba(143, 152, 173, 0.18);
-    -fx-text-fill: #b8c0d4;
-}
-
-.avatar {
-    -fx-min-width: 44;
-    -fx-min-height: 44;
-    -fx-max-width: 44;
-    -fx-max-height: 44;
-    -fx-background-radius: 22;
-    -fx-alignment: center;
-    -fx-font-family: "Segoe UI Semibold";
-    -fx-font-size: 16px;
-}
-
-.list-cell .employee-id {
-    -fx-font-family: "Menlo", "Consolas", "Monospaced";
-    -fx-font-size: 11px;
-    -fx-text-fill: #8f98ad;
-}
-
-.list-cell .label-muted {
-    -fx-text-fill: #9aa3b8;
-}
-
-.cell_big_label {
-    -fx-font-family: "Segoe UI Semibold";
-    -fx-font-size: 16px;
-    -fx-text-fill: #010504;
-}
-
-.cell_small_label {
-    -fx-font-family: "Segoe UI";
-    -fx-font-size: 13px;
-    -fx-text-fill: #010504;
-}
-
-.stack-pane {
-     -fx-background-color: derive(#1d1d1d, 20%);
 }
 
 .pane-with-border {
-     -fx-background-color: derive(#1d1d1d, 20%);
-     -fx-border-color: derive(#1d1d1d, 10%);
-     -fx-border-top-width: 1px;
+    -fx-background-color: #080a0a;
+    -fx-border-color: #303635;
+    -fx-border-width: 1 0 0 0;
 }
 
-.status-bar {
-    -fx-background-color: derive(#1d1d1d, 30%);
-}
-
-.result-display {
-    -fx-background-color: transparent;
-    -fx-font-family: "Segoe UI Light";
-    -fx-font-size: 13pt;
-    -fx-text-fill: white;
-}
-
-.result-display .label {
-    -fx-text-fill: black !important;
-}
-
-.result-success {
-    -fx-border-color: transparent transparent transparent #35d49a;
-    -fx-border-width: 0 0 0 4;
-}
-
-.result-error {
-    -fx-border-color: transparent transparent transparent #ff6b78;
-    -fx-border-width: 0 0 0 4;
-    -fx-text-fill: #ff9aa2;
-}
-
-.status-bar .label {
-    -fx-font-family: "Segoe UI Light";
-    -fx-text-fill: white;
-    -fx-padding: 4px;
-    -fx-pref-height: 30px;
-}
-
-.status-bar-with-border {
-    -fx-background-color: derive(#1d1d1d, 30%);
-    -fx-border-color: derive(#1d1d1d, 25%);
-    -fx-border-width: 1px;
-}
-
-.status-bar-with-border .label {
-    -fx-text-fill: white;
-}
-
-.grid-pane {
-    -fx-background-color: derive(#1d1d1d, 30%);
-    -fx-border-color: derive(#1d1d1d, 30%);
-    -fx-border-width: 1px;
-}
-
-.grid-pane .stack-pane {
-    -fx-background-color: derive(#1d1d1d, 30%);
-}
-
-.context-menu {
-    -fx-background-color: derive(#1d1d1d, 50%);
-}
-
-.context-menu .label {
-    -fx-text-fill: white;
-}
-
-.menu-bar {
-    -fx-background-color: derive(#1d1d1d, 20%);
-}
-
-.menu-bar .label {
-    -fx-font-size: 14pt;
-    -fx-font-family: "Segoe UI Light";
-    -fx-text-fill: white;
-    -fx-opacity: 0.9;
-}
-
-.menu .left-container {
-    -fx-background-color: black;
-}
-
-/*
- * Metro style Push Button
- * Author: Pedro Duque Vieira
- * http://pixelduke.wordpress.com/2012/10/23/jmetro-windows-8-controls-on-java/
- */
-.button {
-    -fx-padding: 5 22 5 22;
-    -fx-border-color: #e2e2e2;
-    -fx-border-width: 2;
-    -fx-background-radius: 0;
-    -fx-background-color: #1d1d1d;
-    -fx-font-family: "Segoe UI", Helvetica, Arial, sans-serif;
-    -fx-font-size: 11pt;
-    -fx-text-fill: #d8d8d8;
-    -fx-background-insets: 0 0 0 0, 0, 1, 2;
-}
-
-.button:hover {
-    -fx-background-color: #3a3a3a;
-}
-
-.button:pressed, .button:default:hover:pressed {
-  -fx-background-color: white;
-  -fx-text-fill: #1d1d1d;
-}
-
-.button:focused {
-    -fx-border-color: white, white;
-    -fx-border-width: 1, 1;
-    -fx-border-style: solid, segments(1, 1);
-    -fx-border-radius: 0, 0;
-    -fx-border-insets: 1 1 1 1, 0;
-}
-
-.button:disabled, .button:default:disabled {
-    -fx-opacity: 0.4;
-    -fx-background-color: #1d1d1d;
-    -fx-text-fill: white;
-}
-
-.button:default {
-    -fx-background-color: -fx-focus-color;
-    -fx-text-fill: #ffffff;
-}
-
-.button:default:hover {
-    -fx-background-color: derive(-fx-focus-color, 30%);
-}
-
-.dialog-pane {
-    -fx-background-color: #1d1d1d;
-}
-
-.dialog-pane > *.button-bar > *.container {
-    -fx-background-color: #1d1d1d;
-}
-
-.dialog-pane > *.label.content {
-    -fx-font-size: 14px;
-    -fx-font-weight: bold;
-    -fx-text-fill: white;
-}
-
-.dialog-pane:header *.header-panel {
-    -fx-background-color: derive(#1d1d1d, 25%);
-}
-
-.dialog-pane:header *.header-panel *.label {
-    -fx-font-size: 18px;
-    -fx-font-style: italic;
-    -fx-fill: white;
-    -fx-text-fill: white;
-}
-
-.scroll-bar {
-    -fx-background-color: derive(#1d1d1d, 20%);
-}
-
-.scroll-bar .thumb {
-    -fx-background-color: derive(#1d1d1d, 50%);
-    -fx-background-insets: 3;
-}
-
-.scroll-bar .increment-button, .scroll-bar .decrement-button {
-    -fx-background-color: transparent;
-    -fx-padding: 0 0 0 0;
-}
-
-.scroll-bar .increment-arrow, .scroll-bar .decrement-arrow {
-    -fx-shape: " ";
-}
-
-.scroll-bar:vertical .increment-arrow, .scroll-bar:vertical .decrement-arrow {
-    -fx-padding: 1 8 1 8;
-}
-
-.scroll-bar:horizontal .increment-arrow, .scroll-bar:horizontal .decrement-arrow {
-    -fx-padding: 8 1 8 1;
-}
-
-#cardPane {
-    -fx-background-color: transparent;
+.command-section,
+.result-section {
+    -fx-background-color: #080a0a;
     -fx-border-width: 0;
 }
 
-#commandTypeLabel {
-    -fx-font-size: 11px;
-    -fx-text-fill: #F70D1A;
+/* Quiet application chrome with hard editor-like divisions. */
+.menu-bar {
+    -fx-background-color: #0d1010;
+    -fx-border-color: #303635;
+    -fx-border-width: 0 0 1 0;
+    -fx-padding: 0 8 0 8;
 }
 
-#commandTextField {
-    -fx-background-color: transparent #383838 transparent #383838;
-    -fx-background-insets: 0;
-    -fx-border-color: #383838 #383838 #ffffff #383838;
-    -fx-border-insets: 0;
+.menu-bar .label {
+    -fx-font-size: 12px;
+    -fx-text-fill: #929896;
+}
+
+.menu:hover,
+.menu:showing {
+    -fx-background-color: #141818;
+}
+
+.menu:hover .label,
+.menu:showing .label {
+    -fx-text-fill: #b8bcba;
+}
+
+.context-menu {
+    -fx-background-color: #0d1010;
+    -fx-border-color: #303635;
     -fx-border-width: 1;
-    -fx-font-family: "Segoe UI Light";
-    -fx-font-size: 13pt;
-    -fx-text-fill: white;
+    -fx-padding: 3;
 }
 
-#filterField, #employeeListPanel, #employeeWebpage {
-    -fx-effect: innershadow(gaussian, black, 10, 0, 0, 0);
+.context-menu .menu-item:focused {
+    -fx-background-color: #141818;
+}
+
+.context-menu .menu-item:focused .label {
+    -fx-text-fill: #00b8b5;
+}
+
+.context-menu .label {
+    -fx-text-fill: #d8d9d5;
+}
+
+/* The prompt is presentational; the TextField still contains only the user's command. */
+.command-box {
+    -fx-background-color: #0d1010;
+    -fx-border-color: #303635;
+    -fx-border-width: 1 0 1 0;
+    -fx-padding: 0 10 0 10;
+}
+
+.command-prompt {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #00b8b5;
+    -fx-padding: 0 8 0 0;
+}
+
+#commandTextField,
+.command-input {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-background-radius: 0;
+    -fx-border-color: transparent;
+    -fx-border-width: 0 0 1 0;
+    -fx-border-radius: 0;
+    -fx-padding: 8 0 8 0;
+    -fx-font-size: 14px;
+    -fx-text-fill: #d8d9d5;
+    -fx-prompt-text-fill: #626a68;
+    -fx-highlight-fill: rgba(0, 184, 181, 0.32);
+    -fx-highlight-text-fill: #d8d9d5;
+}
+
+#commandTextField:focused,
+.command-input:focused {
+    -fx-border-color: #168e8d;
+    -fx-effect: none;
+}
+
+#commandTextField.error,
+.command-input.error,
+.error {
+    -fx-border-color: #c96f6b;
+    -fx-text-fill: #d8d9d5 !important;
+}
+
+/* Feedback is a compact, rectangular message strip rather than a floating card. */
+.result-display {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-background-radius: 0;
+    -fx-border-radius: 0;
+    -fx-padding: 0;
+    -fx-font-size: 12px;
+    -fx-text-fill: #b4b9b6;
 }
 
 #resultDisplay .content {
-    -fx-background-color: transparent, #383838, transparent, #383838;
+    -fx-background-color: #141818;
     -fx-background-radius: 0;
+    -fx-border-radius: 0;
+    -fx-padding: 7 10 7 10;
 }
 
-#tags {
-    -fx-hgap: 7;
-    -fx-vgap: 3;
+.result-success {
+    -fx-border-color: #303635 transparent #303635 #48b77a;
+    -fx-border-width: 1 0 1 3;
+    -fx-text-fill: #a9c8b5;
 }
 
-#tags .label {
-    -fx-text-fill: white;
-    -fx-background-color: #3e7b91;
-    -fx-padding: 1 3 1 3;
-    -fx-border-radius: 2;
-    -fx-background-radius: 2;
-    -fx-font-size: 11;
+.result-error {
+    -fx-border-color: #303635 transparent #303635 #c96f6b;
+    -fx-border-width: 1 0 1 3;
+    -fx-text-fill: #dda09c;
+}
+
+/* Employee entries form one continuous technical list. */
+.list-view {
+    -fx-background-color: #080a0a;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+    -fx-border-width: 0;
+}
+
+.list-cell,
+.list-cell:filled:even,
+.list-cell:filled:odd,
+.list-cell:empty {
+    -fx-background-color: #080a0a;
+    -fx-label-padding: 0;
+    -fx-graphic-text-gap: 0;
+    -fx-padding: 0;
+}
+
+.list-cell:filled:hover {
+    -fx-background-color: #0d1010;
+}
+
+.list-cell:filled:selected {
+    -fx-background-color: #141818;
+}
+
+#cardPane,
+.employee-card {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent transparent #303635 transparent;
+    -fx-border-width: 0 0 1 0;
+}
+
+.list-cell:filled:selected #cardPane {
+    -fx-border-color: transparent transparent #168e8d transparent;
+}
+
+.index-gutter {
+    -fx-border-color: transparent #303635 transparent transparent;
+    -fx-border-width: 0 1 0 0;
+    -fx-padding: 1 10 0 0;
+}
+
+.row-index {
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #6d7774;
+}
+
+.list-cell:filled:selected .row-index {
+    -fx-text-fill: #168e8d;
+}
+
+.employee-name {
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #d8d9d5;
+}
+
+.employee-id {
+    -fx-font-size: 11px;
+    -fx-text-fill: #57908f;
+}
+
+.employee-role {
+    -fx-font-size: 12px;
+    -fx-text-fill: #a6aba8;
+}
+
+.metadata,
+.label-muted {
+    -fx-font-size: 11px;
+    -fx-text-fill: #737b79;
+}
+
+.avatar {
+    -fx-min-width: 38;
+    -fx-min-height: 38;
+    -fx-max-width: 38;
+    -fx-max-height: 38;
+    -fx-background-radius: 1;
+    -fx-background-color: rgba(22, 142, 141, 0.28);
+    -fx-alignment: center;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #579b9a;
+}
+
+.chip {
+    -fx-font-size: 10px;
+    -fx-background-color: rgba(22, 142, 141, 0.18);
+    -fx-background-radius: 1;
+    -fx-padding: 2 6 2 6;
+    -fx-text-fill: #579b9a;
+}
+
+.chip-archived {
+    -fx-background-color: rgba(183, 130, 84, 0.22);
+    -fx-text-fill: #c29768;
+}
+
+.chip-manager {
+    -fx-background-color: transparent;
+    -fx-text-fill: #737b79;
+    -fx-padding: 1 0 1 0;
+}
+
+/* The existing path becomes a compact editor-style status line. */
+.status-bar {
+    -fx-background-color: #777b79;
+    -fx-border-color: #929896 transparent transparent transparent;
+    -fx-border-width: 1 0 0 0;
+}
+
+.status-bar .label {
+    -fx-font-size: 10px;
+    -fx-text-fill: #111313;
+    -fx-padding: 3 12 3 12;
+    -fx-pref-height: 22px;
+}
+
+/* Native controls remain restrained, square and consistent with the editor geometry. */
+.scroll-bar {
+    -fx-background-color: #080a0a;
+}
+
+.scroll-bar .thumb {
+    -fx-background-color: #303635;
+    -fx-background-insets: 3;
+    -fx-background-radius: 1;
+}
+
+.scroll-bar .thumb:hover {
+    -fx-background-color: #49514f;
+}
+
+.scroll-bar .increment-button,
+.scroll-bar .decrement-button {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
+
+.scroll-bar .increment-arrow,
+.scroll-bar .decrement-arrow {
+    -fx-shape: " ";
+}
+
+.scroll-bar:vertical .increment-arrow,
+.scroll-bar:vertical .decrement-arrow {
+    -fx-padding: 1 7 1 7;
+}
+
+.scroll-bar:horizontal .increment-arrow,
+.scroll-bar:horizontal .decrement-arrow {
+    -fx-padding: 7 1 7 1;
+}
+
+.tooltip {
+    -fx-background-color: #141818;
+    -fx-border-color: #303635;
+    -fx-border-width: 1;
+    -fx-background-radius: 1;
+    -fx-border-radius: 1;
+    -fx-text-fill: #d8d9d5;
+    -fx-font-size: 11px;
+    -fx-padding: 6 8 6 8;
+}
+
+.button {
+    -fx-background-color: #0d1010;
+    -fx-background-radius: 1;
+    -fx-border-color: #303635;
+    -fx-border-radius: 1;
+    -fx-border-width: 1;
+    -fx-padding: 6 12 6 12;
+    -fx-text-fill: #d8d9d5;
+}
+
+.button:hover {
+    -fx-background-color: #141818;
+    -fx-border-color: #168e8d;
+}
+
+.button:focused {
+    -fx-border-color: #00b8b5;
+}
+
+.dialog-pane,
+.dialog-pane > *.button-bar > *.container {
+    -fx-background-color: #0d1010;
+}
+
+.dialog-pane:header *.header-panel {
+    -fx-background-color: #141818;
+    -fx-border-color: transparent transparent #303635 transparent;
+    -fx-border-width: 0 0 1 0;
+}
+
+.dialog-pane .label {
+    -fx-text-fill: #d8d9d5;
 }

@@ -6,21 +6,19 @@
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
 
-<HBox id="cardPane" fx:id="cardPane" alignment="CENTER_LEFT" spacing="12" xmlns="http://javafx.com/javafx/17"
+<HBox id="cardPane" fx:id="cardPane" styleClass="employee-card" alignment="TOP_LEFT" spacing="10"
+      xmlns="http://javafx.com/javafx/17"
       xmlns:fx="http://javafx.com/fxml/1">
   <padding>
-    <Insets top="8" right="10" bottom="8" left="14" />
+    <Insets top="10" right="8" bottom="10" left="8" />
   </padding>
+  <VBox styleClass="index-gutter" alignment="TOP_RIGHT" minWidth="44" prefWidth="44" maxWidth="44">
+    <Label fx:id="id" styleClass="row-index" />
+  </VBox>
   <Label fx:id="avatar" styleClass="avatar" text="\$initials" />
   <VBox alignment="CENTER_LEFT" spacing="2" minWidth="0" HBox.hgrow="ALWAYS">
     <HBox spacing="8" alignment="BASELINE_LEFT">
-      <Label fx:id="id" styleClass="cell_big_label">
-        <minWidth>
-          <!-- Ensures that the label text is never truncated -->
-          <Region fx:constant="USE_PREF_SIZE" />
-        </minWidth>
-      </Label>
-      <Label fx:id="name" text="\$first" styleClass="cell_big_label" minWidth="0" />
+      <Label fx:id="name" text="\$first" styleClass="employee-name" minWidth="0" />
       <Label fx:id="employeeId" styleClass="employee-id" text="\$employeeId">
         <minWidth>
           <!-- Ensures that the ID is never cut short -->
@@ -28,8 +26,8 @@
         </minWidth>
       </Label>
     </HBox>
-    <Label fx:id="role" styleClass="cell_small_label" text="\$role" minWidth="0" />
-    <Label fx:id="contact" styleClass="cell_small_label, label-muted" text="\$contact" minWidth="0" />
+    <Label fx:id="role" styleClass="employee-role" text="\$role" minWidth="0" />
+    <Label fx:id="contact" styleClass="metadata" text="\$contact" minWidth="0" />
     <HBox spacing="6" alignment="CENTER_LEFT">
       <padding>
         <Insets top="3" bottom="0" />

@@ -1,5 +1,7 @@
 package seedu.address.ui;
 
+import java.util.Locale;
+
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.control.Tooltip;
@@ -48,13 +50,13 @@ public class EmployeeCard extends UiPart<Region> {
      */
     public EmployeeCard(Employee employee, int displayedIndex) {
         super(FXML);
-        id.setText(displayedIndex + ". ");
+        id.setText(formatDisplayIndex(displayedIndex));
         name.setText(employee.getName().fullName);
         employeeId.setText(employee.getId().value);
         contact.setText(employee.getPhone().value + "  \u00B7  " + employee.getEmail().value);
         avatar.setText(Initials.of(employee.getName().fullName));
-        avatar.setStyle(DepartmentColour.chipStyle(employee.getDepartment().value));
         department.setText(employee.getDepartment().value);
+        avatar.setStyle(DepartmentColour.avatarStyle(employee.getDepartment().value));
         department.setStyle(DepartmentColour.chipStyle(employee.getDepartment().value));
         archivedBadge.setVisible(employee.isArchived());
         archivedBadge.setManaged(employee.isArchived());
@@ -71,5 +73,9 @@ public class EmployeeCard extends UiPart<Region> {
 
     static String getManagerText(Employee employee) {
         return employee.getManagerId().map(managerId -> "Reports to " + managerId).orElse("Unassigned");
+    }
+
+    static String formatDisplayIndex(int displayedIndex) {
+        return String.format(Locale.ROOT, "%02d", displayedIndex);
     }
 }
