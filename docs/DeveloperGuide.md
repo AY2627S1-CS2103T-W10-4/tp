@@ -361,6 +361,24 @@ this read-only command.
 
 <puml src="diagrams/StatsSequenceDiagram.puml" alt="Interactions for summarising the active workforce" />
 
+### Data-quality check
+
+`CheckCommand` reads the complete roster through `Model#getAddressBook()` and excludes archived employees, so the
+current search and archive view do not affect it. It counts how many active employees have each phone number and each
+email. Phone numbers are compared exactly as stored. Emails are compared after `toLowerCase(Locale.ROOT)`, since
+addresses that differ only in letter case reach the same inbox. An employee is reported when their phone number or
+their email is shared with another active employee, and only once, even if both are shared or more than two employees
+share a value.
+
+The reported employees are ordered by employee ID, ignoring letter case. Each entry in the result shows the ID, the
+name and the reasons, `shared phone X` and `shared email Y`, separated by `; `. The email is shown as stored. The result
+starts with `Found N active employee(s) with data-quality issues:`. If nobody is reported, including when there are no
+active employees, the result is `No data-quality issues found.`
+
+`AddressBookParser` rejects any text after `check` or `stats` with `Invalid command format.` followed by `Usage: check`
+or `Usage: stats`. Like `stats`, `check` reports only: it does not modify employee records, the current filter, the
+sort order or the undo/redo history, and `LogicManager` does not save the employee file after it.
+
 ### Employee archiving
 
 `Employee` has an immutable boolean archive status. Active and archived employees remain in the same
@@ -910,6 +928,7 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 | `*` | Busy user | Sort employees by a chosen field (e.g. name or department) | scan records in the order that's useful to me |
 | `*` | Busy user | Look up an employee's leave status with one command | check quickly if they're available for a meeting |
 | `*` | Long-time user | Identify employees who don't appear connected to anyone else in the organisation | investigate whether my workforce information is incomplete |
+| `*` | Long-time user | Identify employees who share a phone number or email with another employee | find and correct data-entry mistakes |
 | `*` | Long-time user | Count employees by department | quickly see the size of each team |
 | `* *` | HR administrator | Archive an employee while retaining their details and reporting relationships | Keep former employees' records outside the active roster |
 | `* *` | HR administrator | List archived employees and restore one by ID | Bring an employee back without re-entering their information |
@@ -1114,6 +1133,54 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
   * 2a1. HuntR orders them by employee ID from A to Z.
 
     Use case resumes at step 3.
+
+**Use case: View workforce statistics**
+
+**MSS**
+
+1. User requests the workforce statistics using `stats`.
+2. HuntR counts the active employees, in total and for each department and role.
+3. HuntR displays the total and the two breakdowns in the result box, with the largest group first.
+
+    Use case ends.
+
+**Extensions**
+
+* 1a. The command contains text after `stats`.
+
+  * 1a1. HuntR shows `Invalid command format.` followed by the usage. Records and the displayed list remain unchanged.
+
+    Use case resumes at step 1.
+
+* 2a. There are no active employees.
+
+  * 2a1. HuntR displays a total of `0` and `(none)` under both headings.
+
+    Use case ends.
+
+**Use case: Check data quality**
+
+**MSS**
+
+1. User requests a data-quality check using `check`.
+2. HuntR finds the active employees who share a phone number or an email with another active employee.
+3. HuntR displays the number of such employees, and for each of them the ID, name and shared contact details.
+
+    Use case ends.
+
+**Extensions**
+
+* 1a. The command contains text after `check`.
+
+  * 1a1. HuntR shows `Invalid command format.` followed by the usage. Records and the displayed list remain unchanged.
+
+    Use case resumes at step 1.
+
+* 2a. No active employee shares a phone number or an email.
+
+  * 2a1. HuntR displays `No data-quality issues found.`
+
+    Use case ends.
 
 **Use case: View employee data**
 
@@ -1488,6 +1555,38 @@ Engineering department, `E0003` is in Finance and `E0006` is in Sales.
    is followed by the `sort` usage. The displayed order does not change.
 7. Enter `list`.<br>
    Expected: HuntR displays all employees in the order in which they were added, from `E0001` to `E0007`.
+
+### Viewing workforce statistics
+
+**Prerequisites:** Launch HuntR with the original six sample employees.
+
+1. Enter `stats`.<br>
+   Expected: HuntR displays `Total active employees: 6`. Under `By department:`, `Engineering: 2` comes first, followed by `Finance`, `Human Resources`, `Operations` and `Sales` with 1 each. Under `By role:`, each of the six roles has 1, in alphabetical order.
+2. Enter `find Alex`, then `stats`.<br>
+   Expected: The counts are the same as in step 1, and the displayed list still shows only the employees found.
+3. Enter `list`, `archive id/E0006`, then `stats`.<br>
+   Expected: The total is 5, and `Sales` and `Account Manager` no longer appear. Enter `list archived`, then `stats` again; the counts do not change.
+4. Enter `stats d/Ops`.<br>
+   Expected: HuntR displays `Invalid command format.` followed by `Usage: stats`, and nothing changes.
+5. Enter `clear`, then `stats`.<br>
+   Expected: HuntR displays `Total active employees: 0` with `(none)` under both headings. Enter `undo` to bring back the five active employees.
+
+### Checking data quality
+
+**Prerequisites:** Launch HuntR with the original six sample employees, none of which share a phone number or an email.
+
+1. Enter `check`.<br>
+   Expected: HuntR displays `No data-quality issues found.`
+2. Enter `add id/E0007 n/Dup Phone p/93210283 e/dup1@example.com d/Finance r/Accountant`, then `check`.<br>
+   Expected: HuntR displays `Found 2 active employee(s) with data-quality issues:` followed by `E0003 (Charlotte Oliveiro): shared phone 93210283` and `E0007 (Dup Phone): shared phone 93210283`.
+3. Enter `add id/E0008 n/Dup Mail p/80000001 e/CHARLOTTE@example.com d/Finance r/Accountant`, then `check`.<br>
+   Expected: HuntR displays `Found 3 active employee(s) with data-quality issues:`. `E0003` appears once with `shared phone 93210283; shared email charlotte@example.com`, and `E0008 (Dup Mail): shared email CHARLOTTE@example.com` is added. The emails differ only in letter case and are still flagged.
+4. Enter `find Alex`, then `check`.<br>
+   Expected: HuntR displays the same `Found 3 active employee(s) with data-quality issues:` report as in step 3, listing `E0003`, `E0007` and `E0008`, while the displayed list still shows only `Alex Yeoh`. The search does not limit the check.
+5. Enter `list`, `archive id/E0007`, then `check`.<br>
+   Expected: HuntR displays `Found 2 active employee(s) with data-quality issues:`, listing `E0003` and `E0008` for the shared email only. The archived employee is not reported and no longer causes `E0003` to be flagged for the phone number.
+6. Enter `check x`.<br>
+   Expected: HuntR displays `Invalid command format.` followed by `Usage: check`, and nothing changes.
 
 ### Archiving and restoring employees
 
