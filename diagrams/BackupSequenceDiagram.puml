@@ -1,0 +1,50 @@
+@startuml
+!include style.puml
+skinparam ArrowFontStyle plain
+
+participant ":LogicManager" as Logic LOGIC_COLOR
+participant ":BackupCommand" as Backup LOGIC_COLOR
+participant "model:Model" as Model MODEL_COLOR
+participant ":JsonAddressBookStorage" as Storage STORAGE_COLOR
+participant "<<class>>\nAtomicFileWriter" as Writer STORAGE_COLOR
+
+note over Logic, Backup
+AddressBookParser accepts backup without arguments.
+HistoryAction.NONE: no checkpoint, history commit or employee-file save.
+end note
+Logic -> Backup : execute(model)
+activate Backup
+Backup -> Model : getAddressBook()
+Model --> Backup : complete roster
+Backup -> Backup : timestamp from local clock\nchoose counter 0000000000
+loop retry while destination is occupied
+    Backup -> Backup : createStorage(backupPath)
+    Backup -> Storage : saveNewAddressBook(roster)
+    activate Storage
+    Storage -> Storage : serialise complete JSON
+    Storage -> Writer : writeNew(path, bytes)
+    activate Writer
+    note right of Writer
+Create parents and protected sibling temporary file.
+Write and force bytes, then publish with a new hard link.
+Never replace an existing destination.
+end note
+    alt snapshot published
+        Writer --> Storage : return
+        Storage --> Backup : return
+        note right of Backup : Leave retry loop.
+    else FileAlreadyExistsException
+        Writer --> Storage : collision
+        Storage --> Backup : collision
+        Backup -> Backup : verify occupied path with NOFOLLOW_LINKS\nincrement counter
+    end
+    deactivate Writer
+    deactivate Storage
+end
+Backup --> Logic : CommandResult("Backed up <count> employee(s) to <path>")
+deactivate Backup
+note over Backup, Writer
+Other I/O failures produce the backup-specific CommandException.
+Earlier snapshots, employee data, view and history remain unchanged.
+end note
+@enduml
