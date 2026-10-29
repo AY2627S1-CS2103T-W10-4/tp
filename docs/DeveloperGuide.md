@@ -419,12 +419,10 @@ never expose archived employees. `list archived` calls `Model#showArchivedEmploy
 in the same existing employee panel. `edit` preserves the target's archive status, while `delete` searches the complete
 stored list and can remove either status; session history can restore the removed record.
 
-`AddressBookParser` accepts only an empty argument string or the exact lowercase `archived` for `list`, after
-trimming surrounding whitespace. It constructs `ListCommand(false)` or `ListCommand(true)`. Both reset the sort
-comparator to roster order before installing their predicate. An empty archive displays
-`There are no archived employees.` An empty active list with archived records displays the archived count and a
-`list archived` hint. Listing does not commit a history step. Reporting views can include both active and archived
-employees, while `StatsCommand` and `CheckCommand` operate only on active records regardless of the displayed view.
+Both `list` variants reset the sort comparator to roster order before installing their status predicate. See
+[Listing employees](#listing-employees) for parsing, feedback, UI updates and history behavior. Reporting views can
+include both active and archived employees, while `StatsCommand` and `CheckCommand` operate only on active records
+regardless of the displayed view.
 
 #### Persistence and history
 
@@ -438,6 +436,55 @@ the data, history and view. Undo/redo preserves archive status and reporting rel
 view in effect when it runs. Restart loads the saved archive statuses but starts with fresh undo/redo history.
 `ArchiveCommandsTest`, `ArchiveViewIntegrationTest`, `ArchiveManagerFeedbackTest`, the individual parser tests and
 `ListCommandTest` cover status changes, saved data, view preservation, redundant requests and listing feedback.
+
+### Listing employees
+
+#### Parsing and view selection
+
+`AddressBookParser#parseCommand` handles `list` directly; there is no separate list parser. After trimming
+surrounding whitespace, an empty argument creates `ListCommand(false)` and exactly lowercase `archived` creates
+`ListCommand(true)`. Any other argument throws `ParseException` with `Invalid command format.` and
+`Usage: list [archived]`, before execution can change the current view or sorting. The command word is also
+case-sensitive, as for other commands.
+
+`ListCommand#execute` first calls `Model#resetEmployeeSortOrder`, then selects the requested status:
+
+* `list` calls `updateFilteredEmployeeList(Model.PREDICATE_SHOW_ALL_EMPLOYEES)`. The model combines that always-true
+  predicate with `!employee.isArchived()`, so only active employees appear.
+* `list archived` calls `showArchivedEmployees`, which installs `Employee::isArchived` directly.
+
+Both commands replace any previous name search, multi-field filter or reporting predicate. Clearing the
+`SortedList` comparator restores the stored employee order without reordering the underlying roster.
+
+#### Feedback, UI and persistence
+
+The command inspects `model.getFilteredEmployeeList()` after selecting the view. A non-empty view returns
+`Listed all active employees.` or `Listed all archived employees.` An empty archive returns
+`There are no archived employees.` An empty active view uses `getArchivedEmployeeCount()` to distinguish two cases:
+
+* Zero archived employees: `MESSAGE_EMPTY_LIST` gives the introductory guidance and the six required `add` fields.
+* One or more archived employees: `MESSAGE_EMPTY_ACTIVE_WITH_ARCHIVED` gives the count and a `list archived` hint,
+  using singular `employee` for one and plural `employees` otherwise.
+
+`ModelManager` retains one `FilteredList` over `VersionedAddressBook#getEmployeeList()` and one `SortedList` over
+that filtered list. `getFilteredEmployeeList()` exposes the sorted view, despite its historical method name.
+`MainWindow` supplies that same observable list to `EmployeeListPanel` when the UI is created. Predicate/comparator
+changes update the existing `ListView`; the list command does not reconstruct the panel or load records from disk.
+`EmployeeCard` shows the current one-based display index, employee details and manager text. Display indexes
+are positions in the current view, not employee IDs. Archived cards also show the `Archived` badge.
+
+`ListCommand` inherits `HistoryAction.NONE`, so `LogicManager` skips checkpoint creation, history commit and the
+automatic employee-file save. Employee data and the redo branch remain unchanged, including when the data file
+is unwritable. Undo/redo continue to use the current view rather than restoring a view cleared by `list`.
+
+The diagram shows both accepted forms after parsing, including the distinct empty-list results:
+
+<puml src="diagrams/ListSequenceDiagram.puml" alt="Selecting active or archived employees and producing list feedback" />
+
+`ListCommandTest` covers filtering/sort reset, status selection and empty-list feedback. `AddressBookParserTest`
+covers accepted forms and rejected arguments. `ModelManagerTest` verifies displayed sorting without changing
+stored order; `ArchiveViewIntegrationTest` covers switching views and preserving archived status.
+`HistoryTransactionTest` and `AtomicSaveLogicTest` verify that listing preserves redo and skips saving.
 
 ### Delete an employee by ID
 
@@ -1000,7 +1047,8 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 | `* * *` | Careful user | Save a separate JSON backup of the complete employee roster | Retain a snapshot I can restore after an unwanted change |
 | `* *` | Long-time user | Filter employees by search criteria | Gather specific organisation-wide data efficiently |
 | `* * *` | Basic user | Add an employee's information | the app reflects my company's workforce |
-| `* * *` | Basic user | List all employees | see the full roster in one place |
+| `* * *` | Basic user | List all active employees with their details in stored order | Review the current workforce in one place |
+| `* *` | HR administrator | Return to the complete active list after searching, filtering, sorting or viewing archived records | Continue reviewing the workforce without changing employee data |
 | `* * *` | Basic user | Delete an active or archived employee by ID, even when hidden by a search | Remove the intended record without changing my view |
 | `* *` | Careful user | Undo a deletion and its reporting changes during the same session | Recover a mistakenly deleted employee and their relationships |
 | `* * *` | Basic user | Find an employee by name | quickly retrieve their information without browsing the whole list |
@@ -1344,12 +1392,37 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
   * 4a1. HuntR suggests `list` to see the employee; any remaining archived records stay visible in an archive view.
     Use case ends.
 
+**Use case: List active employees**
+
+**MSS**
+
+1. User enters `list` without arguments.
+2. HuntR clears the previous view restriction and sort order, and displays all active employees in stored roster order.
+3. HuntR displays `Listed all active employees.` Each card includes the employee's details and manager assignment.
+
+    Employee records and undo/redo history remain unchanged. Use case ends.
+
+**Extensions**
+
+* 1a. Extra arguments other than exactly lowercase `archived` are supplied.
+  * 1a1. HuntR displays `Invalid command format.` and `Usage: list [archived]`, retaining the previous view and sorting.
+    Use case resumes at step 1.
+* 1b. User requests `list archived`.
+  * 1b1. HuntR follows the **List archived employees** use case instead.
+    Use case ends.
+* 2a. There are no active or archived employees.
+  * 2a1. HuntR displays an empty panel and introductory guidance containing the `add` format.
+    Use case ends.
+* 2b. There are no active employees, but archived employees exist.
+  * 2b1. HuntR displays an empty active panel and the archived count with a `list archived` hint.
+    Use case ends.
+
 **Use case: List archived employees**
 
 **MSS**
 
 1. User enters `list archived`.
-2. HuntR replaces the current view with all archived employees in roster order.
+2. HuntR replaces the current view with all archived employees in roster order, resets sorting and shows the `Archived` badge on their cards.
 3. HuntR displays `Listed all archived employees.` Employee data and undo/redo history are unchanged.
 
     Use case ends.
@@ -1604,16 +1677,54 @@ For each rejected command, verify that no record is added or changed.
 
 ### Listing employees
 
-**Prerequisites:** Launch HuntR with at least two employees whose names are different.
+**Prerequisites:** Use a disposable writable installation with an empty roster (no active or archived employees).
+Add these employees in the order shown, then archive `L1002`. Restore this starting state before each independent
+test below. `clear` alone does not remove archived employees.
 
-1. Enter `find Alex`.<br>
-   Expected: Only employees whose names contain the whole-word keyword `Alex`, ignoring case, are displayed.
-2. Enter `list`.<br>
-   Expected: HuntR displays `Listed all active employees.` and restores the complete active employee roster.
-3. Enter `clear`, followed by `list`.<br>
-   Expected: After `clear`, all active employee records are removed. If archived records remain, `list` displays
-   an empty active roster and suggests `list archived` with their count. Otherwise, the message begins with
-   `You don’t have any employees yet.`, followed by the `add` command format.
+```text
+add id/L1003 n/Zoe Tan p/91234561 e/zoe.tan@example.com d/Engineering r/Manager
+add id/L1001 n/Alice Lim p/91234562 e/alice.lim@example.com d/Sales r/Analyst m/L1003
+add id/L1002 n/Bob Ng p/91234563 e/bob.ng@example.com d/Engineering r/Engineer m/L1003
+archive id/L1002
+```
+
+1. Enter `list`, then repeat with leading/trailing spaces.<br>
+   Expected: `Listed all active employees.` Both commands show `L1003`, then `L1001`, numbered 1 and 2. Their names,
+   IDs, phone numbers, emails, departments, roles and manager text are visible. `L1002` is excluded. Alice's manager
+   reads `Reports to L1003`; Zoe's reads `Unassigned`.
+2. Enter `find Alice`, then `list`; repeat with `find Nobody`, then `list`.<br>
+   Expected: Both searches are cleared by `list`, which shows both active employees in the original order.
+   Repeat with `filter d/Sales` and `team id/L1003` before `list`: both view restrictions are cleared, and the
+   archived report shown by `team` is excluded again.
+3. Enter `sort id asc`, then `list`.<br>
+   Expected: Sorting shows `L1001`, then `L1003`; `list` restores `L1003`, then `L1001`. The stored order is unchanged.
+4. Enter `list archived`, then `list`.<br>
+   Expected: The archive view contains only `L1002` with an `Archived` badge and `Listed all archived employees.`
+   The second command returns to the two active employees without changing anyone's status.
+5. Enter `find Alice` and `sort id asc`. Try `list 1`, `list all`, `list d/Engineering`, `list ARCHIVED`,
+   `list Archived` and `list archived extra` separately.<br>
+   Expected: Each reports `Invalid command format.` followed by `Usage: list [archived]`. Alice remains the only
+   visible employee and the ascending-ID sort stays selected. Enter `filter d/Sales d/Engineering`:
+   `L1001` precedes `L1003`, confirming the failed commands did not reset sorting.
+6. Enter `edit id/L1001 r/Senior Analyst`, `undo`, `list`, `list archived`, then `redo`.<br>
+   Expected: Redo remains available after both list commands and restores Alice's role to Senior Analyst.
+   The archived view remains selected. `list` adds no history step and cannot itself be undone.
+7. Archive `L1003` and `L1001`, then enter `list`.<br>
+   Expected: An empty active panel and
+   ``There are no active employees. Use `list archived` to see the 3 archived employees.``
+   `list archived` displays all three records in stored order. Unarchive `L1003` and `L1001`, then enter `list`:
+   the original two active employees return with unchanged details.
+8. In a separate empty roster, enter `list`, then `list archived`.<br>
+   Expected: `list` displays the four-line `MESSAGE_EMPTY_LIST` guidance reproduced in the UG; `list archived`
+   displays `There are no archived employees.` Add one employee, archive them and enter `list`:<br>
+   Expected: The hint says `1 archived employee.` with singular wording.
+9. Record the employee data file's bytes and last-write time after setup. Enter `list`, `find Alice`, `list archived`
+   and `list`.<br>
+   Expected: The employee file is unchanged. Listing does not create an absent data file either. In a disposable
+   installation, repeat with the employee data file read-only: listing succeeds without a save-permission error.
+10. Add enough active employees for the panel to scroll, then enter `list`.<br>
+    Expected: Every active employee is reachable by scrolling and numbering follows the current view. Long values
+    fit within their cards, with full name, role, contact, department and manager details available through tooltips.
 
 ### Finding employees
 
