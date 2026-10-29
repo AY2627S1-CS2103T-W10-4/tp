@@ -1689,7 +1689,7 @@ archive id/L1002
 ```
 
 1. Enter `list`, then repeat with leading/trailing spaces.<br>
-   Expected: `Listed all active employees.` Both commands show `L1003`, then `L1001`, numbered 1 and 2. Their names,
+   Expected: `Listed all active employees.` Both commands show `L1003`, then `L1001`, numbered `01` and `02`. Their names,
    IDs, phone numbers, emails, departments, roles and manager text are visible. `L1002` is excluded. Alice's manager
    reads `Reports to L1003`; Zoe's reads `Unassigned`.
 2. Enter `find Alice`, then `list`; repeat with `find Nobody`, then `list`.<br>

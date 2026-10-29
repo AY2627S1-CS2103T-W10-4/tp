@@ -180,7 +180,7 @@ optional argument `archived` must be lowercase.
 * Replaces the current search, filter, archived-only or reporting view with **all active employees**.
 * Resets any `sort` to the stored roster order, normally the order employees were added or imported.
   It does not change the saved order or any employee's details.
-* The numbers on the cards start at 1 for the current view and may change when the view changes.
+* The numbers on the cards (`01`, `02` and so on) start at `01` for the current view and may change when the view changes.
   Use the employee ID, such as `E0001`, to identify an employee in commands that require `id/`.
 * Does not save employee data or add an undo step, and preserves any available redo. `undo` reverses the last
   employee-data change while keeping the current view; it does not bring back the search or sorting cleared by `list`.
