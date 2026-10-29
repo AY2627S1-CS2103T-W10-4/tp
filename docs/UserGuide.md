@@ -165,23 +165,65 @@ Examples (use IDs that are not already stored):
 ### Listing all active employees: `list`
 
 Shows all active employees stored in HuntR as a numbered list. Archived employees are excluded.
-Each entry includes the employee's name, employee ID,
-phone number, email, department, and role. Employees are shown in the order in which they were added, so `list` also undoes any `sort`.
+Each card shows the employee's name, employee ID, phone number, email, department, role and manager
+(`Reports to MANAGER_ID` or `Unassigned`). Scroll the employee panel to see records below the visible area;
+hover over shortened details to see their full values.
 
 Format: `list`
 
+Example: `list`
+
 Use `list` without arguments to show active employees, or [`list archived`](#listing-archived-employees-list-archived)
-to show archived employees. Leading and trailing spaces are ignored. The `archived` argument is case-sensitive
-and must be written in lowercase: `list ARCHIVED` and `list Archived` are rejected with `Invalid command format.`
-followed by `Usage: list [archived]`. Any other argument or additional text after `archived` is also rejected.
+to show archived employees. Leading and trailing whitespace is ignored. Both the command word `list` and the
+optional argument `archived` must be lowercase.
 
-When active employees are shown, HuntR displays `Listed all active employees.`
+* Replaces the current search, filter, archived-only or reporting view with **all active employees**.
+* Resets any `sort` to the stored roster order, normally the order employees were added or imported.
+  It does not change the saved order or any employee's details.
+* The numbers on the cards start at 1 for the current view and may change when the view changes.
+  Use the employee ID, such as `E0001`, to identify an employee in commands that require `id/`.
+* Does not save employee data or add an undo step, and preserves any available redo. `undo` reverses the last
+  employee-data change while keeping the current view; it does not bring back the search or sorting cleared by `list`.
 
-If there are no employee records, HuntR displays an empty employee list and explains how to add an employee.
-If only archived employees remain, HuntR displays an empty active list and suggests `list archived` with the
-number of archived employees.
+The result depends on the records stored:
 
-Use `list` to show every active employee again after a `find` or `filter`.
+| Roster state | Result |
+| --- | --- |
+| At least one active employee | Shows all active cards and `Listed all active employees.` |
+| Only archived employees remain | Shows an empty active panel and suggests `list archived`, with the number of archived employees. |
+| No active or archived employees | Shows an empty panel and the guidance below. |
+
+```text
+You don’t have any employees yet.
+Add employees by using
+add id/EMPLOYEE_ID n/NAME p/PHONE e/EMAIL d/DEPARTMENT r/ROLE
+to get a start!
+```
+
+For example, if two archived employees are the only remaining records, `list` displays:
+
+```text
+There are no active employees. Use `list archived` to see the 2 archived employees.
+```
+
+Arguments such as `list 1`, `list all`, `list d/Engineering`, `list ARCHIVED` and `list archived extra` are rejected
+with `Invalid command format.` followed by `Usage: list [archived]`. The previous view and sorting remain unchanged.
+Use [`filter`](#filtering-employees-filter) to narrow the roster by employee details.
+
+Examples:
+
+* `find Alex`, then `list`: shows every active employee again, including those hidden by the search.
+* `sort id desc`, then `list`: restores the stored roster order.
+* `list archived`, then `list`: returns to the active roster.
+
+The following example contains two active employees and one archived employee. `list` shows the active employees
+in their stored order, with their manager information:
+
+![Listing all active employees in stored order](images/list-active-employees.jpg)
+
+After all three employees are archived, the active panel is empty and `list` gives their archived count:
+
+![Empty active list with a hint to view the three archived employees](images/list-no-active-employees.jpg)
 
 ### Editing an employee: `edit`
 
@@ -654,22 +696,135 @@ active roster still succeeds and shows the active view, but creates no history e
 
 ### Importing and exporting CSV files: `import`, `export`
 
+Use CSV files to add a batch of employees or open the complete roster in a spreadsheet application.
+For a separate JSON snapshot that can replace the roster later, use [`backup`](#backing-up-employee-data-backup)
+and [`restore`](#restoring-a-json-backup-restore).
+
+#### File paths for both commands
+
 Format: `import file/FILE_PATH` or `export file/FILE_PATH`
 
-Examples: `import file/employees.csv`, `export file/output.csv`
-
 `file/` is a parameter prefix: these examples read `employees.csv` and write `output.csv` directly in the folder
-where HuntR runs. The prefix is not part of the filesystem path.
+where HuntR runs: `import file/employees.csv`, `export file/output.csv`. The prefix is not part of the filesystem path.
 
-* Supply one non-empty path ending in `.csv`. Spaces are supported without quotes, for example
+* Supply one non-empty path ending in `.csv` (case-insensitive). Do not surround the path with quotes.
+  Spaces are supported without quotes, for example
   `export file/my exports/staff.csv`. Only the leading `file/` is treated as a prefix; the rest is one path,
   so `import file/my file/staff.csv` reads `my file/staff.csv`.
 * Paths must be relative to the folder HuntR runs from and remain inside it, including after symbolic links are
   followed. Absolute paths and paths such as `file/../staff.csv` are rejected.
 * Positional paths such as `import employees.csv` and `export output.csv` remain supported for compatibility.
   To access a directory literally named `file`, use `import file/file/employees.csv` or `import ./file/employees.csv`.
-* Import adds employees and validates the complete CSV before changing the roster; existing IDs are rejected.
-  Export writes all employees, including archived records, creates missing parent folders and replaces an existing file.
+
+#### Importing employees: `import`
+
+Format: `import file/FILE_PATH`
+
+Example: `import file/employees.csv`
+
+Save the file as **CSV UTF-8** in Excel or as UTF-8 comma-separated text in a text editor. The first record must
+be one of these headers, with the columns in exactly this order. Header names ignore letter case and surrounding
+spaces; Excel's UTF-8 byte order mark is accepted. Do not put a blank line before the header.
+
+| Header | How missing fields are handled |
+| --- | --- |
+| `id,name,phone,email,department,role,archived,managerId` | Current format; all eight values must be present in each employee row, including blank values. |
+| `id,name,phone,email,department,role,archived` | Legacy format; every imported employee has no manager. |
+| `id,name,phone,email,department,role` | Legacy format; every imported employee is active and has no manager. |
+
+The first six values follow the same [field rules as `add`](#adding-an-employee-add). `archived` accepts `true`,
+`false` or blank (meaning `false`), ignoring case and surrounding spaces. A blank `managerId` means no manager;
+otherwise it must identify an existing employee or another employee in the same CSV, even one on a later row.
+Manager IDs ignore case and are saved using the referenced employee's ID spelling. Self-reporting and cycles are rejected.
+
+For example, save the following as `employees.csv` in the folder where HuntR runs. Both IDs must be unused:
+
+```csv
+id,name,phone,email,department,role,archived,managerId
+C1002,Mei Lim,81234567,mei.lim@example.com,"Research, Development",Developer,true,C1001
+C1001,John Tan,91234567,john.tan@example.com,"Research, Development",Manager,false,
+```
+
+The comma in `Research, Development` is part of the department because the field is enclosed in double quotes.
+CSV also supports quoted line breaks and doubled double quotes inside quoted fields, but the resulting values
+must still satisfy employee field rules. Blank records after the header are skipped.
+
+* Import **adds** employees; it does not replace existing records. IDs must be unique, ignoring case, both within
+  the CSV and against the complete active and archived roster. Importing an export into the same roster is therefore rejected.
+* HuntR validates the entire file before adding anyone. Invalid fields, duplicate IDs, malformed quotes, incorrect
+  column counts or invalid reporting relationships reject the whole import. Empty and header-only files are also rejected.
+* On success, HuntR displays `Imported 2 employee(s) from employees.csv` for the example above, saves the change
+  automatically and shows all active employees with the current sort order. `C1001` is visible; use `list archived`
+  to see `C1002`. Imported records are appended in CSV row order, after the existing records.
+* One `undo` reverses the whole import. `redo` restores the imported records without rereading the CSV.
+  Failed imports, including automatic-save failures, preserve the previous records, view and undo/redo history.
+
+Common errors:
+
+| Problem | Result and next step |
+| --- | --- |
+| Missing file, or a path to a directory | `File not found: <path>`. Check the filename and its location. |
+| File is not UTF-8 | HuntR asks you to save it as `CSV UTF-8`. Resave the file and try again. |
+| Wrong header or column order | HuntR shows the required header. Use one of the three supported headers above. |
+| Invalid employee row | `Nothing was imported. Row <number>: <problem>`. Correct the indicated record. The number is its starting physical line, counting the header as line 1, including blank lines and quoted line breaks. |
+| Reporting cycle | `Nothing was imported. Reporting relationships cannot contain a cycle.` Correct the manager assignments. |
+| File cannot be read | Close it in other programs such as Excel and check read permissions. |
+
+The example import adds two records, with only active employee `C1001` shown in the active view:
+
+![Successful import of the two-record CSV example](images/csv-import-result.jpg)
+
+#### Exporting employees: `export`
+
+Format: `export file/FILE_PATH`
+
+Example: `export file/exports/staff.csv`
+
+* Exports **every active and archived employee**, including employees hidden by the current view, in stored roster
+  order. Searching, filtering or sorting the employee cards does not restrict or reorder the exported records.
+* Writes UTF-8 CSV using the eight-column header above, preserving archive status and manager IDs.
+  Fields containing commas, double quotes or line breaks are quoted automatically.
+* Creates missing parent folders. **An existing destination file is replaced immediately, without confirmation.**
+  Use a new filename to keep an earlier export.
+* Success displays `Exported <count> employee(s) to <path>`. The count includes archived employees.
+  An empty roster produces a header-only file, which `import` will reject because it contains no employees.
+* Leaves employee data, the current view, sort order and undo/redo history unchanged. `undo` does not remove or
+  recover exported files. Export uses an ordinary file write; it does not provide the atomic-save guarantees of JSON data saving.
+* If writing fails, HuntR displays `Could not write to <path>. Check that the file is not open in another program
+  (such as Excel) and that you are allowed to write to that folder.` Close the file and check permissions before retrying.
+
+Exporting after the example import includes both employees, even though only one is visible:
+
+![Successful export of both active and archived employees](images/csv-export-result.jpg)
+
+### Backing up employee data: `backup`
+
+Saves a separate JSON snapshot of the complete current roster, including archived and hidden employees,
+manager assignments, ID spelling and stored record order. It does not back up preferences or session undo/redo history.
+
+Format: `backup`
+
+Example: `backup`
+
+* Takes no parameters. Extra text such as `backup now` or `backup file/copy.json` is rejected with the command usage.
+* Creates `data/backups` inside the folder where HuntR runs if needed. The destination is fixed; no custom path is accepted.
+* Files are named `huntr-yyyyMMdd-HHmmss-0000000000.json` using the computer's local date and time.
+  The ten-digit counter increases when a name is occupied, so earlier snapshots are never overwritten, including
+  backups created in the same second. Older backup filenames remain valid.
+* Success displays `Backed up <count> employee(s) to <backup-path>`, for example
+  `Backed up 2 employee(s) to data/backups/huntr-20261028-183000-0000000000.json`.
+  Path separators follow your operating system. The count includes archived employees; an empty roster can also be backed up.
+* Leaves records, the current view, sort order and undo/redo history unchanged and does not rewrite the main employee file.
+  `undo` does not delete the snapshot. Use [`restore file/JSON_FILE_PATH`](#restoring-a-json-backup-restore) with the
+  reported path to load it later; restoration replaces the roster.
+* The backup folder must support hard links and the [access protections used for JSON saving](#saving-the-data).
+  If saving fails, HuntR displays
+  `Could not save the backup to <backup-path>. Check that you are allowed to write to that folder.`
+  Unsupported hard links fail without creating an empty final backup file; existing snapshots remain intact.
+
+The result shows the snapshot's actual path; its timestamp and counter will differ for each backup:
+
+![Successful JSON backup showing the generated snapshot path](images/json-backup-result.jpg)
 
 ### Undoing and redoing employee changes: `undo`, `redo`
 
@@ -861,22 +1016,9 @@ existing UI does not provide ordinary command-box handling for those exceptions.
 Read-only commands do not attempt an automatic employee-file save, so an unwritable employee file does not prevent
 view changes, searches or help. Export and backup still require write access to their own output destinations.
 
-JSON backups are saved in `data/backups` as `huntr-yyyyMMdd-HHmmss-0000000000.json`.
-Every filename includes a ten-digit counter, increasing to `0000000001`, `0000000002` and so on when a name is taken.
-Sorting new backup names alphabetically keeps backups made within the same second in creation order.
-Existing backup snapshots are never overwritten, including when multiple backups are created within the same second.
-The backup folder must support hard links as well as the access protections described above. If hard links are
-unavailable, backup fails without creating an empty backup file. Older backup filenames remain valid.
-A backup write failure,
-including unsupported hard links or protection, keeps its backup-specific message:
-
-```text
-Could not save the backup to <backup-path>. Check that you are allowed to write to that folder.
-```
-
-Successful backups report `Backed up <count> employee(s) to <backup-path>` without an additional automatic
-employee-file save.
-CSV exports and preference saving are unchanged.
+Use [`backup`](#backing-up-employee-data-backup) to save a separate JSON snapshot. It uses its own backup-specific
+error message and never overwrites an existing snapshot. CSV exports use an ordinary file write rather than this
+atomic JSON-saving mechanism.
 
 ### Editing the data file
 
@@ -918,17 +1060,17 @@ Action     | Format, Examples
 -----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 **Add**    | `add id/EMPLOYEE_ID n/NAME p/PHONE e/EMAIL d/DEPARTMENT r/ROLE [m/MANAGER_ID]`<br>e.g., `add id/E0123 n/John Tan p/91234567 e/johntan@example.com d/Engineering r/Software Engineer`
 **[Archive](#archiving-employees-archive)** | `archive id/EMPLOYEE_ID`<br>e.g., `archive id/E0123`<br>Keeps the employee's record and marks it archived.
-**Backup** | `backup`
+**[Backup](#backing-up-employee-data-backup)** | `backup`<br>Saves the complete roster to a new JSON file in `data/backups`.
 **Restore JSON backup** | `restore file/JSON_FILE_PATH`
-**Import CSV** | `import file/FILE_PATH`
-**Export CSV** | `export file/FILE_PATH`
+**[Import CSV](#importing-employees-import)** | `import file/FILE_PATH`<br>e.g., `import file/employees.csv`<br>Adds all valid CSV records; existing IDs are rejected.
+**[Export CSV](#exporting-employees-export)** | `export file/FILE_PATH`<br>e.g., `export file/exports/staff.csv`<br>Writes the complete roster, replacing an existing destination file.
 **Check**  | `check`
 **Clear**  | `clear`
 **[Delete](#deleting-an-employee-delete)** | `delete id/EMPLOYEE_ID`<br> e.g., `delete id/EMP-0042`<br>Deletes one active or archived employee by ID.
 **Edit**   | `edit id/EMPLOYEE_ID [n/NAME] [p/PHONE] [e/EMAIL] [d/DEPARTMENT] [r/ROLE] [m/MANAGER_ID]`<br>e.g., `edit id/E0001 p/91234567 e/alex@example.com`
 **Find**   | `find KEYWORD [MORE_KEYWORDS]`<br> e.g., `find James Jake`
 **Filter** | `filter [id/EMPLOYEE_ID] [n/NAME] [d/DEPARTMENT] [r/ROLE]`<br> e.g., `filter n/John d/Sales`, `filter d/Sales d/Finance r/Manager`
-**List**   | `list` for active employees; [`list archived`](#listing-archived-employees-list-archived) for archived employees. Both reset sorting.
+**[List](#listing-all-active-employees-list)** | `list`<br>Shows all active employees, clears the current view restriction and resets sorting to stored roster order.<br>Use [`list archived`](#listing-archived-employees-list-archived) for archived employees.
 **Stats**  | `stats`
 **Manager** | `manager id/EMPLOYEE_ID m/MANAGER_ID`
 **Unassign manager** | `unassign-manager id/EMPLOYEE_ID`

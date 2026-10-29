@@ -361,6 +361,24 @@ this read-only command.
 
 <puml src="diagrams/StatsSequenceDiagram.puml" alt="Interactions for summarising the active workforce" />
 
+### Data-quality check
+
+`CheckCommand` reads the complete roster through `Model#getAddressBook()` and excludes archived employees, so the
+current search and archive view do not affect it. It counts how many active employees have each phone number and each
+email. Phone numbers are compared exactly as stored. Emails are compared after `toLowerCase(Locale.ROOT)`, since
+addresses that differ only in letter case reach the same inbox. An employee is reported when their phone number or
+their email is shared with another active employee, and only once, even if both are shared or more than two employees
+share a value.
+
+The reported employees are ordered by employee ID, ignoring letter case. Each entry in the result shows the ID, the
+name and the reasons, `shared phone X` and `shared email Y`, separated by `; `. The email is shown as stored. The result
+starts with `Found N active employee(s) with data-quality issues:`. If nobody is reported, including when there are no
+active employees, the result is `No data-quality issues found.`
+
+`AddressBookParser` rejects any text after `check` or `stats` with `Invalid command format.` followed by `Usage: check`
+or `Usage: stats`. Like `stats`, `check` reports only: it does not modify employee records, the current filter, the
+sort order or the undo/redo history, and `LogicManager` does not save the employee file after it.
+
 ### Employee archiving
 
 `Employee` has an immutable boolean archive status. Active and archived employees remain in the same
@@ -401,12 +419,10 @@ never expose archived employees. `list archived` calls `Model#showArchivedEmploy
 in the same existing employee panel. `edit` preserves the target's archive status, while `delete` searches the complete
 stored list and can remove either status; session history can restore the removed record.
 
-`AddressBookParser` accepts only an empty argument string or the exact lowercase `archived` for `list`, after
-trimming surrounding whitespace. It constructs `ListCommand(false)` or `ListCommand(true)`. Both reset the sort
-comparator to roster order before installing their predicate. An empty archive displays
-`There are no archived employees.` An empty active list with archived records displays the archived count and a
-`list archived` hint. Listing does not commit a history step. Reporting views can include both active and archived
-employees, while `StatsCommand` and `CheckCommand` operate only on active records regardless of the displayed view.
+Both `list` variants reset the sort comparator to roster order before installing their status predicate. See
+[Listing employees](#listing-employees) for parsing, feedback, UI updates and history behavior. Reporting views can
+include both active and archived employees, while `StatsCommand` and `CheckCommand` operate only on active records
+regardless of the displayed view.
 
 #### Persistence and history
 
@@ -420,6 +436,55 @@ the data, history and view. Undo/redo preserves archive status and reporting rel
 view in effect when it runs. Restart loads the saved archive statuses but starts with fresh undo/redo history.
 `ArchiveCommandsTest`, `ArchiveViewIntegrationTest`, `ArchiveManagerFeedbackTest`, the individual parser tests and
 `ListCommandTest` cover status changes, saved data, view preservation, redundant requests and listing feedback.
+
+### Listing employees
+
+#### Parsing and view selection
+
+`AddressBookParser#parseCommand` handles `list` directly; there is no separate list parser. After trimming
+surrounding whitespace, an empty argument creates `ListCommand(false)` and exactly lowercase `archived` creates
+`ListCommand(true)`. Any other argument throws `ParseException` with `Invalid command format.` and
+`Usage: list [archived]`, before execution can change the current view or sorting. The command word is also
+case-sensitive, as for other commands.
+
+`ListCommand#execute` first calls `Model#resetEmployeeSortOrder`, then selects the requested status:
+
+* `list` calls `updateFilteredEmployeeList(Model.PREDICATE_SHOW_ALL_EMPLOYEES)`. The model combines that always-true
+  predicate with `!employee.isArchived()`, so only active employees appear.
+* `list archived` calls `showArchivedEmployees`, which installs `Employee::isArchived` directly.
+
+Both commands replace any previous name search, multi-field filter or reporting predicate. Clearing the
+`SortedList` comparator restores the stored employee order without reordering the underlying roster.
+
+#### Feedback, UI and persistence
+
+The command inspects `model.getFilteredEmployeeList()` after selecting the view. A non-empty view returns
+`Listed all active employees.` or `Listed all archived employees.` An empty archive returns
+`There are no archived employees.` An empty active view uses `getArchivedEmployeeCount()` to distinguish two cases:
+
+* Zero archived employees: `MESSAGE_EMPTY_LIST` gives the introductory guidance and the six required `add` fields.
+* One or more archived employees: `MESSAGE_EMPTY_ACTIVE_WITH_ARCHIVED` gives the count and a `list archived` hint,
+  using singular `employee` for one and plural `employees` otherwise.
+
+`ModelManager` retains one `FilteredList` over `VersionedAddressBook#getEmployeeList()` and one `SortedList` over
+that filtered list. `getFilteredEmployeeList()` exposes the sorted view, despite its historical method name.
+`MainWindow` supplies that same observable list to `EmployeeListPanel` when the UI is created. Predicate/comparator
+changes update the existing `ListView`; the list command does not reconstruct the panel or load records from disk.
+`EmployeeCard` shows the current one-based display index, employee details and manager text. Display indexes
+are positions in the current view, not employee IDs. Archived cards also show the `Archived` badge.
+
+`ListCommand` inherits `HistoryAction.NONE`, so `LogicManager` skips checkpoint creation, history commit and the
+automatic employee-file save. Employee data and the redo branch remain unchanged, including when the data file
+is unwritable. Undo/redo continue to use the current view rather than restoring a view cleared by `list`.
+
+The diagram shows both accepted forms after parsing, including the distinct empty-list results:
+
+<puml src="diagrams/ListSequenceDiagram.puml" alt="Selecting active or archived employees and producing list feedback" />
+
+`ListCommandTest` covers filtering/sort reset, status selection and empty-list feedback. `AddressBookParserTest`
+covers accepted forms and rejected arguments. `ModelManagerTest` verifies displayed sorting without changing
+stored order; `ArchiveViewIntegrationTest` covers switching views and preserving archived status.
+`HistoryTransactionTest` and `AtomicSaveLogicTest` verify that listing preserves redo and skips saving.
 
 ### Delete an employee by ID
 
@@ -663,18 +728,32 @@ order is not part of an undo/redo checkpoint and is not stored in the JSON file,
 
 ### CSV import and export
 
+#### Parsing and path confinement
+
 `ImportCommand` and `ExportCommand` extend the abstract `CsvFileCommand`, which holds the file path and the folder
 HuntR runs from. Both parsers use `ParserUtil.parseCsvFileArgument` to remove the `file/` parameter prefix and
 reject blank paths. Only the leading prefix is removed, so spaces and ` file/` within a path are preserved.
 Positional paths remain supported; `./file/staff.csv` explicitly addresses
 a directory named `file`. `ParserUtil.parseCsvFilePath` then checks that the path is relative and ends in `.csv`, and
 `CsvFileCommand#resolveFilePath` rejects a path that leads outside that folder once symbolic links are followed.
+The extension check ignores case. Paths are normalised before checking for a root or leading `..`; no shell-style
+quote removal or argument tokenisation is performed. Only the leading `file/` is removed, so the rest of the input
+is one path rather than a list of additional parameters. Invalid arguments produce a `ParseException` with the
+command-specific usage. Resolution errors, including broken symbolic links, become `CommandException`s.
+
+#### CSV representation and import validation
+
 `CsvUtil` converts between a list of values and one CSV record, quoting values that contain commas, quotes or line breaks.
 `CsvUtil.splitCsvRecords` splits only at line endings outside quoted values, preserves embedded line endings and
-tracks the starting physical line of each record. `parseCsvLine` then validates each complete record's quote syntax.
+tracks the starting physical line of each record for LF, CRLF and CR input. `parseCsvLine` then validates each complete
+record's quote syntax and unescapes doubled quotes. CSV syntax acceptance does not bypass employee field validation.
 
-`ExportCommand` writes the header in `ExportCommand.CSV_HEADER`, then one line per employee in the complete stored
-roster, including archived employees. It creates missing parent folders and replaces an existing file.
+`ExportCommand.CSV_COLUMNS` defines `id,name,phone,email,department,role,archived,managerId`. Import also accepts
+`LEGACY_CSV_COLUMNS` (seven columns ending in `archived`) and `REQUIRED_CSV_COLUMNS` (the first six columns).
+`readColumns` removes a UTF-8 BOM, trims and case-folds the header names, and requires one of these exact column
+orders. Every employee record must have the same number of values as its header. Missing archive status defaults
+to active; missing or blank manager IDs default to no manager. Archive values accept trimmed, case-insensitive
+`true`/`false`, with blank meaning `false`. Blank records after the header are skipped; empty and header-only files fail.
 
 The sequence diagram below shows a successful `import file/staff.csv`. `ImportCommand` reads the UTF-8 text, splits it into
 complete records, checks the header against the three accepted column lists, and parses each non-blank record with
@@ -682,9 +761,78 @@ the same `ParserUtil` methods as `add`. A record that is invalid, repeats an ear
 the command with its starting physical line number, including when earlier records contain quoted line breaks.
 `ReportingStructure.validate` then checks the managers of the existing and imported employees together. Only after
 every check passes does the command change the model, so a failed import adds no one. It adds every employee without
-a manager first and then sets the managers, so a manager may appear later in the file than their reports.
+a manager first and then sets the managers, so a manager may appear later in the file than their reports. Manager
+IDs are canonicalised to the stored spelling. Duplicate checks include the full active and archived roster and
+earlier CSV rows, comparing IDs case-insensitively; an import never overwrites an existing employee.
+
+Imported employees are appended in CSV row order. Success selects all active employees while retaining the current
+sort comparator, then returns `Imported <count> employee(s) from <path>`. `ImportCommand#getHistoryAction` returns
+`COMMIT`: `LogicManager` checkpoints before execution, commits the batch once and automatically saves it through
+`Storage`. Execution or save failure restores records, view and history. The result reaches the UI only after saving
+succeeds. Undo/redo navigate snapshots without rereading CSV. See
+[Checkpoints and transaction boundary](#checkpoints-and-transaction-boundary) for the shared transaction flow.
+
+Missing/non-regular input files, invalid UTF-8 and read failures have distinct messages. Field, quote, column-count,
+duplicate and manager-reference errors identify the record's starting physical line with
+`Nothing was imported. Row <number>: <problem>`. Whole-graph validation errors, such as cycles, use
+`Nothing was imported. <problem>` without a row number.
 
 <puml src="diagrams/ImportSequenceDiagram.puml" alt="Interactions for importing employees from a CSV file" />
+
+#### Export execution
+
+`ExportCommand` obtains `model.getAddressBook().getEmployeeList()`, independently of the filtered/sorted display.
+It writes `CSV_HEADER`, then one record per employee in stored order, including archived status and manager IDs.
+`Files.createDirectories` creates missing parents and `FileUtil.writeToFile` writes UTF-8 with platform line endings
+and a trailing line ending. An empty roster exports the header only; import deliberately rejects that file.
+
+Export replaces an existing destination without confirmation. It uses an ordinary file write, so JSON's atomic
+replacement and access-protection guarantees do not apply; a failed write does not promise to preserve an existing
+CSV's bytes. `IOException` becomes the export-specific `Could not write to <path>...` error. Export inherits the
+default `HistoryAction.NONE`, so `LogicManager` creates no checkpoint, commits no history and skips the automatic
+employee-file save. The view, sort and redo branch remain unchanged; output files are outside undo/redo.
+
+<puml src="diagrams/ExportSequenceDiagram.puml" alt="Exporting the complete roster without changing employee history" />
+
+### JSON data backup
+
+`AddressBookParser` directly creates `BackupCommand` for `backup` and rejects non-blank arguments with usage.
+The default destination is `data/backups`, relative to the process working directory, rather than a path supplied
+by the user or the configured employee-data path. `BackupCommand` reads the complete in-memory roster, including
+archived and hidden employees, and passes it to `JsonAddressBookStorage#saveNewAddressBook`. The JSON contains
+employee fields, archive status, manager IDs and roster order, but excludes preferences, views and undo/redo history.
+An empty roster is a valid snapshot.
+
+`Clock.systemDefaultZone()` supplies the local timestamp. The filename is
+`huntr-yyyyMMdd-HHmmss-0000000000.json`; a ten-digit counter begins at zero for each invocation and increases when
+an occupied name causes `FileAlreadyExistsException`. The command retries only if the destination exists with
+`NOFOLLOW_LINKS`, so an existing symbolic link also reserves a name. Other I/O failures propagate to the
+backup-specific error, retaining the cause. Existing backups are never overwritten.
+
+The storage layer serialises the snapshot before publishing it. It creates missing parent folders, writes and
+forces a protected sibling temporary file, then publishes the complete file with a hard link that refuses an
+existing destination. Successful link creation is the commit point; temporary-name cleanup is best effort.
+See [Atomic employee-file saving](#atomic-employee-file-saving) for access protections, failure semantics and
+the hard-link requirement. This differs from export's ordinary overwrite and the main data file's atomic replacement.
+
+Success returns `Backed up <count> employee(s) to <path>`; all `IOException`s become
+`Could not save the backup to <path>. Check that you are allowed to write to that folder.`
+Backup inherits `HistoryAction.NONE`: it preserves employee data, view, sort and redo, and does not trigger another
+automatic save. Undo cannot remove snapshots. The separate [`restore` implementation](#json-backup-restoration)
+validates a saved JSON snapshot and replaces the roster as a data-changing transaction.
+
+<puml src="diagrams/BackupSequenceDiagram.puml" alt="Creating a new JSON backup and retrying occupied filenames" />
+
+#### Validation coverage
+
+`ImportCommandParserTest` and `ExportCommandParserTest` cover prefixed and positional paths, embedded `file/`,
+spaces, invalid extensions and path confinement. `CsvUtilTest` covers quoting and multiline record boundaries.
+`ImportCommandTest` covers accepted headers, UTF-8/BOM, validation, duplicates, forward manager references,
+relationship round trips and failures without partial import. `ExportCommandTest` covers complete-roster output,
+archive values, quoting, header-only output, overwriting, parent creation and symbolic-link confinement.
+`BackupCommandTest` covers hidden employees, empty snapshots, JSON round trips, filename collisions and I/O errors.
+`HistoryCommandTest` and `HistoryTransactionTest` cover batch history and save rollback. `AtomicSaveLogicTest`
+checks the persistence boundary, including the absence of automatic employee-file saves for export/backup.
 
 ### Employee history and in-memory rollback
 
@@ -894,10 +1042,13 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 | `*` | Expert user | Record who an employee reports to | Understand the company’s reporting structure |
 | `*` | Expert user | Update who an employee reports to | Keep records correct after a reorganisation or resignation |
 | `* * *` | Long-time user | Easily search up contact details with the commands | Save time instead of using traditional address / contact books |
-| `* *` | Long-time user | Import employee data from a supported file | Initialise or restore the company’s records efficiently |
+| `* *` | Long-time user | Import a validated CSV batch without overwriting existing IDs | Add employee records efficiently without leaving a partially imported roster |
+| `* *` | HR administrator | Export all active and archived employees, including reporting relationships, to CSV | Review the complete roster in a spreadsheet application |
+| `* * *` | Careful user | Save a separate JSON backup of the complete employee roster | Retain a snapshot I can restore after an unwanted change |
 | `* *` | Long-time user | Filter employees by search criteria | Gather specific organisation-wide data efficiently |
 | `* * *` | Basic user | Add an employee's information | the app reflects my company's workforce |
-| `* * *` | Basic user | List all employees | see the full roster in one place |
+| `* * *` | Basic user | List all active employees with their details in stored order | Review the current workforce in one place |
+| `* *` | HR administrator | Return to the complete active list after searching, filtering, sorting or viewing archived records | Continue reviewing the workforce without changing employee data |
 | `* * *` | Basic user | Delete an active or archived employee by ID, even when hidden by a search | Remove the intended record without changing my view |
 | `* *` | Careful user | Undo a deletion and its reporting changes during the same session | Recover a mistakenly deleted employee and their relationships |
 | `* * *` | Basic user | Find an employee by name | quickly retrieve their information without browsing the whole list |
@@ -910,6 +1061,7 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 | `*` | Busy user | Sort employees by a chosen field (e.g. name or department) | scan records in the order that's useful to me |
 | `*` | Busy user | Look up an employee's leave status with one command | check quickly if they're available for a meeting |
 | `*` | Long-time user | Identify employees who don't appear connected to anyone else in the organisation | investigate whether my workforce information is incomplete |
+| `*` | Long-time user | Identify employees who share a phone number or email with another employee | find and correct data-entry mistakes |
 | `*` | Long-time user | Count employees by department | quickly see the size of each team |
 | `* *` | HR administrator | Archive an employee while retaining their details and reporting relationships | Keep former employees' records outside the active roster |
 | `* *` | HR administrator | List archived employees and restore one by ID | Bring an employee back without re-entering their information |
@@ -1115,6 +1267,54 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 
     Use case resumes at step 3.
 
+**Use case: View workforce statistics**
+
+**MSS**
+
+1. User requests the workforce statistics using `stats`.
+2. HuntR counts the active employees, in total and for each department and role.
+3. HuntR displays the total and the two breakdowns in the result box, with the largest group first.
+
+    Use case ends.
+
+**Extensions**
+
+* 1a. The command contains text after `stats`.
+
+  * 1a1. HuntR shows `Invalid command format.` followed by the usage. Records and the displayed list remain unchanged.
+
+    Use case resumes at step 1.
+
+* 2a. There are no active employees.
+
+  * 2a1. HuntR displays a total of `0` and `(none)` under both headings.
+
+    Use case ends.
+
+**Use case: Check data quality**
+
+**MSS**
+
+1. User requests a data-quality check using `check`.
+2. HuntR finds the active employees who share a phone number or an email with another active employee.
+3. HuntR displays the number of such employees, and for each of them the ID, name and shared contact details.
+
+    Use case ends.
+
+**Extensions**
+
+* 1a. The command contains text after `check`.
+
+  * 1a1. HuntR shows `Invalid command format.` followed by the usage. Records and the displayed list remain unchanged.
+
+    Use case resumes at step 1.
+
+* 2a. No active employee shares a phone number or an email.
+
+  * 2a1. HuntR displays `No data-quality issues found.`
+
+    Use case ends.
+
 **Use case: View employee data**
 
 **MSS**
@@ -1192,12 +1392,37 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
   * 4a1. HuntR suggests `list` to see the employee; any remaining archived records stay visible in an archive view.
     Use case ends.
 
+**Use case: List active employees**
+
+**MSS**
+
+1. User enters `list` without arguments.
+2. HuntR clears the previous view restriction and sort order, and displays all active employees in stored roster order.
+3. HuntR displays `Listed all active employees.` Each card includes the employee's details and manager assignment.
+
+    Employee records and undo/redo history remain unchanged. Use case ends.
+
+**Extensions**
+
+* 1a. Extra arguments other than exactly lowercase `archived` are supplied.
+  * 1a1. HuntR displays `Invalid command format.` and `Usage: list [archived]`, retaining the previous view and sorting.
+    Use case resumes at step 1.
+* 1b. User requests `list archived`.
+  * 1b1. HuntR follows the **List archived employees** use case instead.
+    Use case ends.
+* 2a. There are no active or archived employees.
+  * 2a1. HuntR displays an empty panel and introductory guidance containing the `add` format.
+    Use case ends.
+* 2b. There are no active employees, but archived employees exist.
+  * 2b1. HuntR displays an empty active panel and the archived count with a `list archived` hint.
+    Use case ends.
+
 **Use case: List archived employees**
 
 **MSS**
 
 1. User enters `list archived`.
-2. HuntR replaces the current view with all archived employees in roster order.
+2. HuntR replaces the current view with all archived employees in roster order, resets sorting and shows the `Archived` badge on their cards.
 3. HuntR displays `Listed all archived employees.` Employee data and undo/redo history are unchanged.
 
     Use case ends.
@@ -1253,6 +1478,81 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 
   * 3c1. HuntR restores the employee records, reporting relationships, history and view and displays the save error.
 
+    Use case ends.
+
+**Use case: Import employees from CSV**
+
+**MSS**
+
+1. User requests `import file/FILE_PATH` for a UTF-8 CSV file inside the folder where HuntR runs.
+2. HuntR validates the path, reads the file and validates the header, every employee record, ID uniqueness and reporting relationships.
+3. HuntR appends the employees in CSV order, records the batch as one undo step and saves the updated roster.
+4. HuntR shows all active employees with the current sort order and reports the number imported and the input path.
+
+    Use case ends.
+
+**Extensions**
+
+* 1a. The path is missing, blank, invalid, outside the app folder or lacks a `.csv` extension.
+  * 1a1. HuntR reports the path error; parser errors also include command usage. No records or view change.
+    Use case resumes at step 1.
+* 2a. The file is missing, unreadable, not UTF-8, empty, header-only or has an unsupported header.
+  * 2a1. HuntR reports the relevant error without adding employees.
+    Use case ends.
+* 2b. A record is malformed, has invalid fields, duplicates an ID in the file or complete roster, or references an unknown manager.
+  * 2b1. HuntR rejects the entire batch and identifies the record's starting physical line and problem.
+    Use case ends.
+* 2c. The combined reporting graph contains a cycle.
+  * 2c1. HuntR rejects the entire batch with the relationship error.
+    Use case ends.
+* 3a. Execution or saving fails before the data file is replaced.
+  * 3a1. HuntR restores the previous roster, view and undo/redo history and reports the failure.
+    Use case ends.
+
+**Use case: Export employees to CSV**
+
+**MSS**
+
+1. User requests `export file/FILE_PATH` for a CSV destination inside the folder where HuntR runs.
+2. HuntR validates the path and obtains every active and archived employee in stored order.
+3. HuntR creates missing parent folders and writes the UTF-8 eight-column CSV, replacing an existing destination without confirmation.
+4. HuntR reports the exported count and path. Employee data, view, sort and history remain unchanged.
+
+    Use case ends.
+
+**Extensions**
+
+* 1a. The path is missing, blank, invalid, outside the app folder or lacks a `.csv` extension.
+  * 1a1. HuntR reports the path error; parser errors also include command usage. No file is written.
+    Use case resumes at step 1.
+* 2a. The roster is empty.
+  * 2a1. HuntR writes the header only and reports zero exported employees.
+    Use case ends.
+* 3a. A folder cannot be created or the destination cannot be written.
+  * 3a1. HuntR reports the export-specific write error. Employee data and history remain unchanged; existing CSV bytes are not guaranteed to survive a failed overwrite.
+    Use case ends.
+
+**Use case: Back up employee data**
+
+**MSS**
+
+1. User enters `backup` without arguments.
+2. HuntR obtains the complete roster and chooses a timestamped JSON filename in `data/backups`.
+3. HuntR saves a new snapshot without overwriting earlier backups, retrying with the next counter if the name is occupied.
+4. HuntR reports the employee count and backup path. Employee data, view, sort and undo/redo history remain unchanged.
+
+    Use case ends.
+
+**Extensions**
+
+* 1a. Extra arguments are supplied.
+  * 1a1. HuntR reports invalid command format and backup usage, without creating a snapshot.
+    Use case resumes at step 1.
+* 2a. The roster is empty.
+  * 2a1. HuntR still saves a valid empty JSON snapshot and reports zero employees.
+    Use case ends.
+* 3a. The destination cannot be written or the filesystem lacks the required hard links or access protections.
+  * 3a1. HuntR reports the backup-specific write error. Earlier snapshots, employee data, view and history remain unchanged.
     Use case ends.
 
 *{More to be added}*
@@ -1377,16 +1677,54 @@ For each rejected command, verify that no record is added or changed.
 
 ### Listing employees
 
-**Prerequisites:** Launch HuntR with at least two employees whose names are different.
+**Prerequisites:** Use a disposable writable installation with an empty roster (no active or archived employees).
+Add these employees in the order shown, then archive `L1002`. Restore this starting state before each independent
+test below. `clear` alone does not remove archived employees.
 
-1. Enter `find Alex`.<br>
-   Expected: Only employees whose names contain the whole-word keyword `Alex`, ignoring case, are displayed.
-2. Enter `list`.<br>
-   Expected: HuntR displays `Listed all active employees.` and restores the complete active employee roster.
-3. Enter `clear`, followed by `list`.<br>
-   Expected: After `clear`, all active employee records are removed. If archived records remain, `list` displays
-   an empty active roster and suggests `list archived` with their count. Otherwise, the message begins with
-   `You don’t have any employees yet.`, followed by the `add` command format.
+```text
+add id/L1003 n/Zoe Tan p/91234561 e/zoe.tan@example.com d/Engineering r/Manager
+add id/L1001 n/Alice Lim p/91234562 e/alice.lim@example.com d/Sales r/Analyst m/L1003
+add id/L1002 n/Bob Ng p/91234563 e/bob.ng@example.com d/Engineering r/Engineer m/L1003
+archive id/L1002
+```
+
+1. Enter `list`, then repeat with leading/trailing spaces.<br>
+   Expected: `Listed all active employees.` Both commands show `L1003`, then `L1001`, numbered 1 and 2. Their names,
+   IDs, phone numbers, emails, departments, roles and manager text are visible. `L1002` is excluded. Alice's manager
+   reads `Reports to L1003`; Zoe's reads `Unassigned`.
+2. Enter `find Alice`, then `list`; repeat with `find Nobody`, then `list`.<br>
+   Expected: Both searches are cleared by `list`, which shows both active employees in the original order.
+   Repeat with `filter d/Sales` and `team id/L1003` before `list`: both view restrictions are cleared, and the
+   archived report shown by `team` is excluded again.
+3. Enter `sort id asc`, then `list`.<br>
+   Expected: Sorting shows `L1001`, then `L1003`; `list` restores `L1003`, then `L1001`. The stored order is unchanged.
+4. Enter `list archived`, then `list`.<br>
+   Expected: The archive view contains only `L1002` with an `Archived` badge and `Listed all archived employees.`
+   The second command returns to the two active employees without changing anyone's status.
+5. Enter `find Alice` and `sort id asc`. Try `list 1`, `list all`, `list d/Engineering`, `list ARCHIVED`,
+   `list Archived` and `list archived extra` separately.<br>
+   Expected: Each reports `Invalid command format.` followed by `Usage: list [archived]`. Alice remains the only
+   visible employee and the ascending-ID sort stays selected. Enter `filter d/Sales d/Engineering`:
+   `L1001` precedes `L1003`, confirming the failed commands did not reset sorting.
+6. Enter `edit id/L1001 r/Senior Analyst`, `undo`, `list`, `list archived`, then `redo`.<br>
+   Expected: Redo remains available after both list commands and restores Alice's role to Senior Analyst.
+   The archived view remains selected. `list` adds no history step and cannot itself be undone.
+7. Archive `L1003` and `L1001`, then enter `list`.<br>
+   Expected: An empty active panel and
+   ``There are no active employees. Use `list archived` to see the 3 archived employees.``
+   `list archived` displays all three records in stored order. Unarchive `L1003` and `L1001`, then enter `list`:
+   the original two active employees return with unchanged details.
+8. In a separate empty roster, enter `list`, then `list archived`.<br>
+   Expected: `list` displays the four-line `MESSAGE_EMPTY_LIST` guidance reproduced in the UG; `list archived`
+   displays `There are no archived employees.` Add one employee, archive them and enter `list`:<br>
+   Expected: The hint says `1 archived employee.` with singular wording.
+9. Record the employee data file's bytes and last-write time after setup. Enter `list`, `find Alice`, `list archived`
+   and `list`.<br>
+   Expected: The employee file is unchanged. Listing does not create an absent data file either. In a disposable
+   installation, repeat with the employee data file read-only: listing succeeds without a save-permission error.
+10. Add enough active employees for the panel to scroll, then enter `list`.<br>
+    Expected: Every active employee is reachable by scrolling and numbering follows the current view. Long values
+    fit within their cards, with full name, role, contact, department and manager details available through tooltips.
 
 ### Finding employees
 
@@ -1488,6 +1826,38 @@ Engineering department, `E0003` is in Finance and `E0006` is in Sales.
    is followed by the `sort` usage. The displayed order does not change.
 7. Enter `list`.<br>
    Expected: HuntR displays all employees in the order in which they were added, from `E0001` to `E0007`.
+
+### Viewing workforce statistics
+
+**Prerequisites:** Launch HuntR with the original six sample employees.
+
+1. Enter `stats`.<br>
+   Expected: HuntR displays `Total active employees: 6`. Under `By department:`, `Engineering: 2` comes first, followed by `Finance`, `Human Resources`, `Operations` and `Sales` with 1 each. Under `By role:`, each of the six roles has 1, in alphabetical order.
+2. Enter `find Alex`, then `stats`.<br>
+   Expected: The counts are the same as in step 1, and the displayed list still shows only the employees found.
+3. Enter `list`, `archive id/E0006`, then `stats`.<br>
+   Expected: The total is 5, and `Sales` and `Account Manager` no longer appear. Enter `list archived`, then `stats` again; the counts do not change.
+4. Enter `stats d/Ops`.<br>
+   Expected: HuntR displays `Invalid command format.` followed by `Usage: stats`, and nothing changes.
+5. Enter `clear`, then `stats`.<br>
+   Expected: HuntR displays `Total active employees: 0` with `(none)` under both headings. Enter `undo` to bring back the five active employees.
+
+### Checking data quality
+
+**Prerequisites:** Launch HuntR with the original six sample employees, none of which share a phone number or an email.
+
+1. Enter `check`.<br>
+   Expected: HuntR displays `No data-quality issues found.`
+2. Enter `add id/E0007 n/Dup Phone p/93210283 e/dup1@example.com d/Finance r/Accountant`, then `check`.<br>
+   Expected: HuntR displays `Found 2 active employee(s) with data-quality issues:` followed by `E0003 (Charlotte Oliveiro): shared phone 93210283` and `E0007 (Dup Phone): shared phone 93210283`.
+3. Enter `add id/E0008 n/Dup Mail p/80000001 e/CHARLOTTE@example.com d/Finance r/Accountant`, then `check`.<br>
+   Expected: HuntR displays `Found 3 active employee(s) with data-quality issues:`. `E0003` appears once with `shared phone 93210283; shared email charlotte@example.com`, and `E0008 (Dup Mail): shared email CHARLOTTE@example.com` is added. The emails differ only in letter case and are still flagged.
+4. Enter `find Alex`, then `check`.<br>
+   Expected: HuntR displays the same `Found 3 active employee(s) with data-quality issues:` report as in step 3, listing `E0003`, `E0007` and `E0008`, while the displayed list still shows only `Alex Yeoh`. The search does not limit the check.
+5. Enter `list`, `archive id/E0007`, then `check`.<br>
+   Expected: HuntR displays `Found 2 active employee(s) with data-quality issues:`, listing `E0003` and `E0008` for the shared email only. The archived employee is not reported and no longer causes `E0003` to be flagged for the phone number.
+6. Enter `check x`.<br>
+   Expected: HuntR displays `Invalid command format.` followed by `Usage: check`, and nothing changes.
 
 ### Archiving and restoring employees
 
@@ -1693,6 +2063,101 @@ Use this permission test only on a disposable copy of the data.
 2. Close HuntR and try `java -Dhuntr.maxUndoHistory=-2 -jar huntr.jar`, then
    `java -Dhuntr.maxUndoHistory=invalid -jar huntr.jar`.<br>
    Expected: Both launches fail because the configured history limit is invalid; neither changes the saved roster.
+
+### Importing employees from CSV
+
+**Prerequisites:** Use a disposable writable launch folder with the current `huntr.jar`. Start with an empty roster
+(no active or archived employees) in a separate test data file. Save the two-record CSV example from the
+[UG import section](UserGuide.md#importing-employees-import) as UTF-8 `employees.csv` in that launch folder.
+Restore this starting state before each independent test. Do not use `clear` to remove archived records.
+
+1. Enter `find Nobody`, `sort id desc`, then `import file/employees.csv`.<br>
+   Expected: `Imported 2 employee(s) from employees.csv`. The active view shows `C1001`, with the descending-ID sort
+   retained. `list archived` shows `C1002`, with manager `C1001` and department `Research, Development`.
+   Exit and relaunch: both records, archive status and the manager assignment persist.
+2. Import the example, enter `undo`, then rename the input CSV outside HuntR and enter `redo`.<br>
+   Expected: One undo removes both imported employees. Redo restores both without reading the CSV again.
+3. Import the example, enter `find Nobody`, then import it again.<br>
+   Expected: `Nothing was imported. Row 2: An employee with Employee ID C1002 already exists.` No data or view changes.
+   The archived employee reserves its ID. Repeat using `c1002` in the CSV; it is still rejected.
+4. From the empty starting state, change the second employee's ID to `c1002` and blank the first row's manager ID.<br>
+   Expected: The import identifies row 3 and says that its ID is also used on row 2. Neither employee is added.
+5. Independently change the second record's phone to `12`, remove one value from that record, use `yes` for
+   archive status, leave a quoted field unclosed, or use an unknown manager ID.<br>
+   Expected: Each import reports `Nothing was imported. Row <number>: <problem>` and adds no employees, including
+   when the preceding record is valid. Give both employees each other as manager:<br>
+   Expected: `Nothing was imported. Reporting relationships cannot contain a cycle.` No employee is added.
+6. Make separate six-column and seven-column versions by removing the trailing header and data fields together.<br>
+   Expected: Both import. Six-column records are active with no manager; seven-column records retain archive
+   status with no manager. Also verify mixed-case, space-padded header names and a UTF-8 BOM are accepted.
+7. Independently test a missing file, an empty file, a header-only file, reordered header columns and a non-UTF-8 file.<br>
+   Expected: Each produces its corresponding import error and leaves records, view and history unchanged.
+8. In a six-column file, put a quoted name `Alice` followed by a line break and `Smith` on physical lines 2–3,
+   leave line 4 blank and put a record with phone `12` on line 5. Test LF and CRLF files.<br>
+   Expected: The error identifies row 5 and imports nothing. Correct the phone and import again:<br>
+   Expected: Both records import, and the multiline name is normalised to `Alice Smith`.
+9. Enter `import`, `import file/`, `import file/staff.txt`, `import file/../staff.csv` and an absolute CSV path separately.<br>
+   Expected: Input errors with import usage; no data, view or history changes. A symbolic link leading outside the
+   launch folder is also rejected, without usage. Valid paths containing spaces or an embedded ` file/` resolve as
+   one path; `import employees.csv` and `import file/employees.csv` read the same file.
+10. Make the main employee data file unwritable in a disposable installation, keeping the CSV readable. Attempt an import.<br>
+    Expected: An automatic-save error replaces the success message. No imported employees remain; the previous
+    view, undo/redo history and saved data are preserved. Restore write access before continuing.
+
+### Exporting employees to CSV
+
+**Prerequisites:** Import the UG's two-record example into an empty disposable roster. `C1001` is active and
+`C1002` is archived and reports to `C1001`. Keep both records unless a step specifies otherwise.
+
+1. Enter `find Nobody`, `sort id desc`, then `export file/exports/staff.csv`.<br>
+   Expected: Missing folders are created and `Exported 2 employee(s) to <path>` is shown with the platform's path
+   separators. The empty filtered view remains. Open the file in a UTF-8 editor: the header is
+   `id,name,phone,email,department,role,archived,managerId`; `C1002` precedes `C1001` in stored order, despite the
+   view sort. The department containing a comma is quoted; archive status and manager ID are present.
+2. Replace the output file's contents with `old contents`, then repeat the export.<br>
+   Expected: The file is replaced without confirmation. Also export to `my exports/staff.csv` using
+   `export file/my exports/staff.csv`; no literal `file` directory is added to the path.
+3. In a separate empty test installation, import the exported CSV.<br>
+   Expected: Both employees, ID spelling, row order, archive status and manager assignment round-trip correctly.
+4. Create a redo branch with `edit id/C1001 r/Director`, then `undo`. Export and enter `redo`.<br>
+   Expected: Export preserves redo; the role becomes Director. The export still contains the pre-redo role Manager.
+   Undo/redo do not rewrite or delete the CSV. Export itself adds no history step.
+5. Enter `export`, `export file/`, `export file/staff.txt`, `export file/../staff.csv` and an absolute CSV path separately.<br>
+   Expected: Each reports a path/format error with export usage and creates no file. An outward symbolic link is
+   also rejected. Exporting to an existing directory named `blocked.csv` produces the export-specific write error;
+   employee data, view and history remain unchanged.
+6. In a separate empty roster, enter `export file/empty.csv`, then `import file/empty.csv`.<br>
+   Expected: Export reports zero employees and writes only the header. Import reports that the file has no employee
+   rows to import; the roster remains empty.
+
+### Backing up employee data
+
+**Prerequisites:** Use a disposable writable installation on a filesystem supporting hard links and the access
+protections described under [Atomic employee-file saving](#atomic-employee-file-saving). Import the UG's two-record
+CSV example into an empty roster. Use the actual backup path reported by each command in subsequent steps.
+
+1. Enter `find Nobody`, `sort id desc`, then `backup`.<br>
+   Expected: `Backed up 2 employee(s) to <path>`. `data/backups` is created if absent. The filename has the form
+   `huntr-yyyyMMdd-HHmmss-0000000000.json`, using local time. The empty view and sort remain selected. Inspect JSON:
+   it contains both employees in stored order, archive status and manager IDs, with no preferences or history.
+2. Enter `backup` repeatedly.<br>
+   Expected: Every snapshot has its own filename and earlier files retain their bytes. When multiple calls occur
+   in the same second, the ten-digit counter increases; otherwise the timestamp changes. No snapshot is overwritten.
+3. Enter `edit id/C1001 r/Director`, `undo`, `backup`, then `redo`.<br>
+   Expected: Backup preserves redo and the final role is Director. The new snapshot retains role Manager.
+   Enter `restore file/` followed by that snapshot's path, then `list archived`:<br>
+   Expected: Both employees are restored, with role Manager for `C1001` and the original manager/archive values for
+   `C1002`. Undoing restoration recovers Director; backups remain on disk.
+4. Enter `backup now` and `backup file/custom.json` separately.<br>
+   Expected: Invalid command format with backup usage. No snapshot is created and records/view/history stay unchanged.
+5. In a separate installation with an empty roster, enter `backup`.<br>
+   Expected: Success reports zero employees; the JSON contains an empty employee array and is a valid restore input.
+6. With HuntR closed in another disposable installation, create a regular file at `data/backups` instead of a
+   directory. Launch and enter `backup`.<br>
+   Expected: `Could not save the backup to <path>. Check that you are allowed to write to that folder.`
+   No success message or automatic employee-file save occurs, and records, view and history stay unchanged.
+   Restore the test folder afterwards. Filesystems without hard links or required access protections likewise
+   report the backup-specific error without publishing an empty final snapshot.
 
 ### Saving data
 

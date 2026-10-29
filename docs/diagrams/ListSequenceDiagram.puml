@@ -1,0 +1,59 @@
+@startuml
+!include style.puml
+skinparam ArrowFontStyle plain
+
+participant ":LogicManager" as Logic LOGIC_COLOR
+participant "command:ListCommand" as List LOGIC_COLOR
+participant "model:ModelManager" as Model MODEL_COLOR
+participant "filteredEmployees:FilteredList" as Filtered MODEL_COLOR
+participant "sortedEmployees:SortedList" as Sorted MODEL_COLOR
+
+note over Logic, List
+AddressBookParser constructs ListCommand(false) for list,
+or ListCommand(true) for exactly list archived.
+Invalid arguments fail before execution and preserve the view/sort.
+end note
+
+Logic -> List : execute(model)
+activate List
+List -> Model : resetEmployeeSortOrder()
+Model -> Sorted : setComparator(null)
+note right of Sorted : Restore stored roster order.
+
+alt list (active employees)
+    List -> Model : updateFilteredEmployeeList(\nPREDICATE_SHOW_ALL_EMPLOYEES)
+    Model -> Filtered : setPredicate(active status AND predicate)
+else list archived
+    List -> Model : showArchivedEmployees()
+    Model -> Filtered : setPredicate(Employee::isArchived)
+end
+
+note over Filtered, Sorted
+The existing observable view updates EmployeeListPanel's ListView.
+Cards are numbered from 1 in the resulting view.
+No employee record is changed or reloaded from disk.
+end note
+
+List -> Model : getFilteredEmployeeList()
+Model --> List : sorted view
+alt view is non-empty
+    List -> List : choose active / archived success message
+else empty archive view
+    List -> List : choose MESSAGE_EMPTY_ARCHIVE
+else empty active view
+    List -> Model : getArchivedEmployeeCount()
+    Model --> List : archivedCount
+    alt archivedCount == 0
+        List -> List : choose MESSAGE_EMPTY_LIST (add guidance)
+    else archivedCount > 0
+        List -> List : choose MESSAGE_EMPTY_ACTIVE_WITH_ARCHIVED\n(count and list archived hint)
+    end
+end
+List --> Logic : CommandResult(feedback)
+deactivate List
+
+note over Logic, Model
+HistoryAction.NONE: no checkpoint, history commit or employee-file save.
+Available undo/redo steps remain unchanged.
+end note
+@enduml
