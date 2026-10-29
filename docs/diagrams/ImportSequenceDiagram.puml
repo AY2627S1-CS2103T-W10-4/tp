@@ -52,6 +52,8 @@ activate ImportCommand
 
 ImportCommand -> ImportCommand : resolveFilePath()
 ImportCommand -> ImportCommand : readRecords(path)
+ImportCommand -> CsvUtil : splitCsvRecords(UTF-8 text)
+CsvUtil --> ImportCommand : complete records with physical line numbers
 
 ImportCommand -> CsvUtil : parseCsvLine(header)
 activate CsvUtil
@@ -68,6 +70,11 @@ loop each non-blank record
     activate Model
     Model --> ImportCommand : false
     deactivate Model
+end
+
+loop each imported employee
+    ImportCommand -> ReportingStructure : withCanonicalManager(combined, employee)
+    ReportingStructure --> ImportCommand : employee with canonical manager ID
 end
 
 ImportCommand -> ReportingStructure : validate(combined)
@@ -103,6 +110,14 @@ deactivate CommandResult
 ImportCommand --> LogicManager : r
 deactivate ImportCommand
 
-[<-- LogicManager
+note over LogicManager, Model
+LogicManager creates a checkpoint before execute.
+After execute returns, it commits the import as one history step
+and saves the complete roster through Storage before returning r.
+Execution or save failure restores records, view and history.
+See CommandTransaction for the shared transaction flow.
+end note
+
+[<-- LogicManager : r (only after successful save)
 deactivate LogicManager
 @enduml
