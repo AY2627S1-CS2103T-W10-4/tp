@@ -56,6 +56,8 @@ public class EmployeeCard extends UiPart<Region> {
         contact.setText(employee.getPhone().value + "  \u00B7  " + employee.getEmail().value);
         avatar.setText(Initials.of(employee.getName().fullName));
         department.setText(employee.getDepartment().value);
+        avatar.setStyle(DepartmentColour.avatarStyle(employee.getDepartment().value));
+        department.setStyle(DepartmentColour.chipStyle(employee.getDepartment().value));
         archivedBadge.setVisible(employee.isArchived());
         archivedBadge.setManaged(employee.isArchived());
         role.setText(employee.getRole().value);

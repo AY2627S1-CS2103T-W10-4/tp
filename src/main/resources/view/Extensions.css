@@ -1,21 +1,21 @@
 
 .error {
-    -fx-border-color: #d97972 !important;
-    -fx-text-fill: #e7e3da !important;
+    -fx-border-color: #c96f6b !important;
+    -fx-text-fill: #d8d9d5 !important;
 }
 
 .list-cell:empty {
     /* Empty cells will not have alternating colours */
-    -fx-background-color: #0b1420;
+    -fx-background-color: #080a0a;
 }
 
 .tag-selector {
     -fx-border-width: 1;
-    -fx-border-color: #f2a33a;
-    -fx-border-radius: 3;
-    -fx-background-radius: 3;
+    -fx-border-color: #00b8b5;
+    -fx-border-radius: 1;
+    -fx-background-radius: 1;
 }
 
 .tooltip-text {
-    -fx-text-fill: #e7e3da;
+    -fx-text-fill: #d8d9d5;
 }

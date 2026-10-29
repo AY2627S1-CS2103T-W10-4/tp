@@ -1,13 +1,14 @@
-/* HuntR's compact dark design system. Keep behavioural state in controllers and visual state here. */
+/* HuntR's terminal-inspired dark design system. Visual state belongs here; behaviour remains in controllers. */
 .root {
     -fx-font-family: "JetBrains Mono", "SFMono-Regular", "Cascadia Mono", "Consolas", "Liberation Mono", "Monospaced";
     -fx-font-size: 13px;
-    -fx-base: #101c2b;
-    -fx-background: #0b1420;
-    -fx-control-inner-background: #101c2b;
-    -fx-focus-color: #f2a33a;
-    -fx-faint-focus-color: rgba(242, 163, 58, 0.10);
-    -fx-accent: #f2a33a;
+    -fx-font-weight: 500;
+    -fx-base: #0d1010;
+    -fx-background: #080a0a;
+    -fx-control-inner-background: #0d1010;
+    -fx-focus-color: #00b8b5;
+    -fx-faint-focus-color: rgba(0, 184, 181, 0.10);
+    -fx-accent: #168e8d;
 }
 
 .app-shell,
@@ -15,123 +16,145 @@
 .stack-pane,
 .employee-section,
 .employee-list-panel {
-    -fx-background-color: #0b1420;
+    -fx-background-color: #080a0a;
 }
 
 .label {
-    -fx-text-fill: #9ba6b2;
+    -fx-text-fill: #929896;
     -fx-opacity: 1;
 }
 
 .pane-with-border {
-    -fx-background-color: #0b1420;
-    -fx-border-color: #233448;
+    -fx-background-color: #080a0a;
+    -fx-border-color: #303635;
     -fx-border-width: 1 0 0 0;
 }
 
-.command-section {
-    -fx-background-color: #0b1420;
+.command-section,
+.result-section {
+    -fx-background-color: #080a0a;
     -fx-border-width: 0;
 }
 
-.result-section {
-    -fx-background-color: #0b1420;
-    -fx-border-color: #233448;
-    -fx-border-width: 0 0 1 0;
-}
-
+/* Quiet application chrome with hard editor-like divisions. */
 .menu-bar {
-    -fx-background-color: #101c2b;
-    -fx-border-color: #233448;
+    -fx-background-color: #0d1010;
+    -fx-border-color: #303635;
     -fx-border-width: 0 0 1 0;
-    -fx-padding: 1 8 1 8;
+    -fx-padding: 0 8 0 8;
 }
 
 .menu-bar .label {
     -fx-font-size: 12px;
-    -fx-text-fill: #9ba6b2;
+    -fx-text-fill: #929896;
 }
 
 .menu:hover,
 .menu:showing {
-    -fx-background-color: #173f67;
+    -fx-background-color: #141818;
+}
+
+.menu:hover .label,
+.menu:showing .label {
+    -fx-text-fill: #b8bcba;
 }
 
 .context-menu {
-    -fx-background-color: #101c2b;
-    -fx-border-color: #233448;
+    -fx-background-color: #0d1010;
+    -fx-border-color: #303635;
     -fx-border-width: 1;
-    -fx-padding: 4;
+    -fx-padding: 3;
 }
 
 .context-menu .menu-item:focused {
-    -fx-background-color: rgba(242, 163, 58, 0.12);
+    -fx-background-color: #141818;
+}
+
+.context-menu .menu-item:focused .label {
+    -fx-text-fill: #00b8b5;
 }
 
 .context-menu .label {
-    -fx-text-fill: #e7e3da;
+    -fx-text-fill: #d8d9d5;
 }
 
-/* Command input remains the primary interaction surface. */
+/* The prompt is presentational; the TextField still contains only the user's command. */
+.command-box {
+    -fx-background-color: #0d1010;
+    -fx-border-color: #303635;
+    -fx-border-width: 1 0 1 0;
+    -fx-padding: 0 10 0 10;
+}
+
+.command-prompt {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #00b8b5;
+    -fx-padding: 0 8 0 0;
+}
+
 #commandTextField,
 .command-input {
-    -fx-background-color: #101c2b;
+    -fx-background-color: transparent;
     -fx-background-insets: 0;
-    -fx-background-radius: 4;
-    -fx-border-color: #233448;
-    -fx-border-width: 1;
-    -fx-border-radius: 4;
-    -fx-padding: 10 12 10 12;
+    -fx-background-radius: 0;
+    -fx-border-color: transparent;
+    -fx-border-width: 0 0 1 0;
+    -fx-border-radius: 0;
+    -fx-padding: 8 0 8 0;
     -fx-font-size: 14px;
-    -fx-text-fill: #e7e3da;
-    -fx-prompt-text-fill: #708090;
-    -fx-highlight-fill: rgba(242, 163, 58, 0.30);
-    -fx-highlight-text-fill: #e7e3da;
+    -fx-text-fill: #d8d9d5;
+    -fx-prompt-text-fill: #626a68;
+    -fx-highlight-fill: rgba(0, 184, 181, 0.32);
+    -fx-highlight-text-fill: #d8d9d5;
 }
 
 #commandTextField:focused,
 .command-input:focused {
-    -fx-border-color: #f2a33a;
+    -fx-border-color: #168e8d;
     -fx-effect: none;
 }
 
 #commandTextField.error,
 .command-input.error,
 .error {
-    -fx-border-color: #d97972;
-    -fx-text-fill: #e7e3da !important;
+    -fx-border-color: #c96f6b;
+    -fx-text-fill: #d8d9d5 !important;
 }
 
-/* Result output uses a narrow semantic stripe instead of decorative chrome. */
+/* Feedback is a compact, rectangular message strip rather than a floating card. */
 .result-display {
     -fx-background-color: transparent;
     -fx-background-insets: 0;
+    -fx-background-radius: 0;
+    -fx-border-radius: 0;
     -fx-padding: 0;
     -fx-font-size: 12px;
-    -fx-text-fill: #9ba6b2;
+    -fx-text-fill: #b4b9b6;
 }
 
 #resultDisplay .content {
-    -fx-background-color: #101c2b;
-    -fx-background-radius: 3;
-    -fx-border-radius: 3;
+    -fx-background-color: #141818;
+    -fx-background-radius: 0;
+    -fx-border-radius: 0;
+    -fx-padding: 7 10 7 10;
 }
 
 .result-success {
-    -fx-border-color: transparent transparent transparent #78b995;
-    -fx-border-width: 0 0 0 2;
-    -fx-text-fill: #afd0bd;
+    -fx-border-color: #303635 transparent #303635 #48b77a;
+    -fx-border-width: 1 0 1 3;
+    -fx-text-fill: #a9c8b5;
 }
 
 .result-error {
-    -fx-border-color: transparent transparent transparent #d97972;
-    -fx-border-width: 0 0 0 2;
-    -fx-text-fill: #e1a19c;
+    -fx-border-color: #303635 transparent #303635 #c96f6b;
+    -fx-border-width: 1 0 1 3;
+    -fx-text-fill: #dda09c;
 }
 
-/* Employee list: flat rows, quiet separators, no alternating card blocks. */
+/* Employee entries form one continuous technical list. */
 .list-view {
-    -fx-background-color: #0b1420;
+    -fx-background-color: #080a0a;
     -fx-background-insets: 0;
     -fx-padding: 0;
     -fx-border-width: 0;
@@ -141,34 +164,33 @@
 .list-cell:filled:even,
 .list-cell:filled:odd,
 .list-cell:empty {
-    -fx-background-color: #0b1420;
+    -fx-background-color: #080a0a;
     -fx-label-padding: 0;
     -fx-graphic-text-gap: 0;
     -fx-padding: 0;
 }
 
 .list-cell:filled:hover {
-    -fx-background-color: #0e1926;
+    -fx-background-color: #0d1010;
 }
 
 .list-cell:filled:selected {
-    -fx-background-color: #13253a;
+    -fx-background-color: #141818;
 }
 
 #cardPane,
 .employee-card {
     -fx-background-color: transparent;
-    -fx-border-color: transparent transparent #233448 transparent;
+    -fx-border-color: transparent transparent #303635 transparent;
     -fx-border-width: 0 0 1 0;
 }
 
 .list-cell:filled:selected #cardPane {
-    -fx-border-color: transparent transparent #245a8d transparent;
-    -fx-border-width: 0 0 1 0;
+    -fx-border-color: transparent transparent #168e8d transparent;
 }
 
 .index-gutter {
-    -fx-border-color: transparent #233448 transparent transparent;
+    -fx-border-color: transparent #303635 transparent transparent;
     -fx-border-width: 0 1 0 0;
     -fx-padding: 1 10 0 0;
 }
@@ -176,29 +198,33 @@
 .row-index {
     -fx-font-size: 13px;
     -fx-font-weight: bold;
-    -fx-text-fill: #f2a33a;
+    -fx-text-fill: #6d7774;
+}
+
+.list-cell:filled:selected .row-index {
+    -fx-text-fill: #168e8d;
 }
 
 .employee-name {
     -fx-font-size: 15px;
     -fx-font-weight: bold;
-    -fx-text-fill: #e7e3da;
+    -fx-text-fill: #d8d9d5;
 }
 
 .employee-id {
     -fx-font-size: 11px;
-    -fx-text-fill: #8ea0b2;
+    -fx-text-fill: #57908f;
 }
 
 .employee-role {
     -fx-font-size: 12px;
-    -fx-text-fill: #bdc4cb;
+    -fx-text-fill: #a6aba8;
 }
 
 .metadata,
 .label-muted {
     -fx-font-size: 11px;
-    -fx-text-fill: #7c8997;
+    -fx-text-fill: #737b79;
 }
 
 .avatar {
@@ -206,56 +232,60 @@
     -fx-min-height: 38;
     -fx-max-width: 38;
     -fx-max-height: 38;
-    -fx-background-radius: 4;
-    -fx-background-color: #173f67;
+    -fx-background-radius: 1;
+    -fx-background-color: rgba(22, 142, 141, 0.28);
     -fx-alignment: center;
     -fx-font-size: 13px;
     -fx-font-weight: bold;
-    -fx-text-fill: #f2a33a;
+    -fx-text-fill: #579b9a;
 }
 
 .chip {
     -fx-font-size: 10px;
-    -fx-background-color: #173f67;
-    -fx-background-radius: 3;
-    -fx-padding: 2 7 2 7;
-    -fx-text-fill: #b8c3cc;
+    -fx-background-color: rgba(22, 142, 141, 0.18);
+    -fx-background-radius: 1;
+    -fx-padding: 2 6 2 6;
+    -fx-text-fill: #579b9a;
 }
 
 .chip-archived {
-    -fx-background-color: rgba(217, 135, 50, 0.14);
-    -fx-text-fill: #dba565;
+    -fx-background-color: rgba(183, 130, 84, 0.22);
+    -fx-text-fill: #c29768;
 }
 
 .chip-manager {
     -fx-background-color: transparent;
-    -fx-text-fill: #7e8c9c;
+    -fx-text-fill: #737b79;
     -fx-padding: 1 0 1 0;
 }
 
-/* Status is supporting chrome and intentionally low contrast. */
+/* The existing path becomes a compact editor-style status line. */
 .status-bar {
-    -fx-background-color: #101c2b;
-    -fx-border-color: #233448;
+    -fx-background-color: #777b79;
+    -fx-border-color: #929896 transparent transparent transparent;
     -fx-border-width: 1 0 0 0;
 }
 
 .status-bar .label {
     -fx-font-size: 10px;
-    -fx-text-fill: #708090;
-    -fx-padding: 4 12 4 12;
-    -fx-pref-height: 24px;
+    -fx-text-fill: #111313;
+    -fx-padding: 3 12 3 12;
+    -fx-pref-height: 22px;
 }
 
-/* Restrained native-control styling used by menus, dialogs and scrollable output. */
+/* Native controls remain restrained, square and consistent with the editor geometry. */
 .scroll-bar {
-    -fx-background-color: #0b1420;
+    -fx-background-color: #080a0a;
 }
 
 .scroll-bar .thumb {
-    -fx-background-color: #233448;
+    -fx-background-color: #303635;
     -fx-background-insets: 3;
-    -fx-background-radius: 3;
+    -fx-background-radius: 1;
+}
+
+.scroll-bar .thumb:hover {
+    -fx-background-color: #49514f;
 }
 
 .scroll-bar .increment-button,
@@ -280,44 +310,46 @@
 }
 
 .tooltip {
-    -fx-background-color: #101c2b;
-    -fx-border-color: #233448;
+    -fx-background-color: #141818;
+    -fx-border-color: #303635;
     -fx-border-width: 1;
-    -fx-background-radius: 3;
-    -fx-border-radius: 3;
-    -fx-text-fill: #e7e3da;
+    -fx-background-radius: 1;
+    -fx-border-radius: 1;
+    -fx-text-fill: #d8d9d5;
     -fx-font-size: 11px;
     -fx-padding: 6 8 6 8;
 }
 
 .button {
-    -fx-background-color: #101c2b;
-    -fx-background-radius: 3;
-    -fx-border-color: #233448;
-    -fx-border-radius: 3;
+    -fx-background-color: #0d1010;
+    -fx-background-radius: 1;
+    -fx-border-color: #303635;
+    -fx-border-radius: 1;
     -fx-border-width: 1;
     -fx-padding: 6 12 6 12;
-    -fx-text-fill: #d9d7d1;
+    -fx-text-fill: #d8d9d5;
 }
 
 .button:hover {
-    -fx-background-color: #173f67;
-    -fx-border-color: #245a8d;
+    -fx-background-color: #141818;
+    -fx-border-color: #168e8d;
 }
 
 .button:focused {
-    -fx-border-color: #f2a33a;
+    -fx-border-color: #00b8b5;
 }
 
 .dialog-pane,
 .dialog-pane > *.button-bar > *.container {
-    -fx-background-color: #101c2b;
+    -fx-background-color: #0d1010;
 }
 
 .dialog-pane:header *.header-panel {
-    -fx-background-color: #173f67;
+    -fx-background-color: #141818;
+    -fx-border-color: transparent transparent #303635 transparent;
+    -fx-border-width: 0 0 1 0;
 }
 
 .dialog-pane .label {
-    -fx-text-fill: #e7e3da;
+    -fx-text-fill: #d8d9d5;
 }

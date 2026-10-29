@@ -1,39 +1,40 @@
 .root {
     -fx-font-family: "JetBrains Mono", "SFMono-Regular", "Cascadia Mono", "Consolas", "Liberation Mono", "Monospaced";
     -fx-font-size: 12px;
+    -fx-font-weight: 500;
 }
 
 #helpMessageContainer {
-    -fx-background-color: #0b1420;
+    -fx-background-color: #080a0a;
 }
 
 #commandSummary {
-    -fx-text-fill: #e7e3da;
+    -fx-text-fill: #d8d9d5;
 }
 
 #helpMessage {
-    -fx-text-fill: #9ba6b2;
+    -fx-text-fill: #929896;
 }
 
 #copyButton {
-    -fx-background-color: #101c2b;
-    -fx-background-radius: 3;
-    -fx-border-color: #233448;
-    -fx-border-radius: 3;
+    -fx-background-color: #0d1010;
+    -fx-background-radius: 1;
+    -fx-border-color: #303635;
+    -fx-border-radius: 1;
     -fx-border-width: 1;
     -fx-padding: 6 10 6 10;
-    -fx-text-fill: #e7e3da;
+    -fx-text-fill: #d8d9d5;
 }
 
 #copyButton:hover {
-    -fx-background-color: #173f67;
-    -fx-border-color: #245a8d;
+    -fx-background-color: #141818;
+    -fx-border-color: #168e8d;
 }
 
 #copyButton:focused {
-    -fx-border-color: #f2a33a;
+    -fx-border-color: #00b8b5;
 }
 
 #copyButton:armed {
-    -fx-background-color: #233448;
+    -fx-background-color: #303635;
 }
