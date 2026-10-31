@@ -7,8 +7,6 @@
 
 We are a team based in the [School of Computing, National University of Singapore](http://www.comp.nus.edu.sg).
 
-You can reach us at the email `seer[at]comp.nus.edu.sg`
-
 ## Project team
 
 ### Dylan Chew
@@ -24,7 +22,6 @@ You can reach us at the email `seer[at]comp.nus.edu.sg`
 <img src="images/zhanghanzhongfox.png" width="200px">
 
 [[github](http://github.com/ZhangHanzhongFox)]
-[[portfolio](team/johndoe.md)]
 
 * Role: Documentation
 * Responsibilities: Responsible for the quality of various project documents.
@@ -34,7 +31,6 @@ You can reach us at the email `seer[at]comp.nus.edu.sg`
 <img src="images/sjyjoshua.png" width="200px">
 
 [[github](http://github.com/sjyjoshua)]
-[[portfolio](team/sjyjoshua.md)]
 
 * Role: Code Quality
 * Responsibilities: Dev Ops + Threading
