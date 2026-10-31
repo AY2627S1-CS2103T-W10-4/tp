@@ -8,7 +8,7 @@
 
 HuntR is a **desktop application for a sole HR administrator to manage employee records, optimised for use through a Command Line Interface (CLI)** while retaining the benefits of a Graphical User Interface (GUI). If you can type quickly, HuntR can help you add, find, update and remove employee records faster than traditional GUI-based HR tools.
 
-HuntR is based on [AddressBook-Level3](https://github.com/se-edu/addressbook-level3) from SE-EDU. This guide covers version 1.4.
+HuntR is based on [AddressBook-Level3](https://github.com/se-edu/addressbook-level3) from SE-EDU. This guide covers version 1.5.
 
 <!-- * Table of Contents -->
 <page-nav-print />
@@ -1022,8 +1022,9 @@ atomic JSON-saving mechanism.
 
 ### Editing the data file
 
-HuntR data is saved automatically as a JSON file `[JAR file location]/data/addressbook.json`. Advanced users may
-update that file in a text editor while HuntR is closed.
+HuntR data is saved automatically as a JSON file `data/addressbook.json` in the folder where HuntR runs, which is the
+folder you `cd` to in the [Quick start](#quick-start) (not necessarily the folder that contains the JAR file). Advanced
+users may update that file in a text editor while HuntR is closed.
 
 Each employee in the `employees` array has an `archived` status. Employee IDs remain unique regardless of status.
 Older valid files without the `archived` field continue to load, with those employees treated as active.
@@ -1043,7 +1044,7 @@ Furthermore, certain edits can cause HuntR to behave in unexpected ways (e.g., i
 ## FAQ
 
 **Q**: How do I transfer my data to another computer?<br>
-**A**: Install the app on the other computer, run it, and exit. Create the `data` folder beside the JAR if it does not exist. Then overwrite that data file (`data/addressbook.json`) with the data file from your previous HuntR home folder.
+**A**: Install the app on the other computer, run it, and exit. Create the `data` folder in the folder where you run HuntR if it does not exist. Then overwrite that data file (`data/addressbook.json`) with the data file from your previous HuntR home folder.
 
 --------------------------------------------------------------------------------------------------------------------
 
