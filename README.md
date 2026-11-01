@@ -8,11 +8,11 @@
 
 HuntR is a desktop app for the sole HR administrator at a small or medium-sized company. It helps them keep employee records accurate and quickly find the information they need. It is optimised for administrators who prefer typing commands, while still showing results in a graphical interface.
 
-This version (v1.4, an alpha release) builds on the core employee-record features with filtering and sorting, archiving, reporting relationships, workforce statistics and data checks, CSV import and export, and undo and redo.
+This version (v1.5) builds on the core employee-record features with filtering and sorting, archiving, reporting relationships, workforce statistics and data checks, CSV import and export, backup and restore, and undo and redo.
 
 ## User interface
 
-The main window has a menu bar (**File** and **Help**), a command box at the top, a result display below it, and the list of employees underneath. The result display has a green stripe when a command worked and a red stripe when it failed. Each employee card shows an avatar with the employee's initials in the colour of their department, the name with the employee ID, the role, the phone number and email, and chips for the department, the manager (`Reports to E0004`) and the `Archived` status. The status bar at the bottom shows where the data file is saved.
+The main window has a menu bar (**File** and **Help**), a command box at the top, and the list of employees underneath. After a command, a result strip appears below the command box with a green stripe when the command worked and a red stripe when it failed. Each employee card shows its position in the list (`01`, `02` and so on), an avatar with the employee's initials in the colour of their department, the name with the employee ID, the role, the phone number and email, a chip for the department (and an `Archived` chip for archived employees), and the manager (`Reports to E0004`, or `Unassigned`). The status bar at the bottom shows where the data file is saved.
 
 Type a command in the command box and press <kbd>Enter</kbd>. For example, `find John` shows only the employees whose names contain the word `John`, and `list` shows everyone again.
 
@@ -22,7 +22,7 @@ For the detailed documentation of this project, see the **[HuntR Product Website
 
 ## Features
 
-The features below are available in v1.4. See the [User Guide](https://ay2627s1-cs2103t-w10-4.github.io/tp/UserGuide.html) for the full command formats.
+The features below are available in v1.5. See the [User Guide](https://ay2627s1-cs2103t-w10-4.github.io/tp/UserGuide.html) for the full command formats.
 
 ### Add employees
 
@@ -92,7 +92,7 @@ HuntR allows HR administrators to see the number of active employees by departme
 
 ### Import, export and backup
 
-HuntR allows HR administrators to save all employees to a CSV file with `export`, to add the employees of a CSV file with `import` (all or nothing, and `undo` reverses it), and to save a copy of the data with `backup`.
+HuntR allows HR administrators to save all employees to a CSV file with `export`, to add the employees of a CSV file with `import` (all or nothing, and `undo` reverses it), and to save a copy of the data with `backup`, which `restore` can load again (it replaces all current records, and `undo` reverses it).
 
 Example: `export exports/staff.csv`
 
