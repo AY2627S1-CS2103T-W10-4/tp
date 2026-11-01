@@ -639,7 +639,8 @@ The following input errors leave the records unchanged. Each message is followed
 | `delete` or `delete 1` | `Missing parameter: id/EMPLOYEE_ID.` |
 | `delete id/` or a whitespace-only ID | `Employee ID cannot be blank.` |
 | `delete x/value` or `delete id/abc x/value` | `Unknown parameter: x/. Only id/ is supported.` |
-| `delete id/abc!`, `delete id/abc def` or an ID longer than 20 characters | `Employee ID should be 1 to 20 characters long and contain only letters, digits, hyphens and underscores.` |
+| `delete id/abc!` or `delete id/abc def` | `Employee ID should be 1 to 20 characters long and contain only letters, digits, hyphens and underscores.` |
+| `delete id/ABCDEFGHIJKLMNOPQRSTU` (21 characters) | `Employee ID should be at most 20 characters long.` |
 | `delete id/abc id/abc` | `Multiple values specified for the following single-valued field(s): id/` |
 | `delete extra id/abc` | `Unexpected arguments. Specify exactly one employee ID using id/EMPLOYEE_ID.` |
 
