@@ -171,6 +171,23 @@ public class StringUtilTest {
     }
 
     @Test
+    public void getSearchWords_dottedAndDotlessI_normalizesCaseVariants() {
+        for (String name : List.of("Y\u0131lmaz", "YILMAZ", "yilmaz", "Y\u0130LMAZ")) {
+            assertEquals(List.of("yilmaz"), StringUtil.getSearchWords(name), name);
+        }
+    }
+
+    @Test
+    public void getSearchWords_unicodeCaseVariants_normalizesWithoutExpandingLetters() {
+        assertEquals(List.of("emile"), StringUtil.getSearchWords("\u00C9mile"));
+        // Both lowercase forms of Greek sigma match their uppercase form.
+        assertEquals(List.of("\u03C3", "\u03C3", "\u03C3"), StringUtil.getSearchWords("\u03A3 \u03C3 \u03C2"));
+        // Sharp s matches its capital form, but is not expanded into two letters.
+        assertEquals(List.of("gro\u00DF", "gro\u00DF", "gross"),
+                StringUtil.getSearchWords("Gro\u00DF GRO\u1E9E GROSS"));
+    }
+
+    @Test
     public void getSearchWords_accentAsSeparateMark_sameAsAccentOnTheLetter() {
         // E followed by a combining acute accent, as some keyboards and web pages produce it
         assertEquals(StringUtil.getSearchWords("\u00C9mile"), StringUtil.getSearchWords("E\u0301mile"));
@@ -198,6 +215,7 @@ public class StringUtilTest {
         try {
             Locale.setDefault(Locale.forLanguageTag("tr"));
             assertEquals(List.of("id"), StringUtil.getSearchWords("ID"));
+            assertEquals(List.of("yilmaz"), StringUtil.getSearchWords("Y\u0131lmaz"));
         } finally {
             Locale.setDefault(defaultLocale);
         }
