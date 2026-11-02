@@ -67,6 +67,8 @@ HuntR is based on [AddressBook-Level3](https://github.com/se-edu/addressbook-lev
 
 * Command words are written in lowercase, for example `list` and `filter`; `List` is not a command. The same is true for `archived` in `list archived`. If you mistype a command word, HuntR suggests the closest command, for example `Did you mean filter?` for `fliter`.
 
+* Use ordinary spaces typed with the spacebar around command words and between parameters. Non-breaking spaces copied from formatted text can cause errors or unexpected results; see [Known issues](#known-issues) for the limitation and workaround.
+
 * Parameters can be in any order.<br>
   For example, if the command specifies `n/NAME p/PHONE`, `p/PHONE n/NAME` is also acceptable.
 
@@ -174,7 +176,7 @@ Format: `list`
 Example: `list`
 
 Use `list` without arguments to show active employees, or [`list archived`](#listing-archived-employees-list-archived)
-to show archived employees. Leading and trailing whitespace is ignored. Both the command word `list` and the
+to show archived employees. Leading and trailing ordinary spaces are ignored. Both the command word `list` and the
 optional argument `archived` must be lowercase.
 
 * Replaces the current search, filter, archived-only or reporting view with **all active employees**.
@@ -1061,6 +1063,7 @@ Furthermore, certain edits can cause HuntR to behave in unexpected ways (e.g., i
 2. **If you minimize the Help Window** and then run the `help` command (or use the `Help` menu, or the keyboard shortcut `F1`) again, the original Help Window will remain minimized, and no new Help Window will appear. The remedy is to manually restore the minimized Help Window.
 3. **Pasting commands containing tabs:** The command box removes pasted tab characters, which can join words or parameters and cause the command to fail. Replace tabs with ordinary spaces before pasting a command. Pressing <kbd>Tab</kbd> to complete command words still works.
 4. **Symbol-only filter values:** An `n/`, `d/` or `r/` value containing only `&`, apostrophes or certain standalone combining marks can be accepted even though it has no letter or digit. For example, `filter d/&` may show an empty list instead of the documented validation error. Include at least one letter or digit in each value. If an accidental symbol-only filter changes the displayed list, use `list` to show all active employees again. Employee records and undo/redo history are unchanged.
+5. **Non-breaking spaces in commands:** A non-breaking space copied from formatted text is not treated as an ordinary space before or directly after a command word (including after `list`), or between parameters. This can cause the command to fail with an error. In `filter d/Sales r/Account Manager`, a non-breaking space before `r/` can instead silently show no employees even when a matching employee exists. Delete and retype the spaces using the spacebar. Non-breaking spaces between `find` search keywords are supported.
 
 --------------------------------------------------------------------------------------------------------------------
 
