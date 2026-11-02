@@ -1054,6 +1054,7 @@ Furthermore, certain edits can cause HuntR to behave in unexpected ways (e.g., i
 1. **When using multiple screens**, if you move the application to a secondary screen, and later switch to using only the primary screen, the GUI will open off-screen. The remedy is to delete the `preferences.json` file created by the application before running the application again.
 2. **If you minimize the Help Window** and then run the `help` command (or use the `Help` menu, or the keyboard shortcut `F1`) again, the original Help Window will remain minimized, and no new Help Window will appear. The remedy is to manually restore the minimized Help Window.
 3. **Pasting commands containing tabs:** The command box removes pasted tab characters, which can join words or parameters and cause the command to fail. Replace tabs with ordinary spaces before pasting a command. Pressing <kbd>Tab</kbd> to complete command words still works.
+4. **Trailing content in manually edited JSON files:** At startup, HuntR reads the first JSON value in the employee data file or `preferences.json` and may ignore extra text or JSON values after it. That extra content does not trigger the corrupted-file warning and is discarded when the file is next saved. Back up files before editing them and keep exactly one JSON object in each file. The `restore` command rejects trailing content in backups.
 
 --------------------------------------------------------------------------------------------------------------------
 
