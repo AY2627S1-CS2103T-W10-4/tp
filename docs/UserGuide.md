@@ -696,7 +696,7 @@ Extra text after `clear`, such as `clear id/E0001`, is rejected with `Invalid co
 
 <box type="warning" seamless>
 
-**Caution:** There is no confirmation. After `clear`, the empty active roster and unchanged archive are
+**Caution:** There is no confirmation. After `clear`, the empty active roster and the archive are
 saved immediately. Use `undo` to restore the active roster during the same session. Clearing an already empty
 active roster still succeeds and shows the active view, but creates no history entry.
 </box>
