@@ -13,7 +13,11 @@
 
 ## **Acknowledgements**
 
-* _{List the sources of reused or adapted ideas, code, documentation, and third-party libraries here, with links to the originals.}_
+* HuntR is adapted from [AddressBook-Level3](https://github.com/se-edu/addressbook-level3) by the
+  [SE-EDU initiative](https://se-education.org/).
+* HuntR uses [JavaFX](https://openjfx.io/) for its GUI, [Jackson](https://github.com/FasterXML/jackson) for JSON,
+  [JUnit 5](https://github.com/junit-team/junit5) for testing and [MarkBind](https://markbind.org/) with
+  [PlantUML](https://plantuml.com/) for this documentation site and its diagrams.
 
 --------------------------------------------------------------------------------------------------------------------
 
@@ -35,7 +39,7 @@ The following provides a quick overview of the main components and their interac
 
 **Main components of the architecture**
 
-**`Main`** (consisting of classes [`Main`](https://github.com/se-edu/addressbook-level3/tree/master/src/main/java/seedu/address/Main.java) and [`MainApp`](https://github.com/se-edu/addressbook-level3/tree/master/src/main/java/seedu/address/MainApp.java)) is in charge of the app launch and shut down.
+**`Main`** (consisting of classes [`Main`](https://github.com/AY2627S1-CS2103T-W10-4/tp/blob/master/src/main/java/seedu/address/Main.java) and [`MainApp`](https://github.com/AY2627S1-CS2103T-W10-4/tp/blob/master/src/main/java/seedu/address/MainApp.java)) is in charge of the app launch and shut down.
 * At app launch, it initializes the other components in the correct sequence, and connects them up with each other.
 * At shut down, it shuts down the other components and invokes cleanup methods where necessary.
 
@@ -65,7 +69,7 @@ The sections below give more details of each component.
 
 ### UI component
 
-The **API** of this component is specified in [`Ui.java`](https://github.com/se-edu/addressbook-level3/tree/master/src/main/java/seedu/address/ui/Ui.java)
+The **API** of this component is specified in [`Ui.java`](https://github.com/AY2627S1-CS2103T-W10-4/tp/blob/master/src/main/java/seedu/address/ui/Ui.java)
 
 <puml src="diagrams/UiClassDiagram.puml" alt="Structure of the UI Component"/>
 
@@ -73,7 +77,7 @@ The UI consists of a `MainWindow` and its parts, such as `CommandBox`, `ResultDi
 
 A few small classes keep the logic of the UI out of the JavaFX classes. `CommandBox` keeps a `CommandHistory` of the commands that were typed, for the <kbd>↑</kbd> and <kbd>↓</kbd> keys, and uses `CommandCompleter` to complete the command word for the <kbd>Tab</kbd> key. `EmployeeCard` uses `DepartmentColour` to give each department its colour and `Initials` to make the initials shown in the avatar. These four classes do not use JavaFX, so they are tested without a window.
 
-The `UI` component uses the JavaFX UI framework. The layouts of these UI parts are defined in matching `.fxml` files in `src/main/resources/view`. For example, [`MainWindow.fxml`](https://github.com/se-edu/addressbook-level3/tree/master/src/main/resources/view/MainWindow.fxml) specifies the layout of [`MainWindow`](https://github.com/se-edu/addressbook-level3/tree/master/src/main/java/seedu/address/ui/MainWindow.java).
+The `UI` component uses the JavaFX UI framework. The layouts of these UI parts are defined in matching `.fxml` files in `src/main/resources/view`. For example, [`MainWindow.fxml`](https://github.com/AY2627S1-CS2103T-W10-4/tp/blob/master/src/main/resources/view/MainWindow.fxml) specifies the layout of [`MainWindow`](https://github.com/AY2627S1-CS2103T-W10-4/tp/blob/master/src/main/java/seedu/address/ui/MainWindow.java).
 
 The `UI` component,
 
@@ -84,7 +88,7 @@ The `UI` component,
 
 ### Logic component
 
-**API** : [`Logic.java`](https://github.com/se-edu/addressbook-level3/tree/master/src/main/java/seedu/address/logic/Logic.java)
+**API** : [`Logic.java`](https://github.com/AY2627S1-CS2103T-W10-4/tp/blob/master/src/main/java/seedu/address/logic/Logic.java)
 
 Here's a (partial) class diagram of the `Logic` component:
 
@@ -92,7 +96,7 @@ Here's a (partial) class diagram of the `Logic` component:
 
 How the `Logic` component works:
 
-1. When `Logic` is called upon to execute a command, the command is passed to an `AddressBookParser` object, which in turn creates a parser that matches the command (e.g., `DeleteCommandParser`) and uses it to parse the command.
+1. When `Logic` is called upon to execute a command, it passes the text to `AddressBookParser`. Commands with structured arguments use a matching parser (e.g., `DeleteCommandParser`); simple commands such as `list` and `stats` are validated and constructed directly.
 1. This results in a `Command` object (more precisely, an object of one of its subclasses e.g., `DeleteCommand`) which is executed by the `LogicManager`.
 1. The command can communicate with the `Model` when it is executed (e.g. to delete an employee).<br>
    Note that although this is shown as a single step in the diagram above for simplicity, the code can require several interactions between the command object and the `Model` to complete the operation.
@@ -103,11 +107,11 @@ Here are the other classes in `Logic` (omitted from the class diagram above) tha
 <puml src="diagrams/ParserClasses.puml" width="600"/>
 
 How the parsing works:
-* When called upon to parse a user command, the `AddressBookParser` class creates an `XYZCommandParser` (`XYZ` is a placeholder for the specific command name, e.g., `AddCommandParser`). The parser uses the other classes shown above to parse the user command and create an `XYZCommand` object (e.g., `AddCommand`). The `AddressBookParser` returns that object as a `Command` object.
+* For commands with a dedicated parser, `AddressBookParser` creates the matching parser, such as `AddCommandParser`. That parser uses the helper classes shown above to validate the arguments and create an `AddCommand`. `AddressBookParser` returns the result as a `Command`. The diagrams use `XYZ` to stand for a concrete command name.
 * All `XYZCommandParser` classes, such as `AddCommandParser` and `DeleteCommandParser`, implement the `Parser` interface so they can be treated similarly where appropriate, for example during testing.
 
 ### Model component
-**API** : [`Model.java`](https://github.com/se-edu/addressbook-level3/tree/master/src/main/java/seedu/address/model/Model.java)
+**API** : [`Model.java`](https://github.com/AY2627S1-CS2103T-W10-4/tp/blob/master/src/main/java/seedu/address/model/Model.java)
 
 <puml src="diagrams/ModelClassDiagram.puml" width="700" alt="Model structure including employee manager IDs and reporting validation" />
 
@@ -122,7 +126,7 @@ The `Model` component,
 
 ### Storage component
 
-**API** : [`Storage.java`](https://github.com/se-edu/addressbook-level3/tree/master/src/main/java/seedu/address/storage/Storage.java)
+**API** : [`Storage.java`](https://github.com/AY2627S1-CS2103T-W10-4/tp/blob/master/src/main/java/seedu/address/storage/Storage.java)
 
 <puml src="diagrams/StorageClassDiagram.puml" width="550" />
 
@@ -248,10 +252,8 @@ This section describes some noteworthy details on how certain features are imple
 
 ### Reporting relationships and team structure
 
-The reporting implementation is introduced in [PR #110](https://github.com/AY2627S1-CS2103T-W10-4/tp/pull/110).
-Its developer documentation and the reporting sections in the [User Guide](UserGuide.md#assigning-a-manager-manager)
-are maintained together in [PR #111](https://github.com/AY2627S1-CS2103T-W10-4/tp/pull/111).
-The implementation described here requires #110; the documentation PR does not add the commands itself.
+HuntR supports assigning and removing a direct manager and querying teams, reporting subtrees and manager chains.
+See the [User Guide](UserGuide.md#assigning-a-manager-manager) for command formats and examples.
 
 #### Model and relationship validation
 
@@ -365,8 +367,8 @@ this read-only command.
 
 `CheckCommand` reads the complete roster through `Model#getAddressBook()` and excludes archived employees, so the
 current search and archive view do not affect it. It counts how many active employees have each phone number and each
-email. Phone numbers are compared exactly as stored. Emails are compared after `toLowerCase(Locale.ROOT)`, since
-addresses that differ only in letter case reach the same inbox. An employee is reported when their phone number or
+email. Phone numbers are compared exactly as stored. Emails are compared after `toLowerCase(Locale.ROOT)`, so HuntR's
+data-quality check treats addresses that differ only in letter case as shared. An employee is reported when their phone number or
 their email is shared with another active employee, and only once, even if both are shared or more than two employees
 share a value.
 
@@ -528,7 +530,7 @@ by usage; an ID without any fields produces `At least one field to edit must be 
 
 `ParserUtil` validates the ID and supplied field values, returning the corresponding validation messages for invalid values. The parser stores validated changes in an `EditEmployeeDescriptor`; omitted fields keep their existing values. The ID only selects the employee and cannot be changed.
 
-`EditCommand` searches `model.getAddressBook().getEmployeeList()` using case-insensitive `EmployeeId` equality, so filtered-out employees can be edited. It creates a replacement employee with the stored ID, including its original casing, and calls `model.setEmployee`. It then calls `updateFilteredEmployeeList(PREDICATE_SHOW_ALL_EMPLOYEES)` to show the full roster and returns `Edited employee: ` followed by the updated details. An unknown ID produces `No employee with ID X was found.` without usage, where `X` is the entered ID. Successful edits use the existing saving flow.
+`EditCommand` searches `model.getAddressBook().getEmployeeList()` using case-insensitive `EmployeeId` equality, so filtered-out and archived employees can be edited. Editing an archived employee preserves their archive status; they remain hidden in the resulting active view. It creates a replacement employee with the stored ID, including its original casing, and calls `model.setEmployee`. It then calls `updateFilteredEmployeeList(PREDICATE_SHOW_ALL_EMPLOYEES)` to show all active employees, retaining the current sort, and returns `Edited employee: ` followed by the updated details. An unknown ID produces `No employee with ID X was found.` without usage, where `X` is the entered ID. Successful edits use the existing saving flow.
 
 Before changing the model, `EditCommand` passes the replacement employee through `ReportingStructure#withCanonicalManager`,
 which rewrites a manager ID to the spelling stored for that employee, so `m/e0001` is saved as `E0001`. It then compares
@@ -543,17 +545,20 @@ the letter case of a name counts as a change. An invalid manager (`An employee c
 The result message is built by `Messages#format`, which ends with `; Manager: ` followed by the manager ID when
 the edited employee has a manager.
 
-The sequence diagram below shows a successful `edit id/E0001 r/Manager`, adapted from the delete sequence diagram in the Logic component section. It focuses on parsing and model updates; `LogicManager` saves the address book before returning the result, as usual.
+The sequence diagram below shows a successful `edit id/E0001 r/Manager`, showing the parsing and model update flow. It focuses on parsing and model updates; `LogicManager` saves the address book before returning the result, as usual.
 
 <puml src="diagrams/EditSequenceDiagram.puml" alt="Interactions for editing an employee by ID" />
 
 ### Find employees by name
 
-`FindCommandParser` removes the spaces at both ends of the arguments and splits them into keywords at any kind of space (the characters matched by `[\\s\\p{Z}]`, which includes the non-breaking space of a web page). Empty arguments, and arguments beginning with `/`, produce `Invalid command format.` followed by the command usage. Each keyword is then checked against the existing `Name` validation rules; the first invalid keyword produces `Invalid keyword: X` followed by the keyword rules (`FindCommand#MESSAGE_INVALID_KEYWORD`). Otherwise, the parser creates a `NameContainsKeywordsPredicate` and passes it to `FindCommand`.
+`FindCommandParser` removes the spaces at both ends of the arguments and splits them into keywords at any kind of space (the characters matched by `[\s\p{Z}]`, which includes the non-breaking space of a web page). Empty arguments, or any keyword beginning with `/`, produce `Invalid command format.` followed by the command usage. Each keyword is then checked against the existing `Name` validation rules; the first invalid keyword produces `Invalid keyword: X` followed by the keyword rules (`FindCommand#MESSAGE_INVALID_KEYWORD`). Otherwise, the parser creates a `NameContainsKeywordsPredicate` and passes it to `FindCommand`.
 
 `NameContainsKeywordsPredicate` splits the employee's name and each keyword into words with `StringUtil.getSearchWords`, the same method that `filter` uses. Spaces and punctuation separate words, except for `&` and `'`, which stay in a word, and letter case and accents are ignored. A keyword matches when every one of its words is a whole word of the name, so `Tan` matches `Tan, Ah Kow`, `Mary-Ann` matches `Mary-Ann O'Brien`, and `emile` matches `Émile`, while `Han` does not match `Hans`. The employee matches when any keyword matches (OR semantics): `find alex david` matches either name, while `find al` does not match `Alex`. A keyword without any letter or digit never matches. It does not search employee IDs or other fields.
 
-Because `find` and `filter` use the same word splitting, `find Tan` and `filter n/Tan` find the same employees.
+Both commands use the same word splitting. In the v1.5 JAR, both compare the resulting lowercase words exactly.
+On current `master`, `filter` uses `String.CASE_INSENSITIVE_ORDER` for word membership, while `find` retains exact
+normalised-word comparison. For ordinary Latin names, `find Tan` and `filter n/Tan` find the same employees;
+Unicode case variants such as dotless `ı` can differ on `master`. Neither command transliterates names.
 
 `FindCommand` calls `model.updateFilteredEmployeeList(predicate)` to replace the current filter over the full employee list, without changing employee records. It returns the filtered list's size through `Messages.getEmployeesListedOverview`, using `1 employee listed!` or `N employees listed!`. No matches is a successful search returning `0 employees listed!`.
 
@@ -644,8 +649,8 @@ passes the values to `EmployeeMatchesCriteriaPredicate` and returns a `FilterCom
 why a prefix that is repeated widens the search while a new prefix narrows it:
 
 * An `id/` value is met when it equals the employee ID. `EmployeeId` equality ignores letter case.
-* An `n/`, `d/` or `r/` value is met when every word of the value is a whole word of that field. Words are the
-  lowercase runs of letters, digits, `&` and `'` in the text, so `d/Resources` matches `Human Resources` but
+* An `n/`, `d/` or `r/` value is met when every normalised word of the value is a whole word of that field, ignoring
+  case and accents. Word characters include letters, combining marks, digits, `&` and `'`, so `d/Resources` matches `Human Resources` but
   `d/Engineer` does not match `Engineering`. The words of a value may be in any order.
 * A criterion without values is not applied. The constructor asserts that at least one criterion has a value.
 
@@ -702,9 +707,10 @@ order is ascending.
 
 <puml src="diagrams/SortSequenceDiagram.puml" alt="Interactions for sorting employees" />
 
-`SortField#getComparator` builds the comparator. It compares the text of the field after removing accents and
-ignoring letter case, and reverses that comparison for `desc`. Employees with the same value are then ordered by employee ID from A to Z in
-both orders, so the order of the list never depends on the order in which employees were added. The tie-break never
+`SortField#getComparator` builds the comparator. It removes accents and uses `NaturalOrderComparator`, ignoring
+letter case and comparing digit runs by numeric value (so `E2` precedes `E10`). It reverses the field comparison for
+`desc`. Employees with equal field values are then ordered by employee ID in ascending natural order in
+both directions, so the order of the list never depends on the order in which employees were added. The tie-break never
 applies to the `ID` field, because employee IDs are unique.
 
 Because the `SortedList` observes the `FilteredList`, the list is kept in order without any further call. When an
@@ -874,7 +880,7 @@ current snapshot **before** removing redo states. Employee equality alone ignore
 A changed state discards the redo tail and appends one snapshot; an identical state leaves history untouched.
 
 The model exposes `commitAddressBook()`, `canUndoAddressBook()`, `canRedoAddressBook()`, `undoAddressBook()` and
-`redoAddressBook()`. Each of `add`, `edit`, `delete`, `clear`, `import`, `archive`, `unarchive`, `manager` and
+`redoAddressBook()`. Each of `add`, `edit`, `delete`, `clear`, `import`, `restore`, `archive`, `unarchive`, `manager` and
 `unassign-manager` declares
 `HistoryAction.COMMIT` through `Command#getHistoryAction()`. `LogicManager` commits once after successful command
 execution, before saving. Commands do not call `commitAddressBook()` themselves. This single declaration supplies
@@ -1032,19 +1038,16 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 | `* * *` | First-time user | Be shown the correct command format when I mistype something | Correct my mistake without looking up the syntax |
 | `* *` | Beginner user | Undo commands | Easily restore a correct state after I made a mistake |
 | `* * *` | Beginner user | View the information I have about an employee | Answer questions concerning that employee |
-| `*` | Expert user | Create command shortcuts | Save time on long winded commands that I frequently use |
-| `*` | Expert user | View recent workforce changes | Stay aware of how the organisation is changing |
 | `*` | Expert user | Compare department sizes | Understand how employees are distributed across the organisation |
 | `*` | Expert user | View an employee’s relation to other employees | Understand how they fit into the organisation |
-| `*` | Expert user | Record HR-related meetings or follow-up tasks | Keep track of actions related to employees |
 | `*` | Expert user | View an overall workforce summary | Understand the state of the workforce without checking employees one by one |
-| `*` | Expert user | Identify employees with missing information | Maintain complete records |
 | `*` | Expert user | Record who an employee reports to | Understand the company’s reporting structure |
 | `*` | Expert user | Update who an employee reports to | Keep records correct after a reorganisation or resignation |
 | `* * *` | Long-time user | Easily search up contact details with the commands | Save time instead of using traditional address / contact books |
 | `* *` | Long-time user | Import a validated CSV batch without overwriting existing IDs | Add employee records efficiently without leaving a partially imported roster |
 | `* *` | HR administrator | Export all active and archived employees, including reporting relationships, to CSV | Review the complete roster in a spreadsheet application |
 | `* * *` | Careful user | Save a separate JSON backup of the complete employee roster | Retain a snapshot I can restore after an unwanted change |
+| `* * *` | Careful user | Restore a validated JSON backup and undo the replacement during the same session | Recover the complete roster without losing the ability to reverse a mistaken restore |
 | `* *` | Long-time user | Filter employees by search criteria | Gather specific organisation-wide data efficiently |
 | `* * *` | Basic user | Add an employee's information | the app reflects my company's workforce |
 | `* * *` | Basic user | List all active employees with their details in stored order | Review the current workforce in one place |
@@ -1055,12 +1058,9 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 | `* * *` | Basic user | Have my data saved automatically after every change | I don't lose records if the app closes unexpectedly |
 | `* * *` | Basic user | Exit the application with a command | close it safely knowing my data is saved |
 | `* *` | Basic user | Edit an employee's details | keep records accurate when someone's role or contact info changes |
-| `* *` | Careful user | **Coming soon:** Be asked to confirm before a record is deleted | avoid losing a record to a mistyped command |
 | `* *` | Busy user | Filter employees using multiple criteria at once (e.g. department and role) | narrow down results faster than one field at a time |
 | `* *` | Busy user | View an entire team's roster with one command | prepare for a team meeting without assembling the list myself |
 | `*` | Busy user | Sort employees by a chosen field (e.g. name or department) | scan records in the order that's useful to me |
-| `*` | Busy user | Look up an employee's leave status with one command | check quickly if they're available for a meeting |
-| `*` | Long-time user | Identify employees who don't appear connected to anyone else in the organisation | investigate whether my workforce information is incomplete |
 | `*` | Long-time user | Identify employees who share a phone number or email with another employee | find and correct data-entry mistakes |
 | `*` | Long-time user | Count employees by department | quickly see the size of each team |
 | `* *` | HR administrator | Archive an employee while retaining their details and reporting relationships | Keep former employees' records outside the active roster |
@@ -1122,7 +1122,7 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 1. User requests to edit an employee using `edit id/EMPLOYEE_ID` with at least one field to change.
 2. HuntR validates the ID and the given fields.
 3. HuntR finds the employee in the complete roster, comparing IDs case-insensitively.
-4. HuntR updates the employee, saves the updated records and shows the complete roster.
+4. HuntR updates the employee, saves the updated records and shows all active employees with the current sort order. An edited archived employee remains archived and is not displayed in this view.
 5. HuntR displays the updated employee's details as confirmation.
 
     Use case ends.
@@ -1182,7 +1182,7 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 **MSS**
 
 1. User requests to find employees using one or more name keywords.
-2. HuntR searches the employee records for names containing at least one of the keywords.
+2. HuntR searches active employees for names matching at least one whole-word keyword, ignoring case and accents as described under **Find employees by name**.
 3. HuntR displays the matching employees as a numbered list and reports the number of matches.
 
     Use case ends.
@@ -1206,7 +1206,7 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 **MSS**
 
 1. User requests to filter employees by one or more of employee ID, name, department and role.
-2. HuntR finds the employees who match all the given fields.
+2. HuntR finds the active employees who match all the given fields.
 3. HuntR displays the matching employees as a numbered list and reports the number of matches.
 
     Use case ends.
@@ -1219,9 +1219,13 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 
     Use case resumes at step 1.
 
-* 1b. A value is empty, has no letter or digit, or is not a valid employee ID.
+* 1b. A text value is empty or has no search words after normalisation, or an ID value is not a valid employee ID.
 
   * 1b1. HuntR shows an error message that names the field, and the expected command format.
+
+    The text-value check retains `&`, apostrophes and combining marks as word characters. Symbol-only values
+    such as `d/&` can therefore be accepted despite the error message mentioning letters or digits; see the
+    [User Guide's known issues](UserGuide.md#known-issues).
 
     Use case resumes at step 1.
 
@@ -1249,7 +1253,7 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 
 **Extensions**
 
-* 1a. The field or the order is missing, unknown, or followed by extra text.
+* 1a. The field is missing, the field or order is unknown, or extra text follows the optional order.
 
   * 1a1. HuntR shows an error message and the expected command format.
 
@@ -1263,7 +1267,7 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 
 * 2a. Several employees have the same value for the field.
 
-  * 2a1. HuntR orders them by employee ID from A to Z.
+  * 2a1. HuntR orders them by employee ID in ascending natural order, even for a descending field sort.
 
     Use case resumes at step 3.
 
@@ -1314,31 +1318,6 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
   * 2a1. HuntR displays `No data-quality issues found.`
 
     Use case ends.
-
-**Use case: View employee data**
-
-**MSS**
-
-1. User requests to view all employee records.
-2. HuntR displays the employees as a numbered list with summary information.
-3. User selects a specific employee from the displayed list.
-4. HuntR displays the employee's full details, including their employee ID, department, role.
-
-    Use case ends.
-
-**Extensions**
-
-* 2a. There are no employee records.
-
-  * 2a1. HuntR displays an empty list and informs the user that there are no employees to show.
-
-    Use case ends.
-
-* 3a. The selected index does not correspond to an employee in the displayed list.
-
-  * 3a1. HuntR informs the user that the displayed index is invalid.
-
-    Use case resumes at step 2.
 
 **Use case: Archive an employee**
 
@@ -1555,11 +1534,56 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
   * 3a1. HuntR reports the backup-specific write error. Earlier snapshots, employee data, view and history remain unchanged.
     Use case ends.
 
-*{More to be added}*
+**Use case: Clear active employees**
+
+**MSS**
+
+1. User enters `clear`.
+2. HuntR removes every active employee, retains archived employees and clears their references to removed managers.
+3. HuntR selects the active view with the current sort, saves the roster and reports `Active employee records have been cleared!`.
+
+    The complete change is one undo step. Use case ends.
+
+**Extensions**
+
+* 2a. There are no active employees.
+  * 2a1. HuntR still selects the active view, attempts saving and reports success, but adds no history step and retains redo.
+    Use case ends.
+* 3a. Saving fails.
+  * 3a1. HuntR restores the roster, reporting links, view and history and displays the save error.
+    Use case ends.
+
+**Use case: Restore a JSON backup**
+
+**MSS**
+
+1. User enters `restore file/JSON_FILE_PATH`.
+2. HuntR reads and validates the complete backup, including unique IDs, archive status and reporting relationships.
+3. HuntR replaces the complete roster, selects all active employees with the current sort and saves the result.
+4. HuntR reports the restored employee count and path. The replacement is one undo step; the backup is unchanged.
+
+    Use case ends.
+
+**Extensions**
+
+* 1a. The `file/` prefix or path is missing, the path is invalid, or the filename does not end in `.json` (ignoring case).
+  * 1a1. HuntR reports invalid command format and restore usage. Nothing changes.
+    Use case resumes at step 1.
+* 2a. The file is missing, unreadable, invalid, or contains trailing JSON/text.
+  * 2a1. HuntR reports the missing-file or restore-specific read error without changing records, view or history.
+    Use case ends.
+* 3a. The backup is identical to the current roster.
+  * 3a1. HuntR selects the active view and saves, but adds no history step and retains redo.
+    Use case resumes at step 4.
+* 3b. Saving fails.
+  * 3b1. HuntR restores the previous records, view and history and displays the save error.
+    Use case ends.
 
 ### Non-Functional Requirements
 
-The following requirements describe the intended HuntR product, including capabilities that are not yet implemented. Performance limits are acceptance targets, not measured results for the current version. Platform, packaging, storage, and display requirements incorporate the applicable [course project constraints](https://nus-cs2103-ay2627-s1.github.io/website/admin/tp-constraints.html).
+The following requirements describe HuntR's supported use and acceptance targets. Performance limits are targets,
+not measured results for the current version. Platform, packaging, storage, and display requirements incorporate
+the applicable [course project constraints](https://nus-cs2103-ay2627-s1.github.io/website/admin/tp-constraints.html).
 
 HuntR is intended for one HR administrator managing workforce records locally. Shared access to the same data by different users, including taking turns on a shared installation, is outside the supported usage.
 
@@ -1569,9 +1593,9 @@ HuntR is intended for one HR administrator managing workforce records locally. S
 
 3. **NFR-03: Offline operation.** Adding, listing, finding, deleting, saving, and reloading employee records must work with the network disconnected. These operations must not require a remote server or an online account, and HuntR must not transmit employee records over the network.
 
-4. **NFR-04: Human-editable storage.** Workforce records must be stored locally in a human-readable, human-editable JSON file, without a database management system. When the application is closed, a user must be able to edit the file in a text editor; valid changes that satisfy the employee field and uniqueness constraints must appear on the next launch. When launched from the JAR's folder, the default file is `data/addressbook.json` in that folder.
+4. **NFR-04: Human-editable storage.** Workforce records must be stored locally in a human-readable, human-editable JSON file, without a database management system. When the application is closed, a user must be able to edit the file in a text editor; valid changes that satisfy the employee field, uniqueness and reporting-relationship constraints must appear on the next launch. When launched from the JAR's folder, the default file is `data/addressbook.json` in that folder.
 
-5. **NFR-05: Capacity.** HuntR must support at least 1,000 valid employee records with distinct employee IDs. Saving and reloading a dataset of this size must preserve every record and its employee ID, name, phone number, email, department, and role. This is a minimum supported capacity, not a limit on the employee ID format.
+5. **NFR-05: Capacity.** HuntR must support at least 1,000 valid employee records with distinct employee IDs. Saving and reloading a dataset of this size must preserve every record and its employee ID, name, phone number, email, department, role, archive status and manager assignment. This is a minimum supported capacity, not a limit on the employee ID format.
 
 6. **NFR-06: Command response time.** Each `add`, `list`, `find`, and `delete` command must display its result and finish updating the employee list within 2 seconds of pressing Enter, including any automatic save. Verify 20 executions of each command under the performance conditions below, including searches with zero matches and searches matching all employees; every execution must meet the limit.
 
@@ -1583,7 +1607,7 @@ HuntR is intended for one HR administrator managing workforce records locally. S
 
 10. **NFR-10: Persistence reliability.** A data-changing command must save its changes before reporting success. After a successful command followed by normal shutdown and relaunch, all employee records and field values must match the saved state without a manual save. Verify additions and deletions, including deletion of the last employee. If saving fails, such as because the data folder is not writable, HuntR must report the save failure instead of reporting success.
 
-11. **NFR-11: Invalid-file handling.** If the employee data file contains malformed JSON or an employee that violates the field or uniqueness constraints, HuntR must reject the whole dataset, start with an empty employee list, and record a warning in the log. It must not load only the valid entries from that file. A missing or malformed preferences file must cause HuntR to use default preferences without preventing startup.
+11. **NFR-11: Invalid-file handling.** If employee data loading rejects malformed JSON, invalid fields, duplicate IDs or invalid reporting relationships, HuntR must reject the whole dataset, start with an empty employee list, show the startup warning and record it in the log. It must not load only the valid entries from that file. HuntR attempts to preserve the rejected file separately and reports whether this succeeded. A missing or malformed preferences file must cause HuntR to use default preferences without preventing startup. Normal startup reads accept trailing content after the first complete JSON value; `restore` uses strict parsing and rejects it. See the [User Guide's known issues](UserGuide.md#known-issues) for current loading limitations.
 
 12. **NFR-12: Display usability.** At resolutions of 1920 x 1080 and higher with 100% or 125% display scaling, the command box, result display, and employee list must remain accessible, with their text readable directly or through scrolling. All functions must also remain usable at resolutions of 1280 x 720 and higher with 150% scaling. Verify each resolution/scaling combination with the application maximised, including long employee details and error messages.
 
@@ -1591,7 +1615,8 @@ HuntR is intended for one HR administrator managing workforce records locally. S
 
 ### Glossary
 
-These definitions describe HuntR's employee-management domain. The inherited codebase still uses names such as `Person` and `AddressBook` for the underlying records and their collection.
+These definitions describe HuntR's employee-management domain. The code uses `Employee` for records and retains
+the inherited internal name `AddressBook` for the roster.
 
 | Term | Definition |
 |------|------------|
@@ -1602,19 +1627,21 @@ These definitions describe HuntR's employee-management domain. The inherited cod
 | **Department** | The organisational unit to which an employee belongs, such as Engineering or Finance; supplied using `d/`. |
 | **Displayed index** | An employee's position in the currently displayed list, starting at 1. It can change when the list changes and is distinct from the employee ID. HuntR's specified `delete` command uses the employee ID. |
 | **Duplicate employee record** | A record with the same employee ID as another record. Two employees with the same name but different employee IDs are distinct records. |
-| **Employee** | A member of the organisation whose information the HR administrator manages in HuntR. An employee record contains an employee ID, name, phone number, email, department, and role. |
+| **Employee** | A member of the organisation whose information the HR administrator manages in HuntR. An employee record contains an employee ID, name, phone number, email, department, role, archive status and optional direct-manager ID. |
+| **Archived employee** | An employee retained in the complete roster but excluded from normal `list`, `find`, `filter`, `stats` and `check` results. `list archived` and reporting queries can display archived employees. Their IDs remain reserved. |
 | **Employee ID** | The unique identifier for an employee record: 1 to 20 letters, digits, hyphens or underscores, with no spaces, such as `E0123`, `EMP-0042` or `2024-017`. It is stored as typed and compared case-insensitively. It is supplied using `id/` and distinguishes employees even when their names are identical. |
 | **Filtered employee list** | The subset of stored employee records currently displayed after applying search criteria. Filtering changes the view without deleting records from the workforce roster. |
 | **Graphical user interface (GUI)** | The application's visual interface, including the command box, result display, and employee list. |
 | **HR administrator** | The human resources staff member who operates HuntR to maintain the organisation's employee records; the application's target user. |
 | **JAR** | Java Archive: the executable package containing HuntR's application code, dependencies, and resources. |
 | **JSON** | JavaScript Object Notation, the text-based format used for employee data and preferences. |
-| **Keyword** | A space-separated search term supplied to `find`. It matches a whole word in an employee's name, ignoring letter case. With multiple keywords, a match on any one keyword is sufficient. |
+| **Keyword** | A search term supplied to `find`, separated from other terms by whitespace. Its words must all match whole words in an active employee's name after search normalisation; punctuation can split a keyword into several words. With multiple keywords, a match on any one keyword is sufficient. |
 | **Main success scenario (MSS)** | The sequence of steps in a use case when the interaction succeeds without taking an error or alternative path. |
 | **Preferences file** | The local `preferences.json` file containing application settings, such as window size and position, rather than employee records. |
 | **Reporting relationship** | An optional link from an employee to their direct manager, identified by employee ID. Manager references must exist, and self-reporting and cycles are rejected. |
 | **Role** | An employee's job title, such as Software Engineer or Accountant; supplied using `r/`. It does not denote application access permissions. |
 | **Session** | One period of application use, from launch until shutdown. |
+| **Snapshot** | A complete employee state. Undo/redo snapshots exist only for the current session; a JSON backup is a separate file that survives shutdown and can be loaded using `restore`. |
 | **Workforce records / roster** | The complete collection of employee records stored in HuntR, including employees not visible in the current filtered list. |
 
 --------------------------------------------------------------------------------------------------------------------
@@ -1622,6 +1649,12 @@ These definitions describe HuntR's employee-management domain. The inherited cod
 ## **Appendix: Instructions for manual testing**
 
 Given below are instructions to test the app manually.
+
+Use a disposable launch folder for each section unless its prerequisites explicitly continue an earlier scenario.
+To obtain an empty roster, close HuntR and create `data/addressbook.json` containing `{"employees":[]}` before
+launching. A missing data file loads sample employees instead. `clear` removes only active employees, so it does
+not by itself reset a roster containing archived records. Restore each section's starting fixture before an
+independent test; keep consecutive steps together when they depend on previous commands.
 
 <box type="info" seamless>
 
@@ -1745,7 +1778,7 @@ archive id/L1002
    * Enter `find Ah, Alex`.<br>
      Expected: `Tan, Ah Kow` and `Alex Yeoh` are displayed, and HuntR reports `2 employees listed!`.
 4. Enter `find`, with no keyword.<br>
-   Expected: HuntR reports an invalid command format and shows the `find` command usage. The previously displayed empty result remains unchanged.
+   Expected: HuntR reports an invalid command format and shows the `find` command usage. The previous result from `find Ah, Alex` remains unchanged.
 5. Enter `find /Alex`.<br>
    Expected: HuntR reports an invalid command format and shows the `find` command usage because a keyword cannot begin with `/`.
 6. Enter `find Alex valid!`.<br>
@@ -1758,7 +1791,7 @@ archive id/L1002
 1. Enter `edit id/e0001 p/+65 6123-4567 (Office) d/Research & Development r/Principal Engineer`.<br>
    Expected: HuntR displays `Edited employee:` followed by the complete updated record. The stored ID remains `E0001`, the three supplied fields are updated, and the name and email remain unchanged.
 2. Enter `find Alex`, followed by `edit id/E0002 n/Bernice Tan`.<br>
-   Expected: `E0002` is edited even though it was hidden by the search. HuntR then displays the complete roster, with `E0002` renamed to `Bernice Tan`.
+   Expected: `E0002` is edited even though it was hidden by the search. HuntR then displays all active employees, with `E0002` renamed to `Bernice Tan`.
 3. Enter `edit id/E9999 n/Missing Employee`.<br>
    Expected: HuntR displays `No employee with ID E9999 was found.` and no employee is changed.
 4. Enter `edit id/E0001`.<br>
@@ -1964,7 +1997,7 @@ add id/A1003 n/Bob Ng p/91234563 e/bob.ng@example.com d/Sales r/Engineer
 
 ### Reporting relationships and team structure
 
-**Prerequisites:** Use a build containing the reporting implementation from PR #110. Add active employees
+**Prerequisites:** Use the release JAR in a disposable writable folder. Add active employees
 `R1001`, `R1002` and `R1003`, initially without managers. Ensure `R9999` does not exist. Back up the data before
 testing deletion or editing the JSON file.
 
@@ -2158,6 +2191,48 @@ CSV example into an empty roster. Use the actual backup path reported by each co
    No success message or automatic employee-file save occurs, and records, view and history stay unchanged.
    Restore the test folder afterwards. Filesystems without hard links or required access protections likewise
    report the backup-specific error without publishing an empty final snapshot.
+
+### Clearing active employees
+
+**Prerequisites:** Use an empty disposable roster. Add `CLR-1` and `CLR-2`, set `CLR-1` as `CLR-2`'s manager,
+then archive `CLR-2`. Keep these steps in order.
+
+1. Enter `list archived`, `sort id desc`, then `clear`.<br>
+   Expected: `Active employee records have been cleared!` The active view is empty. `list archived` still shows
+   `CLR-2`, now with no manager. `CLR-1` has been removed.
+2. Enter `undo`, then `list`.<br>
+   Expected: `CLR-1` returns. `list archived` shows `CLR-2` still archived and reporting to `CLR-1`.
+3. Enter `redo`, then `clear`, then `undo`.<br>
+   Expected: The second clear has no active records to remove and creates no undo step. The undo reverses the
+   first clear and restores `CLR-1` and the manager assignment. Both statuses persist after exit and relaunch.
+
+### Restoring a JSON backup
+
+**Prerequisites:** Continue from the two-record fixture under **Backing up employee data**, or recreate it in a
+disposable writable folder. Ensure `C1001` has role Manager before running `backup`, and keep its reported path as `BACKUP_PATH`. Replace `BACKUP_PATH` in
+the commands below with that actual path. Restore this fixture before each independent test.
+
+1. Enter `edit id/C1001 r/Director`, `find Nobody`, `sort id desc`, then `restore file/BACKUP_PATH`.<br>
+   Expected: `Restored 2 employee(s) from <path>`. `C1001` has role Manager and is displayed in the active view.
+   `list archived` shows `C1002` with the original manager and department. Unrelated current records are replaced,
+   rather than merged. Exit and relaunch: the restored roster persists.
+2. In one session, edit `C1001` to Director and restore the backup. Rename the backup outside HuntR, then enter
+   `undo` and `redo`.<br>
+   Expected: Undo recovers Director; redo restores Manager without rereading the renamed file. Both retain the
+   current view and sort. Restore the backup's filename afterwards.
+3. Make separate copies of the backup containing invalid JSON, `null`, a null employee entry, duplicate IDs,
+   an unknown manager, a reporting cycle, or text after the complete JSON value. Restore each copy.<br>
+   Expected: Each produces `Could not restore <path>. Check that it is a readable JSON backup with valid employee data and reporting relationships. No employee records were changed.` The roster, view, history and employee-file bytes remain unchanged.
+4. Enter `restore`, `restore file/`, `restore BACKUP_PATH` and `restore file/staff.csv` separately.<br>
+   Expected: Invalid command format with restore usage. `restore file/missing.json` instead reports
+   `Backup file not found: missing.json`. Nothing changes.
+5. Copy the valid backup to `my backups/staff.JSON` and restore it using `restore file/my backups/staff.JSON`.<br>
+   Expected: Success; spaces and the uppercase extension are accepted. Unlike CSV import/export, restore also
+   accepts absolute paths and paths outside the launch folder. Supply such a path to a disposable valid backup
+   and verify the same restored records.
+6. Make the main employee file read-only while leaving the backup readable, then restore a different valid roster.<br>
+   Expected: An automatic-save error is shown; the previous records, view, history and saved bytes are preserved.
+   Restore write access before continuing.
 
 ### Saving data
 
