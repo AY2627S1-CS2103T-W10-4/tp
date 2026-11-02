@@ -475,7 +475,7 @@ Shows only the employees who match the employee ID, name, department and role th
 Format: `filter [id/EMPLOYEE_ID] [n/NAME] [d/DEPARTMENT] [r/ROLE]`
 
 * At least one of `id/`, `n/`, `d/` or `r/` must be given. If you give several, an employee must match **all** of them (an `AND` search), so the list is narrowed further.
-* Matching is case-insensitive and uses whole words, like `find`. For example, `d/engineering` matches `Engineering`, and `d/Resources` matches `Human Resources`, but `d/Engineer` does not match `Engineering`.
+* Matching is case-insensitive and uses whole words, like `find`. For example, `d/engineering` matches `Engineering`, and `d/Resources` matches `Human Resources`, but `d/Engineer` does not match `Engineering`. Unicode case variants also match: `n/YILMAZ` matches `Yılmaz`, and `d/οσ` matches `ΟΣ`.
 * Spaces and punctuation separate words. For example, `d/R&D` matches the department `R&D, Asia`, and `r/Backend` or `r/(Backend)` matches the role `Software Engineer (Backend)`. The symbols `&` and `'` stay part of a word.
 * If a value has several words, every word must appear in that field, in any order. For example, `r/Software Engineer` matches `Software Engineer` but not `Software Manager`.
 * An employee ID must be the whole ID, such as `id/E0123`. The ID is not case-sensitive.
