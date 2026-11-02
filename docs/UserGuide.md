@@ -506,6 +506,9 @@ The following input errors leave the displayed list unchanged. Each message is f
 | `filter d/@@@` | `The value of d/ should contain at least one letter or digit.` |
 | `filter id/E 1` | The employee ID constraints message |
 
+Some symbol-only values are accepted instead of showing the validation error above;
+see [Known issues](#known-issues) for the limitation and workaround.
+
 ### Archiving employees: `archive`
 
 Marks an active employee as archived. Archived employees remain stored but are hidden from normal `list`, `find`
@@ -1054,6 +1057,7 @@ Furthermore, certain edits can cause HuntR to behave in unexpected ways (e.g., i
 1. **When using multiple screens**, if you move the application to a secondary screen, and later switch to using only the primary screen, the GUI will open off-screen. The remedy is to delete the `preferences.json` file created by the application before running the application again.
 2. **If you minimize the Help Window** and then run the `help` command (or use the `Help` menu, or the keyboard shortcut `F1`) again, the original Help Window will remain minimized, and no new Help Window will appear. The remedy is to manually restore the minimized Help Window.
 3. **Pasting commands containing tabs:** The command box removes pasted tab characters, which can join words or parameters and cause the command to fail. Replace tabs with ordinary spaces before pasting a command. Pressing <kbd>Tab</kbd> to complete command words still works.
+4. **Symbol-only filter values:** An `n/`, `d/` or `r/` value containing only `&`, apostrophes or certain standalone combining marks can be accepted even though it has no letter or digit. For example, `filter d/&` may show an empty list instead of the documented validation error. Include at least one letter or digit in each value. If an accidental symbol-only filter changes the displayed list, use `list` to show all active employees again. Employee records and undo/redo history are unchanged.
 
 --------------------------------------------------------------------------------------------------------------------
 
