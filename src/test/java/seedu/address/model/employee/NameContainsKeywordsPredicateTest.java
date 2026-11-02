@@ -77,6 +77,20 @@ public class NameContainsKeywordsPredicateTest {
     }
 
     @Test
+    public void test_dotlessI_matchesCaseVariantsAsWholeWords() {
+        assertTrue(matches("Y\u0131lmaz", "YILMAZ"));
+        assertTrue(matches("YILMAZ", "Y\u0131lmaz"));
+        assertTrue(matches("Y\u0131lmaz", "yilmaz"));
+        assertTrue(matches("Y\u0131lmaz", "Y\u0130LMAZ"));
+        assertTrue(matches("Y\u0131lmaz, Ali", "Nobody", "YILMAZ,"));
+        assertTrue(matches("Y\u0131lmaz-Ali", "YILMAZ-Ali"));
+        assertFalse(matches("Y\u0131lmaz", "YIL"));
+        assertFalse(matches("Y\u0131lmaz", "YILMAZA"));
+        assertFalse(matches("Y\u0131lmaz", "YILMAZ-Ali"));
+        assertFalse(matches("O'Y\u0131lmaz", "YILMAZ"));
+    }
+
+    @Test
     public void test_surnameBeforeComma_matchesWithAndWithoutTheComma() {
         assertTrue(matches("Tan, Ah Kow", "Tan"));
         assertTrue(matches("Tan, Ah Kow", "Tan,"));

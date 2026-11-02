@@ -17,6 +17,7 @@ import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
+import seedu.address.logic.parser.FilterCommandParser;
 import seedu.address.model.Model;
 import seedu.address.model.ModelManager;
 import seedu.address.model.UserPrefs;
@@ -166,6 +167,23 @@ public class FilterCommandTest {
         model.setEmployee(CARL, CARL.withArchived(true));
         new FilterCommand(predicateOf(List.of("Finance"), List.of())).execute(model);
         assertEquals(List.of(), model.getFilteredEmployeeList());
+    }
+
+    @Test
+    public void execute_unicodeCaseVariants_findsActiveMatchesInCurrentSortOrder() throws Exception {
+        Employee first = new EmployeeBuilder().withId("E2").withName("Yılmaz Tan")
+                .withDepartment("ΟΣ Support").withRole("Engineer (Backend)").build();
+        Employee second = new EmployeeBuilder(first).withId("E10").build();
+        Employee archived = new EmployeeBuilder(first).withId("E1").withArchived(true).build();
+        Model peopleModel = new ModelManager(new AddressBookBuilder().withEmployee(second).withEmployee(archived)
+                .withEmployee(first).build(), new UserPrefs());
+        new SortCommand(SortCommand.SortField.ID).execute(peopleModel);
+
+        new FilterCommandParser().parse(" n/YILMAZ d/οσ r/Backend").execute(peopleModel);
+
+        assertEquals(List.of(first, second), peopleModel.getFilteredEmployeeList());
+        assertEquals(List.of(second, archived, first), peopleModel.getAddressBook().getEmployeeList());
+        assertFalse(peopleModel.canUndoAddressBook());
     }
 
     @Test
