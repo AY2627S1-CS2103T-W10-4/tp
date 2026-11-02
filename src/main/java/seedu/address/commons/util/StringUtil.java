@@ -8,7 +8,6 @@ import java.io.StringWriter;
 import java.text.Normalizer;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Locale;
 import java.util.regex.Pattern;
 
 /**
@@ -39,10 +38,12 @@ public class StringUtil {
     }
 
     /**
-     * Returns the lower-case words of {@code text}, to be matched whole against other words.
+     * Returns the words of {@code text}, normalized for case-insensitive whole-word matching.
      * Words are separated by spaces and punctuation, except for {@code &} and {@code '} which stay in a word.
      * Accents on letters are left out, so {@code É} and {@code E} are the same, whether the accent is a part
      * of the letter or a separate mark after it.
+     * Character case is normalized as in {@link String#equalsIgnoreCase(String)}, so dotless {@code ı}
+     * matches {@code I}.
      *   <br>examples:<pre>
      *       getSearchWords("R&amp;D, Asia") == ["r&amp;d", "asia"]
      *       getSearchWords("Engineer (Backend)") == ["engineer", "backend"]
@@ -55,7 +56,11 @@ public class StringUtil {
     public static List<String> getSearchWords(String text) {
         requireNonNull(text);
         String withoutAccents = ACCENT.matcher(Normalizer.normalize(text, Normalizer.Form.NFD)).replaceAll("");
-        return NOT_PART_OF_SEARCH_WORD.splitAsStream(withoutAccents.toLowerCase(Locale.ROOT))
+        String normalized = withoutAccents.codePoints()
+                .map(codePoint -> Character.toLowerCase(Character.toUpperCase(codePoint)))
+                .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
+                .toString();
+        return NOT_PART_OF_SEARCH_WORD.splitAsStream(normalized)
                 .filter(word -> !word.isEmpty())
                 .toList();
     }

@@ -130,15 +130,29 @@ public class FindCommandTest {
     }
 
     @Test
+    public void execute_nameWithDotlessI_caseVariantsReturnOneEmployee() throws Exception {
+        Employee yilmaz = new EmployeeBuilder().withId("T1").withName("Y\u0131lmaz").build();
+        Model roster = new ModelManager(new AddressBookBuilder().withEmployee(yilmaz).build(), new UserPrefs());
+
+        for (String keyword : List.of("Y\u0131lmaz", "YILMAZ", "yilmaz", "Y\u0130LMAZ")) {
+            CommandResult result = new FindCommandParser().parse(keyword).execute(roster);
+            assertEquals(getEmployeesListedOverview(1), result.getFeedbackToUser(), keyword);
+            assertEquals(List.of(yilmaz), roster.getFilteredEmployeeList(), keyword);
+        }
+    }
+
+    @Test
     public void execute_findAndFilterByName_findTheSameEmployees() throws Exception {
         Employee tan = new EmployeeBuilder().withId("T1").withName("Tan, Ah Kow").build();
         Employee mary = new EmployeeBuilder().withId("T2").withName("Mary-Ann O'Brien").build();
         Employee emile = new EmployeeBuilder().withId("T3").withName("\u00C9mile Roux").build();
+        Employee yilmaz = new EmployeeBuilder().withId("T4").withName("Y\u0131lmaz").build();
         Model roster = new ModelManager(
-                new AddressBookBuilder().withEmployee(tan).withEmployee(mary).withEmployee(emile).build(),
+                new AddressBookBuilder().withEmployee(tan).withEmployee(mary).withEmployee(emile)
+                        .withEmployee(yilmaz).build(),
                 new UserPrefs());
 
-        for (String name : List.of("Tan", "Mary", "Ann", "emile")) {
+        for (String name : List.of("Tan", "Mary", "Ann", "emile", "Y\u0131lmaz", "YILMAZ")) {
             List<Employee> found = List.copyOf(findIn(roster, name));
             new FilterCommandParser().parse(" n/" + name).execute(roster);
             assertEquals(found, roster.getFilteredEmployeeList(), name);
