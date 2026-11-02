@@ -399,7 +399,6 @@ Format: `find KEYWORD [MORE_KEYWORDS]`
 * A search with no matching name is still valid.
 * Leading and trailing spaces are ignored, and multiple spaces between keywords are treated as separators. Any kind of
   space separates keywords, including the non-breaking space that is copied from a web page.
-  Use an ordinary space after the command word `find`; see [Known issues](#known-issues) for the non-breaking-space limitation.
 * A search with no matches is successful and displays an empty employee list.
 
 Examples:
@@ -1058,8 +1057,7 @@ Furthermore, certain edits can cause HuntR to behave in unexpected ways (e.g., i
 1. **When using multiple screens**, if you move the application to a secondary screen, and later switch to using only the primary screen, the GUI will open off-screen. The remedy is to delete the `preferences.json` file created by the application before running the application again.
 2. **If you minimize the Help Window** and then run the `help` command (or use the `Help` menu, or the keyboard shortcut `F1`) again, the original Help Window will remain minimized, and no new Help Window will appear. The remedy is to manually restore the minimized Help Window.
 3. **Pasting commands containing tabs:** The command box removes pasted tab characters, which can join words or parameters and cause the command to fail. Replace tabs with ordinary spaces before pasting a command. Pressing <kbd>Tab</kbd> to complete command words still works.
-4. **Non-breaking spaces after command words:** A non-breaking space copied from formatted text directly after a command word such as `find` causes an unknown-command error and leaves the current employee list unchanged. Delete the space after the command word and retype it using the spacebar, for example `find Spaceprobe`. Non-breaking spaces between `find` search keywords are supported.
-5. **Symbol-only filter values:** An `n/`, `d/` or `r/` value containing only `&`, apostrophes or certain standalone combining marks can be accepted even though it has no letter or digit. For example, `filter d/&` may show an empty list instead of the documented validation error. Include at least one letter or digit in each value. If an accidental symbol-only filter changes the displayed list, use `list` to show all active employees again. Employee records and undo/redo history are unchanged.
+4. **Symbol-only filter values:** An `n/`, `d/` or `r/` value containing only `&`, apostrophes or certain standalone combining marks can be accepted even though it has no letter or digit. For example, `filter d/&` may show an empty list instead of the documented validation error. Include at least one letter or digit in each value. If an accidental symbol-only filter changes the displayed list, use `list` to show all active employees again. Employee records and undo/redo history are unchanged.
 
 --------------------------------------------------------------------------------------------------------------------
 
