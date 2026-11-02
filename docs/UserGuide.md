@@ -1033,6 +1033,9 @@ The optional `managerId` field stores the direct manager's ID. Missing or null `
 Manager IDs must refer to an existing employee, with no self-reporting or cycles. Invalid relationships cause the
 whole file to be rejected.
 
+A file containing only `null` is invalid too. HuntR starts with an empty employee list and keeps an unreadable-file
+copy as described below; `{"employees":[]}` is the valid representation of an empty roster.
+
 <box type="warning" seamless>
 
 **Caution:**
