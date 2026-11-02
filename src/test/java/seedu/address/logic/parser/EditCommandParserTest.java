@@ -125,6 +125,17 @@ public class EditCommandParserTest {
     }
 
     @Test
+    public void parse_slashWordAfterSpaceInDepartmentAndRole_success() {
+        EditEmployeeDescriptor descriptor = new EditEmployeeDescriptorBuilder().withDepartment("Regional IT/Ops")
+                .withRole("Senior UI/UX Designer").build();
+        assertParseSuccess(parser, ID_DESC_AMY + " d/Regional IT/Ops r/Senior UI/UX Designer",
+                new EditCommand(TARGET_ID, descriptor));
+
+        // a single letter before the slash is still a parameter
+        assertParseFailure(parser, ID_DESC_AMY + " r/Senior w/ Python", unknownParameterMessage("w/"));
+    }
+
+    @Test
     public void parse_relationWordInName_success() {
         // d/o inside the name is part of the name, not the department prefix
         EditEmployeeDescriptor descriptor = new EditEmployeeDescriptorBuilder().withName("Nur Aisha d/o Ali").build();

@@ -1,7 +1,11 @@
 package seedu.address.logic.parser;
 
 import static seedu.address.logic.Messages.MESSAGE_INVALID_COMMAND_FORMAT;
+import static seedu.address.logic.parser.CliSyntax.PREFIX_DEPARTMENT;
+import static seedu.address.logic.parser.CliSyntax.PREFIX_FILE;
+import static seedu.address.logic.parser.CliSyntax.PREFIX_ID;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_NAME;
+import static seedu.address.logic.parser.CliSyntax.PREFIX_ROLE;
 
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -23,10 +27,16 @@ final class ArgumentPreprocessor {
      * as whole words that appear inside the name field, i.e. after {@code n/} and before the next prefix, so
      * {@code d/O & G} after the email is still read as the department "O & G". The remaining ambiguous case is a
      * department that starts with the word "o" and is typed straight after the name.
+     * <p>
+     * In the same way, a word of two or more letters followed by a slash, such as the "UI/" of
+     * {@code r/Senior UI/UX Designer} or the "IT/" of {@code d/Regional IT/Ops}, is part of the value when it
+     * appears inside a department or role. A single letter followed by a slash, such as "x/", and the prefixes of
+     * HuntR that have more than one letter ("id/" and "file/") are still read as parameters.
      */
     private static final Pattern NAME_RELATION_WORD = Pattern.compile("(s/o|d/o|a/l|a/p)(?=\\s|$)",
             Pattern.CASE_INSENSITIVE);
     private static final char HIDDEN_SLASH = '\uE000';
+    private static final Set<String> MULTI_LETTER_PREFIXES = Set.of(PREFIX_ID.getPrefix(), PREFIX_FILE.getPrefix());
 
     /** Something that looks like a parameter ("x/"), found at the start of the input or after whitespace. */
     private static final Pattern PARAMETER_LIKE = Pattern.compile("(?:^|\\s)([A-Za-z]+/)");
@@ -46,7 +56,8 @@ final class ArgumentPreprocessor {
         while (parameterMatcher.find()) {
             String prefix = parameterMatcher.group(1);
             int prefixStart = parameterMatcher.start(1);
-            if (currentPrefix.equals(PREFIX_NAME.getPrefix()) && isRelationWordAt(args, prefixStart)) {
+            if ((currentPrefix.equals(PREFIX_NAME.getPrefix()) && isRelationWordAt(args, prefixStart))
+                    || isSlashWordInDepartmentOrRole(currentPrefix, prefix)) {
                 hidden.setCharAt(prefixStart + prefix.length() - 1, HIDDEN_SLASH);
             } else {
                 currentPrefix = prefix;
@@ -57,6 +68,16 @@ final class ArgumentPreprocessor {
 
     private static boolean isRelationWordAt(String args, int start) {
         return NAME_RELATION_WORD.matcher(args).region(start, args.length()).lookingAt();
+    }
+
+    /**
+     * Returns true if {@code word}, a parameter-like word such as "UI/", is text inside a department or role
+     * ({@code currentPrefix}) and not a parameter.
+     */
+    private static boolean isSlashWordInDepartmentOrRole(String currentPrefix, String word) {
+        boolean isInDepartmentOrRole = currentPrefix.equals(PREFIX_DEPARTMENT.getPrefix())
+                || currentPrefix.equals(PREFIX_ROLE.getPrefix());
+        return isInDepartmentOrRole && word.length() > 2 && !MULTI_LETTER_PREFIXES.contains(word);
     }
 
     //@@author
