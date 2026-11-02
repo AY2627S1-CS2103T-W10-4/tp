@@ -94,7 +94,7 @@ HuntR allows HR administrators to see the number of active employees by departme
 
 HuntR allows HR administrators to save all employees to a CSV file with `export`, to add the employees of a CSV file with `import` (all or nothing, and `undo` reverses it), and to save a copy of the data with `backup`, which `restore` can load again (it replaces all current records, and `undo` reverses it).
 
-Example: `export exports/staff.csv`
+Example: `export file/exports/staff.csv`
 
 ### Undo and redo
 
@@ -105,14 +105,14 @@ History lasts for the current session only.
 
 ### Automatic data persistence
 
-HuntR saves the current employee state after every successfully executed command and reloads it at the next launch.
+HuntR saves the current employee state after every successful data-changing command and reloads it at the next launch.
 If a data-changing command or its save fails, employee data, history and the view are restored in memory.
 Employee files are replaced atomically: handled save failures preserve the last stored file. History is not saved.
 See the [User Guide](docs/UserGuide.md#saving-the-data) for save errors and supported local-file protections.
 
 ### Exit
 
-HuntR allows HR administrators to close the application using the `exit` command, saving the current employee state before the session ends.
+HuntR allows HR administrators to close the application using the `exit` command. Successful employee changes have already been saved before the session ends.
 
 Example: `exit`
 
