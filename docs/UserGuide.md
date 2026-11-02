@@ -67,11 +67,13 @@ HuntR is based on [AddressBook-Level3](https://github.com/se-edu/addressbook-lev
 
 * Command words are written in lowercase, for example `list` and `filter`; `List` is not a command. The same is true for `archived` in `list archived`. If you mistype a command word, HuntR suggests the closest command, for example `Did you mean filter?` for `fliter`.
 
+* Use ordinary spaces typed with the spacebar around command words and between parameters. Non-breaking spaces copied from formatted text can cause errors or unexpected results; see [Known issues](#known-issues) for the limitation and workaround.
+
 * Parameters can be in any order.<br>
   For example, if the command specifies `n/NAME p/PHONE`, `p/PHONE n/NAME` is also acceptable.
 
-* Extraneous parameters for `help` and `clear` are ignored.<br>
-  For example, `help 123` is interpreted as `help`. The `backup` and `exit` commands also take no parameters but reject extra text, so `backup now` and `exit now` show an error. Likewise, `list` accepts only `archived` after it, so `list 1` shows an error.
+* Extraneous parameters for `help` are ignored.<br>
+  For example, `help 123` is interpreted as `help`. The `clear`, `backup` and `exit` commands also take no parameters but reject extra text, so `clear id/E0001`, `backup now` and `exit now` show an error and change nothing. Likewise, `list` accepts only `archived` after it, so `list 1` shows an error.
   The `stats` and `check` commands take no parameters and reject extra text too.
 
 * When `add`, `edit`, `delete`, `archive` or `unarchive` succeeds, the result message shows the employee's details.
@@ -174,7 +176,7 @@ Format: `list`
 Example: `list`
 
 Use `list` without arguments to show active employees, or [`list archived`](#listing-archived-employees-list-archived)
-to show archived employees. Leading and trailing whitespace is ignored. Both the command word `list` and the
+to show archived employees. Leading and trailing ordinary spaces are ignored. Both the command word `list` and the
 optional argument `archived` must be lowercase.
 
 * Replaces the current search, filter, archived-only or reporting view with **all active employees**.
@@ -475,7 +477,7 @@ Shows only the employees who match the employee ID, name, department and role th
 Format: `filter [id/EMPLOYEE_ID] [n/NAME] [d/DEPARTMENT] [r/ROLE]`
 
 * At least one of `id/`, `n/`, `d/` or `r/` must be given. If you give several, an employee must match **all** of them (an `AND` search), so the list is narrowed further.
-* Matching is case-insensitive and uses whole words, like `find`. For example, `d/engineering` matches `Engineering`, and `d/Resources` matches `Human Resources`, but `d/Engineer` does not match `Engineering`.
+* Matching is case-insensitive and uses whole words, like `find`. For example, `d/engineering` matches `Engineering`, and `d/Resources` matches `Human Resources`, but `d/Engineer` does not match `Engineering`. Unicode case variants also match: `n/YILMAZ` matches `Yılmaz`, and `d/οσ` matches `ΟΣ`.
 * Spaces and punctuation separate words. For example, `d/R&D` matches the department `R&D, Asia`, and `r/Backend` or `r/(Backend)` matches the role `Software Engineer (Backend)`. The symbols `&` and `'` stay part of a word.
 * If a value has several words, every word must appear in that field, in any order. For example, `r/Software Engineer` matches `Software Engineer` but not `Software Manager`.
 * An employee ID must be the whole ID, such as `id/E0123`. The ID is not case-sensitive.
@@ -505,6 +507,9 @@ The following input errors leave the displayed list unchanged. Each message is f
 | `filter d/` or `filter n/` | `The value of d/ should contain at least one letter or digit.` (or `n/`, `r/`) |
 | `filter d/@@@` | `The value of d/ should contain at least one letter or digit.` |
 | `filter id/E 1` | The employee ID constraints message |
+
+Some symbol-only values are accepted instead of showing the validation error above;
+see [Known issues](#known-issues) for the limitation and workaround.
 
 ### Archiving employees: `archive`
 
@@ -688,9 +693,12 @@ Clears the active employee roster from HuntR. Archived employee records are pres
 
 Format: `clear`
 
+Extra text after `clear`, such as `clear id/E0001`, is rejected with `Invalid command format.` followed by the
+`clear` usage, and no employee is removed. To remove one employee, use `delete`.
+
 <box type="warning" seamless>
 
-**Caution:** There is no confirmation. After `clear`, the empty active roster and unchanged archive are
+**Caution:** There is no confirmation. After `clear`, the empty active roster and the archive are
 saved immediately. Use `undo` to restore the active roster during the same session. Clearing an already empty
 active roster still succeeds and shows the active view, but creates no history entry.
 </box>
@@ -1057,6 +1065,8 @@ Furthermore, certain edits can cause HuntR to behave in unexpected ways (e.g., i
 1. **When using multiple screens**, if you move the application to a secondary screen, and later switch to using only the primary screen, the GUI will open off-screen. The remedy is to delete the `preferences.json` file created by the application before running the application again.
 2. **If you minimize the Help Window** and then run the `help` command (or use the `Help` menu, or the keyboard shortcut `F1`) again, the original Help Window will remain minimized, and no new Help Window will appear. The remedy is to manually restore the minimized Help Window.
 3. **Pasting commands containing tabs:** The command box removes pasted tab characters, which can join words or parameters and cause the command to fail. Replace tabs with ordinary spaces before pasting a command. Pressing <kbd>Tab</kbd> to complete command words still works.
+4. **Symbol-only filter values:** An `n/`, `d/` or `r/` value containing only `&`, apostrophes or certain standalone combining marks can be accepted even though it has no letter or digit. For example, `filter d/&` may show an empty list instead of the documented validation error. Include at least one letter or digit in each value. If an accidental symbol-only filter changes the displayed list, use `list` to show all active employees again. Employee records and undo/redo history are unchanged.
+5. **Non-breaking spaces in commands:** A non-breaking space copied from formatted text is not treated as an ordinary space before or directly after a command word (including after `list`), or between parameters. This can cause the command to fail with an error. In `filter d/Sales r/Account Manager`, a non-breaking space before `r/` can instead silently show no employees even when a matching employee exists. Delete and retype the spaces using the spacebar. Non-breaking spaces between `find` search keywords are supported.
 
 --------------------------------------------------------------------------------------------------------------------
 

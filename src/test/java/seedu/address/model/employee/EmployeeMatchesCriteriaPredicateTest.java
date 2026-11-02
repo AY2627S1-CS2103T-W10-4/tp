@@ -100,6 +100,32 @@ public class EmployeeMatchesCriteriaPredicateTest {
     }
 
     @Test
+    public void test_unicodeCaseVariants_matchesNamesDepartmentsAndRoles() {
+        for (String value : List.of("Yılmaz", "ΟΣ", "οσ")) {
+            Employee employee = new EmployeeBuilder().withName(value).withDepartment(value).withRole(value).build();
+            String keyword = value.equals("Yılmaz") ? "YILMAZ" : "ος";
+
+            assertTrue(namesOf(keyword).test(employee));
+            assertTrue(departmentsOf(keyword).test(employee));
+            assertTrue(rolesOf(keyword).test(employee));
+        }
+    }
+
+    @Test
+    public void test_unicodeCaseVariants_preservesWholeWordsAndCombinedCriteria() {
+        Employee employee = new EmployeeBuilder().withName("Yılmaz Tan").withDepartment("ΟΣ Support")
+                .withRole("Engineer (Backend)").build();
+        EmployeeMatchesCriteriaPredicate predicate = new EmployeeMatchesCriteriaPredicate(
+                List.of(), List.of("Other", "TAN YILMAZ"), List.of("Support οσ"), List.of("Backend"));
+
+        assertTrue(predicate.test(employee));
+        assertFalse(namesOf("YIL").test(employee));
+        assertFalse(namesOf("YILMAZ Missing").test(employee));
+        assertFalse(departmentsOf("οσ Missing").test(employee));
+        assertFalse(rolesOf("Manager").test(employee));
+    }
+
+    @Test
     public void test_departmentOnly() {
         // exact word, and ignoring letter case
         assertTrue(departmentsOf("Engineering").test(SOFTWARE_ENGINEER));
