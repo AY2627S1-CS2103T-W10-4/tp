@@ -13,7 +13,7 @@
 
 **HuntR is a desktop app for the sole HR administrator at a small or medium-sized company.** It helps them keep employee records accurate and quickly find the information they need. It is optimised for administrators who prefer typing commands, while still showing results in a graphical interface.
 
-This version (v1.5) lets you add, list, find, filter, sort, edit and delete employees, archive and unarchive them, record who reports to whom, see workforce statistics and data checks, import and export CSV files, back up the data and restore a backup, and undo and redo changes, with automatic saving.
+This version (v1.6) lets you add, list, find, filter, sort, edit and delete employees, archive and unarchive them, record who reports to whom, see workforce statistics and data checks, import and export CSV files, back up the data and restore a backup, and undo and redo changes, with automatic saving.
 
 ## User interface
 
