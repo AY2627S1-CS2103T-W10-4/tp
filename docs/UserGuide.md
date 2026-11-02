@@ -966,6 +966,11 @@ no-op mutations such as clearing an already empty active roster. Read-only comma
 `help`, `stats`, `check` and `exit` do not rewrite the employee file. Export and backup write only their requested
 output files. You do not need to save manually. History and view filters are never written to JSON.
 
+Window size and position are stored separately in `preferences.json` in the folder where HuntR runs. Missing or
+unreadable preferences use the default window settings; `{"guiSettings":null}` is invalid and also uses defaults.
+HuntR saves preferences at startup and on exit, so invalid preferences may be replaced with defaults. This does
+not change employee records.
+
 HuntR writes the complete JSON to a protected temporary file beside the data file, then replaces the data file
 atomically. If a handled failure occurs before replacement, the last stored file keeps its original bytes. If no
 data file existed, it remains absent. Newly created folders may remain. Successful replacement completes the save.
