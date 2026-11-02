@@ -8,7 +8,7 @@
 
 HuntR is a desktop app for the sole HR administrator at a small or medium-sized company. It helps them keep employee records accurate and quickly find the information they need. It is optimised for administrators who prefer typing commands, while still showing results in a graphical interface.
 
-This version (v1.5) builds on the core employee-record features with filtering and sorting, archiving, reporting relationships, workforce statistics and data checks, CSV import and export, backup and restore, and undo and redo.
+This version (v1.6) builds on the core employee-record features with filtering and sorting, archiving, reporting relationships, workforce statistics and data checks, CSV import and export, backup and restore, and undo and redo.
 
 ## User interface
 
@@ -22,7 +22,7 @@ For the detailed documentation of this project, see the **[HuntR Product Website
 
 ## Features
 
-The features below are available in v1.5. See the [User Guide](https://ay2627s1-cs2103t-w10-4.github.io/tp/UserGuide.html) for the full command formats.
+The features below are available in v1.6. See the [User Guide](https://ay2627s1-cs2103t-w10-4.github.io/tp/UserGuide.html) for the full command formats.
 
 ### Add employees
 
