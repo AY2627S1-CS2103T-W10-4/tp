@@ -555,10 +555,9 @@ The sequence diagram below shows a successful `edit id/E0001 r/Manager`, showing
 
 `NameContainsKeywordsPredicate` splits the employee's name and each keyword into words with `StringUtil.getSearchWords`, the same method that `filter` uses. Spaces and punctuation separate words, except for `&` and `'`, which stay in a word, and letter case and accents are ignored. A keyword matches when every one of its words is a whole word of the name, so `Tan` matches `Tan, Ah Kow`, `Mary-Ann` matches `Mary-Ann O'Brien`, and `emile` matches `Émile`, while `Han` does not match `Hans`. The employee matches when any keyword matches (OR semantics): `find alex david` matches either name, while `find al` does not match `Alex`. A keyword without any letter or digit never matches. It does not search employee IDs or other fields.
 
-Both commands use the same word splitting. In the v1.5 JAR, both compare the resulting lowercase words exactly.
-On current `master`, `filter` uses `String.CASE_INSENSITIVE_ORDER` for word membership, while `find` retains exact
-normalised-word comparison. For ordinary Latin names, `find Tan` and `filter n/Tan` find the same employees;
-Unicode case variants such as dotless `ı` can differ on `master`. Neither command transliterates names.
+Both commands use the same word splitting and compare the same normalised words, so `find Tan` and `filter n/Tan`
+find the same employees, and case variants such as dotless `ı` and `I` match in both. Neither command transliterates
+names.
 
 `FindCommand` calls `model.updateFilteredEmployeeList(predicate)` to replace the current filter over the full employee list, without changing employee records. It returns the filtered list's size through `Messages.getEmployeesListedOverview`, using `1 employee listed!` or `N employees listed!`. No matches is a successful search returning `0 employees listed!`.
 
