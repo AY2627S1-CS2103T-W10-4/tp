@@ -124,6 +124,16 @@ public class JsonUserPrefsStorageTest {
     }
 
     @Test
+    public void readUserPrefs_nullGuiSettings_throwsDataLoadingException() throws IOException {
+        Path filePath = testFolder.resolve("NullGuiSettingsPrefs.json");
+        Files.writeString(filePath, "{\"guiSettings\":null}");
+
+        JsonUserPrefsStorage storage = new JsonUserPrefsStorage(filePath);
+        assertThrows(DataLoadingException.class, storage::readUserPrefs);
+        assertEquals("{\"guiSettings\":null}", Files.readString(filePath));
+    }
+
+    @Test
     public void saveUserPrefs_allInOrder_success() throws DataLoadingException, IOException {
 
         UserPrefs original = new UserPrefs();
