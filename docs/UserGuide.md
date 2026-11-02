@@ -70,8 +70,8 @@ HuntR is based on [AddressBook-Level3](https://github.com/se-edu/addressbook-lev
 * Parameters can be in any order.<br>
   For example, if the command specifies `n/NAME p/PHONE`, `p/PHONE n/NAME` is also acceptable.
 
-* Extraneous parameters for `help` and `clear` are ignored.<br>
-  For example, `help 123` is interpreted as `help`. The `backup` and `exit` commands also take no parameters but reject extra text, so `backup now` and `exit now` show an error. Likewise, `list` accepts only `archived` after it, so `list 1` shows an error.
+* Extraneous parameters for `help` are ignored.<br>
+  For example, `help 123` is interpreted as `help`. The `clear`, `backup` and `exit` commands also take no parameters but reject extra text, so `clear id/E0001`, `backup now` and `exit now` show an error and change nothing. Likewise, `list` accepts only `archived` after it, so `list 1` shows an error.
   The `stats` and `check` commands take no parameters and reject extra text too.
 
 * When `add`, `edit`, `delete`, `archive` or `unarchive` succeeds, the result message shows the employee's details.
@@ -690,6 +690,9 @@ Clears the active employee roster from HuntR. Archived employee records are pres
 `delete`. Manager assignments on archived employees are cleared if their manager is removed by `clear`.
 
 Format: `clear`
+
+Extra text after `clear`, such as `clear id/E0001`, is rejected with `Invalid command format.` followed by the
+`clear` usage, and no employee is removed. To remove one employee, use `delete`.
 
 <box type="warning" seamless>
 
