@@ -2,9 +2,9 @@ package seedu.address.model.employee;
 
 import static java.util.Objects.requireNonNull;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.function.Predicate;
 
 import seedu.address.commons.util.StringUtil;
@@ -76,7 +76,8 @@ public class EmployeeMatchesCriteriaPredicate implements Predicate<Employee> {
         if (alternatives.isEmpty()) {
             return true;
         }
-        Set<String> wordsOfField = new HashSet<>(StringUtil.getSearchWords(field));
+        Set<String> wordsOfField = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+        wordsOfField.addAll(StringUtil.getSearchWords(field));
         return alternatives.stream().anyMatch(wordsOfField::containsAll);
     }
 
