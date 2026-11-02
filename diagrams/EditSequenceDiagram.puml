@@ -77,6 +77,11 @@ EditCommand -> EditCommand : createEditedEmployee(\nemployeeToEdit, descriptor)
 activate EditCommand
 note right of EditCommand
 Keep the stored ID and all omitted fields.
+Preserve archive status and an omitted manager.
+Resolve a supplied manager ID to stored spelling;
+reject a missing/self manager or an identical replacement
+before setEmployee is called (not shown).
+The model checks cycles inside setEmployee.
 end note
 EditCommand --> EditCommand : editedEmployee
 deactivate EditCommand
@@ -88,6 +93,10 @@ deactivate Model
 
 EditCommand -> Model : updateFilteredEmployeeList(\nPREDICATE_SHOW_ALL_EMPLOYEES)
 activate Model
+note right of Model
+Show active employees with the current sort.
+An edited archived employee stays archived and hidden.
+end note
 Model --> EditCommand
 deactivate Model
 

@@ -91,6 +91,8 @@
         "importing-employees-from-csv": "Importing employees from CSV",
         "exporting-employees-to-csv": "Exporting employees to CSV",
         "backing-up-employee-data": "Backing up employee data",
+        "clearing-active-employees": "Clearing active employees",
+        "restoring-a-json-backup": "Restoring a JSON backup",
         "saving-data": "Saving data"
       },
       "headingKeywords": {}
