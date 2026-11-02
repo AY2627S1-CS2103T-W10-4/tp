@@ -70,6 +70,47 @@ public class AddCommandParserTest {
     }
 
     @Test
+    public void parse_symbolsInDepartmentAndRole_success() {
+        // a slash, a plus sign and a hash sign are kept as part of the value
+        assertParseSuccess(parser, ID_DESC_BOB + NAME_DESC_BOB + PHONE_DESC_BOB + EMAIL_DESC_BOB
+                + " d/IT/Ops r/UI/UX Designer",
+                new AddCommand(new EmployeeBuilder(BOB).withDepartment("IT/Ops").withRole("UI/UX Designer").build()));
+        assertParseSuccess(parser, ID_DESC_BOB + NAME_DESC_BOB + PHONE_DESC_BOB + EMAIL_DESC_BOB
+                + " d/C# Support r/C++ Developer",
+                new AddCommand(new EmployeeBuilder(BOB).withDepartment("C# Support").withRole("C++ Developer")
+                        .build()));
+    }
+
+    @Test
+    public void parse_slashWordAfterSpaceInDepartmentAndRole_success() {
+        // a word such as "UI/" after a space is part of the value, not a parameter
+        assertParseSuccess(parser, ID_DESC_BOB + NAME_DESC_BOB + PHONE_DESC_BOB + EMAIL_DESC_BOB
+                + " d/Regional IT/Ops r/Senior UI/UX Designer",
+                new AddCommand(new EmployeeBuilder(BOB).withDepartment("Regional IT/Ops")
+                        .withRole("Senior UI/UX Designer").build()));
+        assertParseSuccess(parser, ID_DESC_BOB + NAME_DESC_BOB + " d/Sales Pre/Post" + PHONE_DESC_BOB
+                + EMAIL_DESC_BOB + " r/Lead Dev/Ops Engineer",
+                new AddCommand(new EmployeeBuilder(BOB).withDepartment("Sales Pre/Post")
+                        .withRole("Lead Dev/Ops Engineer").build()));
+    }
+
+    @Test
+    public void parse_slashWordAfterSpaceInDepartmentAndRole_stillRejectsParameters() {
+        // a single letter before the slash is a parameter, also inside a department or role
+        assertParseFailure(parser, REQUIRED_FIELDS_BOB + " r/Dev x/foo", unknownParameterMessage("x/"));
+        assertParseFailure(parser, REQUIRED_FIELDS_BOB + " d/Ops w/ Python", unknownParameterMessage("w/"));
+
+        // a prefix of HuntR is a parameter, also inside a department or role
+        assertParseFailure(parser, REQUIRED_FIELDS_BOB + " r/Dev file/x.json", unknownParameterMessage("file/"));
+
+        // a word with a slash is a parameter after any field other than the department and role
+        assertParseFailure(parser, ID_DESC_BOB + " n/Bob Choo bin/Ali" + PHONE_DESC_BOB + EMAIL_DESC_BOB
+                + DEPARTMENT_DESC_BOB + ROLE_DESC_BOB, unknownParameterMessage("bin/"));
+        assertParseFailure(parser, ID_DESC_BOB + NAME_DESC_BOB + " p/91234567 phone/1" + EMAIL_DESC_BOB
+                + DEPARTMENT_DESC_BOB + ROLE_DESC_BOB, unknownParameterMessage("phone/"));
+    }
+
+    @Test
     public void parse_repeatedValue_failure() {
         String validExpectedEmployeeString = REQUIRED_FIELDS_BOB;
 

@@ -33,12 +33,18 @@ public class RoleTest {
         assertFalse(Role.isValidRole("\u0301Engineering")); // starts with a mark and not a letter
         assertFalse(Role.isValidRole("\u00C9".repeat(101))); // longer than 100 characters, with accents
         assertFalse(Role.isValidRole("Caf\u00E9!")); // a symbol that is not allowed, after an accent
+        assertFalse(Role.isValidRole("+Engineering")); // cannot start with a plus sign
+        assertFalse(Role.isValidRole("/Engineering")); // cannot start with a slash
+        assertFalse(Role.isValidRole("Engineering*")); // a symbol that is still not allowed
 
         // valid roles
         assertTrue(Role.isValidRole("Engineering"));
         assertTrue(Role.isValidRole("human resources")); // lower case with space
         assertTrue(Role.isValidRole("Level 2 Support")); // with digit
         assertTrue(Role.isValidRole("R&D")); // ampersand
+        assertTrue(Role.isValidRole("C++ Developer")); // plus signs
+        assertTrue(Role.isValidRole("C# Developer")); // hash
+        assertTrue(Role.isValidRole("UI/UX Designer")); // slash
         assertTrue(Role.isValidRole("Software Engineer (Backend)")); // brackets
         assertTrue(Role.isValidRole("Sales - APAC, North")); // hyphen and comma
         assertTrue(Role.isValidRole("A".repeat(100))); // exactly 100 characters

@@ -47,7 +47,7 @@ public class EditCommandParser implements Parser<EditCommand> {
         EditEmployeeDescriptor editEmployeeDescriptor = new EditEmployeeDescriptor();
 
         if (argMultimap.getValue(PREFIX_NAME).isPresent()) {
-            // only the name can contain hidden slashes, from relation words such as "d/o"
+            // the name, department and role can contain hidden slashes, from words such as "d/o" and "UI/"
             String name = ArgumentPreprocessor.restoreHiddenSlashes(argMultimap.getValue(PREFIX_NAME).get());
             editEmployeeDescriptor.setName(ParserUtil.parseName(name));
         }
@@ -58,11 +58,13 @@ public class EditCommandParser implements Parser<EditCommand> {
             editEmployeeDescriptor.setEmail(ParserUtil.parseEmail(argMultimap.getValue(PREFIX_EMAIL).get()));
         }
         if (argMultimap.getValue(PREFIX_DEPARTMENT).isPresent()) {
-            editEmployeeDescriptor.setDepartment(
-                    ParserUtil.parseDepartment(argMultimap.getValue(PREFIX_DEPARTMENT).get()));
+            String department = ArgumentPreprocessor.restoreHiddenSlashes(
+                    argMultimap.getValue(PREFIX_DEPARTMENT).get());
+            editEmployeeDescriptor.setDepartment(ParserUtil.parseDepartment(department));
         }
         if (argMultimap.getValue(PREFIX_ROLE).isPresent()) {
-            editEmployeeDescriptor.setRole(ParserUtil.parseRole(argMultimap.getValue(PREFIX_ROLE).get()));
+            String role = ArgumentPreprocessor.restoreHiddenSlashes(argMultimap.getValue(PREFIX_ROLE).get());
+            editEmployeeDescriptor.setRole(ParserUtil.parseRole(role));
         }
 
         if (argMultimap.getValue(PREFIX_MANAGER).isPresent()) {

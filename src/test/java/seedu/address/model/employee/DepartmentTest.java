@@ -33,12 +33,18 @@ public class DepartmentTest {
         assertFalse(Department.isValidDepartment("\u0301Engineering")); // starts with a mark and not a letter
         assertFalse(Department.isValidDepartment("\u00C9".repeat(101))); // longer than 100 characters, with accents
         assertFalse(Department.isValidDepartment("Caf\u00E9!")); // a symbol that is not allowed, after an accent
+        assertFalse(Department.isValidDepartment("+Engineering")); // cannot start with a plus sign
+        assertFalse(Department.isValidDepartment("/Engineering")); // cannot start with a slash
+        assertFalse(Department.isValidDepartment("Engineering*")); // a symbol that is still not allowed
 
         // valid departments
         assertTrue(Department.isValidDepartment("Engineering"));
         assertTrue(Department.isValidDepartment("human resources")); // lower case with space
         assertTrue(Department.isValidDepartment("Level 2 Support")); // with digit
         assertTrue(Department.isValidDepartment("R&D")); // ampersand
+        assertTrue(Department.isValidDepartment("IT/Ops")); // slash
+        assertTrue(Department.isValidDepartment("Sales + Marketing")); // plus sign
+        assertTrue(Department.isValidDepartment("C# Support")); // hash
         assertTrue(Department.isValidDepartment("Software Engineer (Backend)")); // brackets
         assertTrue(Department.isValidDepartment("Sales - APAC, North")); // hyphen and comma
         assertTrue(Department.isValidDepartment("A".repeat(100))); // exactly 100 characters

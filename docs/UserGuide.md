@@ -126,7 +126,7 @@ value with a space.
 | `n/NAME` | Must start with a letter or digit. May contain letters (including accented and non-Latin letters), combining marks, digits, spaces and the symbols `'` `.` `,` `/` `-`, for example `Mary-Ann O'Brien` or `Ravi s/o Kumar`. |
 | `p/PHONE` | At least 3 digits in total. May contain spaces and the symbols `+` `-` `,` `.` and brackets, for example `+65 6123-4567 (HP)`. English letter labels are allowed only inside brackets. Brackets must be balanced, non-empty and not nested. |
 | `e/EMAIL` | An address such as `john.tan@example.com`. The part before `@` uses letters and digits, with `+` `_` `.` `-` between alphanumeric groups. Domain labels use letters and digits with internal hyphens; the final label has at least 2 characters. |
-| `d/DEPARTMENT`, `r/ROLE` | Must start with a letter or digit. May contain letters (including accented and non-Latin letters), combining marks, digits, spaces and the symbols `&` `'` `(` `)` `,` `.` `-`, up to 100 characters after normalisation. |
+| `d/DEPARTMENT`, `r/ROLE` | Must start with a letter or digit. May contain letters (including accented and non-Latin letters), combining marks, digits, spaces and the symbols `&` `'` `(` `)` `,` `.` `+` `#` `/` `-`, up to 100 characters after normalisation, for example `C++ Developer`, `Senior UI/UX Designer` or `IT/Ops`. A single letter followed by `/` after a space, such as `w/` in `Dev w/ Python`, is read as a parameter, so write it another way (for example `Dev with Python`). |
 | `m/MANAGER_ID` (optional) | An existing employee's ID, matched case-insensitively and saved using the spelling of the existing ID. An empty value, unknown manager or self-assignment is rejected. Omit the parameter to add an employee without a manager. |
 
 Leading and trailing spaces are removed from field values. Repeated spaces inside names, departments and roles
@@ -478,7 +478,7 @@ Format: `filter [id/EMPLOYEE_ID] [n/NAME] [d/DEPARTMENT] [r/ROLE]`
 
 * At least one of `id/`, `n/`, `d/` or `r/` must be given. If you give several, an employee must match **all** of them (an `AND` search), so the list is narrowed further.
 * Matching is case-insensitive and uses whole words, like `find`. For example, `d/engineering` matches `Engineering`, and `d/Resources` matches `Human Resources`, but `d/Engineer` does not match `Engineering`. Unicode case variants also match: `n/YILMAZ` matches `Yılmaz`, and `d/οσ` matches `ΟΣ`.
-* Spaces and punctuation separate words. For example, `d/R&D` matches the department `R&D, Asia`, and `r/Backend` or `r/(Backend)` matches the role `Software Engineer (Backend)`. The symbols `&` and `'` stay part of a word.
+* Spaces and punctuation separate words. For example, `d/R&D` matches the department `R&D, Asia`, and `r/Backend` or `r/(Backend)` matches the role `Software Engineer (Backend)`. The symbols `&` and `'` stay part of a word, so `r/C++` searches for the word `C` and `d/IT/Ops` for the words `IT` and `Ops`.
 * If a value has several words, every word must appear in that field, in any order. For example, `r/Software Engineer` matches `Software Engineer` but not `Software Manager`.
 * An employee ID must be the whole ID, such as `id/E0123`. The ID is not case-sensitive.
 * To match any of several values of the same field (an `OR` search), repeat the prefix. For example, `d/Sales d/Finance` matches employees in `Sales` or in `Finance`. Each repeated value is a separate search, so `r/Manager r/Analyst` is not the same as `r/Manager Analyst`, which needs both words.
