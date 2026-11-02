@@ -70,6 +70,18 @@ public class AddCommandParserTest {
     }
 
     @Test
+    public void parse_symbolsInDepartmentAndRole_success() {
+        // a slash, a plus sign and a hash sign are kept as part of the value
+        assertParseSuccess(parser, ID_DESC_BOB + NAME_DESC_BOB + PHONE_DESC_BOB + EMAIL_DESC_BOB
+                + " d/IT/Ops r/UI/UX Designer",
+                new AddCommand(new EmployeeBuilder(BOB).withDepartment("IT/Ops").withRole("UI/UX Designer").build()));
+        assertParseSuccess(parser, ID_DESC_BOB + NAME_DESC_BOB + PHONE_DESC_BOB + EMAIL_DESC_BOB
+                + " d/C# Support r/C++ Developer",
+                new AddCommand(new EmployeeBuilder(BOB).withDepartment("C# Support").withRole("C++ Developer")
+                        .build()));
+    }
+
+    @Test
     public void parse_repeatedValue_failure() {
         String validExpectedEmployeeString = REQUIRED_FIELDS_BOB;
 

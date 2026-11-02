@@ -21,7 +21,7 @@ public class Role {
 
     public static final String MESSAGE_CONSTRAINTS =
             "Role should not be blank, should start with a letter or digit, and may contain only letters, digits, "
-                    + "spaces and the symbols & ' ( ) , . - (up to 100 characters).";
+                    + "spaces and the symbols & ' ( ) , . + # / - (up to 100 characters).";
 
     /*
      * The first character must be a letter or a digit, otherwise " " (a blank string) becomes a valid input.
@@ -29,7 +29,7 @@ public class Role {
      * (\p{Alnum}), so that entries such as "Soporte técnico" are accepted.
      * Common punctuation is allowed so that entries such as "R&D" or "Software Engineer (Backend)" are accepted.
      */
-    public static final String VALIDATION_REGEX = "[\\p{L}\\p{N}][\\p{L}\\p{M}\\p{N} &'(),.\\-]{0,99}";
+    public static final String VALIDATION_REGEX = "[\\p{L}\\p{N}][\\p{L}\\p{M}\\p{N} &'(),.+#/\\-]{0,99}";
 
     public final String value;
 
