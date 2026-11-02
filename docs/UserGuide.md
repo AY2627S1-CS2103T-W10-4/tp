@@ -67,11 +67,13 @@ HuntR is based on [AddressBook-Level3](https://github.com/se-edu/addressbook-lev
 
 * Command words are written in lowercase, for example `list` and `filter`; `List` is not a command. The same is true for `archived` in `list archived`. If you mistype a command word, HuntR suggests the closest command, for example `Did you mean filter?` for `fliter`.
 
+* Use ordinary spaces typed with the spacebar around command words and between parameters. Non-breaking spaces copied from formatted text can cause errors or unexpected results; see [Known issues](#known-issues) for the limitation and workaround.
+
 * Parameters can be in any order.<br>
   For example, if the command specifies `n/NAME p/PHONE`, `p/PHONE n/NAME` is also acceptable.
 
-* Extraneous parameters for `help` and `clear` are ignored.<br>
-  For example, `help 123` is interpreted as `help`. The `backup` and `exit` commands also take no parameters but reject extra text, so `backup now` and `exit now` show an error. Likewise, `list` accepts only `archived` after it, so `list 1` shows an error.
+* Extraneous parameters for `help` are ignored.<br>
+  For example, `help 123` is interpreted as `help`. The `clear`, `backup` and `exit` commands also take no parameters but reject extra text, so `clear id/E0001`, `backup now` and `exit now` show an error and change nothing. Likewise, `list` accepts only `archived` after it, so `list 1` shows an error.
   The `stats` and `check` commands take no parameters and reject extra text too.
 
 * When `add`, `edit`, `delete`, `archive` or `unarchive` succeeds, the result message shows the employee's details.
@@ -174,7 +176,7 @@ Format: `list`
 Example: `list`
 
 Use `list` without arguments to show active employees, or [`list archived`](#listing-archived-employees-list-archived)
-to show archived employees. Leading and trailing whitespace is ignored. Both the command word `list` and the
+to show archived employees. Leading and trailing ordinary spaces are ignored. Both the command word `list` and the
 optional argument `archived` must be lowercase.
 
 * Replaces the current search, filter, archived-only or reporting view with **all active employees**.
@@ -691,9 +693,12 @@ Clears the active employee roster from HuntR. Archived employee records are pres
 
 Format: `clear`
 
+Extra text after `clear`, such as `clear id/E0001`, is rejected with `Invalid command format.` followed by the
+`clear` usage, and no employee is removed. To remove one employee, use `delete`.
+
 <box type="warning" seamless>
 
-**Caution:** There is no confirmation. After `clear`, the empty active roster and unchanged archive are
+**Caution:** There is no confirmation. After `clear`, the empty active roster and the archive are
 saved immediately. Use `undo` to restore the active roster during the same session. Clearing an already empty
 active roster still succeeds and shows the active view, but creates no history entry.
 </box>
@@ -969,6 +974,11 @@ no-op mutations such as clearing an already empty active roster. Read-only comma
 `help`, `stats`, `check` and `exit` do not rewrite the employee file. Export and backup write only their requested
 output files. You do not need to save manually. History and view filters are never written to JSON.
 
+Window size and position are stored separately in `preferences.json` in the folder where HuntR runs. Missing or
+unreadable preferences use the default window settings; `{"guiSettings":null}` is invalid and also uses defaults.
+HuntR saves preferences at startup and on exit, so invalid preferences may be replaced with defaults. This does
+not change employee records.
+
 HuntR writes the complete JSON to a protected temporary file beside the data file, then replaces the data file
 atomically. If a handled failure occurs before replacement, the last stored file keeps its original bytes. If no
 data file existed, it remains absent. Newly created folders may remain. Successful replacement completes the save.
@@ -1036,6 +1046,9 @@ The optional `managerId` field stores the direct manager's ID. Missing or null `
 Manager IDs must refer to an existing employee, with no self-reporting or cycles. Invalid relationships cause the
 whole file to be rejected.
 
+A file containing only `null` is invalid too. HuntR starts with an empty employee list and keeps an unreadable-file
+copy as described below; `{"employees":[]}` is the valid representation of an empty roster.
+
 <box type="warning" seamless>
 
 **Caution:**
@@ -1058,6 +1071,8 @@ Furthermore, certain edits can cause HuntR to behave in unexpected ways (e.g., i
 2. **If you minimize the Help Window** and then run the `help` command (or use the `Help` menu, or the keyboard shortcut `F1`) again, the original Help Window will remain minimized, and no new Help Window will appear. The remedy is to manually restore the minimized Help Window.
 3. **Pasting commands containing tabs:** The command box removes pasted tab characters, which can join words or parameters and cause the command to fail. Replace tabs with ordinary spaces before pasting a command. Pressing <kbd>Tab</kbd> to complete command words still works.
 4. **Symbol-only filter values:** An `n/`, `d/` or `r/` value containing only `&`, apostrophes or certain standalone combining marks can be accepted even though it has no letter or digit. For example, `filter d/&` may show an empty list instead of the documented validation error. Include at least one letter or digit in each value. If an accidental symbol-only filter changes the displayed list, use `list` to show all active employees again. Employee records and undo/redo history are unchanged.
+5. **Non-breaking spaces in commands:** A non-breaking space copied from formatted text is not treated as an ordinary space before or directly after a command word (including after `list`), or between parameters. This can cause the command to fail with an error. In `filter d/Sales r/Account Manager`, a non-breaking space before `r/` can instead silently show no employees even when a matching employee exists. Delete and retype the spaces using the spacebar. Non-breaking spaces between `find` search keywords are supported.
+6. **Trailing content in manually edited JSON files:** At startup, HuntR reads the first JSON value in the employee data file or `preferences.json` and may ignore extra text or JSON values after it. That extra content does not trigger the corrupted-file warning and is discarded when the file is next saved. Edit the files only while HuntR is closed. Back up files before editing them and keep exactly one JSON object in each file. The `restore` command rejects trailing content in backups.
 
 --------------------------------------------------------------------------------------------------------------------
 

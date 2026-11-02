@@ -39,6 +39,16 @@ public class JsonUserPrefsStorageTest {
     }
 
     @Test
+    public void readUserPrefs_nullJsonRoot_throwsDataLoadingException() throws IOException {
+        Path filePath = testFolder.resolve("NullPrefs.json");
+        Files.writeString(filePath, "null");
+
+        JsonUserPrefsStorage storage = new JsonUserPrefsStorage(filePath);
+        assertThrows(DataLoadingException.class, storage::readUserPrefs);
+        assertEquals("null", Files.readString(filePath));
+    }
+
+    @Test
     public void readUserPrefs_nullFilePath_throwsNullPointerException() {
         assertThrows(NullPointerException.class, () -> readUserPrefs(null));
     }
@@ -111,6 +121,16 @@ public class JsonUserPrefsStorageTest {
         } catch (IOException ioe) {
             throw new AssertionError("There should not be an error writing to the file", ioe);
         }
+    }
+
+    @Test
+    public void readUserPrefs_nullGuiSettings_throwsDataLoadingException() throws IOException {
+        Path filePath = testFolder.resolve("NullGuiSettingsPrefs.json");
+        Files.writeString(filePath, "{\"guiSettings\":null}");
+
+        JsonUserPrefsStorage storage = new JsonUserPrefsStorage(filePath);
+        assertThrows(DataLoadingException.class, storage::readUserPrefs);
+        assertEquals("{\"guiSettings\":null}", Files.readString(filePath));
     }
 
     @Test
