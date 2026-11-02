@@ -179,6 +179,7 @@ public class StringUtilTest {
 
     @Test
     public void getSearchWords_unicodeCaseVariants_normalizesWithoutExpandingLetters() {
+        assertEquals(List.of("emile"), StringUtil.getSearchWords("\u00C9mile"));
         // Both lowercase forms of Greek sigma match their uppercase form.
         assertEquals(List.of("\u03C3", "\u03C3", "\u03C3"), StringUtil.getSearchWords("\u03A3 \u03C3 \u03C2"));
         // Sharp s matches its capital form, but is not expanded into two letters.
