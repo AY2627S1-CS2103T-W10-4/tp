@@ -83,6 +83,16 @@ public class FilterCommandParserTest {
     }
 
     @Test
+    public void parse_slashWordAfterSpaceInDepartmentAndRole_success() {
+        assertParseSuccess(parser, " d/Regional IT/Ops r/Senior UI/UX Designer",
+                filterOf(List.of(), List.of(), List.of("Regional IT/Ops"), List.of("Senior UI/UX Designer")));
+
+        // a single letter before the slash is still a parameter
+        String unknownW = String.format(MESSAGE_INVALID_COMMAND_FORMAT, "Unknown parameter: w/\n" + USAGE);
+        assertParseFailure(parser, " r/Senior w/ Python", unknownW);
+    }
+
+    @Test
     public void parse_nameWithRelationWord_success() {
         assertParseSuccess(parser, " n/Ravi s/o Kumar d/Sales",
                 filterOf(List.of(), List.of("Ravi s/o Kumar"), List.of("Sales"), List.of()));
