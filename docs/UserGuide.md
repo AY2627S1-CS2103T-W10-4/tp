@@ -67,6 +67,8 @@ HuntR is based on [AddressBook-Level3](https://github.com/se-edu/addressbook-lev
 
 * Command words are written in lowercase, for example `list` and `filter`; `List` is not a command. The same is true for `archived` in `list archived`. If you mistype a command word, HuntR suggests the closest command, for example `Did you mean filter?` for `fliter`.
 
+* Use ordinary spaces typed with the spacebar around command words and between parameters. Non-breaking spaces copied from formatted text can cause errors or unexpected results; see [Known issues](#known-issues) for the limitation and workaround.
+
 * Parameters can be in any order.<br>
   For example, if the command specifies `n/NAME p/PHONE`, `p/PHONE n/NAME` is also acceptable.
 
@@ -174,7 +176,7 @@ Format: `list`
 Example: `list`
 
 Use `list` without arguments to show active employees, or [`list archived`](#listing-archived-employees-list-archived)
-to show archived employees. Leading and trailing whitespace is ignored. Both the command word `list` and the
+to show archived employees. Leading and trailing ordinary spaces are ignored. Both the command word `list` and the
 optional argument `archived` must be lowercase.
 
 * Replaces the current search, filter, archived-only or reporting view with **all active employees**.
@@ -399,7 +401,6 @@ Format: `find KEYWORD [MORE_KEYWORDS]`
 * A search with no matching name is still valid.
 * Leading and trailing spaces are ignored, and multiple spaces between keywords are treated as separators. Any kind of
   space separates keywords, including the non-breaking space that is copied from a web page.
-  Use an ordinary space after the command word `find`; see [Known issues](#known-issues) for the non-breaking-space limitation.
 * A search with no matches is successful and displays an empty employee list.
 
 Examples:
@@ -506,6 +507,9 @@ The following input errors leave the displayed list unchanged. Each message is f
 | `filter d/` or `filter n/` | `The value of d/ should contain at least one letter or digit.` (or `n/`, `r/`) |
 | `filter d/@@@` | `The value of d/ should contain at least one letter or digit.` |
 | `filter id/E 1` | The employee ID constraints message |
+
+Some symbol-only values are accepted instead of showing the validation error above;
+see [Known issues](#known-issues) for the limitation and workaround.
 
 ### Archiving employees: `archive`
 
@@ -1055,7 +1059,8 @@ Furthermore, certain edits can cause HuntR to behave in unexpected ways (e.g., i
 1. **When using multiple screens**, if you move the application to a secondary screen, and later switch to using only the primary screen, the GUI will open off-screen. The remedy is to delete the `preferences.json` file created by the application before running the application again.
 2. **If you minimize the Help Window** and then run the `help` command (or use the `Help` menu, or the keyboard shortcut `F1`) again, the original Help Window will remain minimized, and no new Help Window will appear. The remedy is to manually restore the minimized Help Window.
 3. **Pasting commands containing tabs:** The command box removes pasted tab characters, which can join words or parameters and cause the command to fail. Replace tabs with ordinary spaces before pasting a command. Pressing <kbd>Tab</kbd> to complete command words still works.
-4. **Non-breaking spaces after command words:** A non-breaking space copied from formatted text directly after a command word such as `find` causes an unknown-command error and leaves the current employee list unchanged. Delete the space after the command word and retype it using the spacebar, for example `find Spaceprobe`. Non-breaking spaces between `find` search keywords are supported.
+4. **Symbol-only filter values:** An `n/`, `d/` or `r/` value containing only `&`, apostrophes or certain standalone combining marks can be accepted even though it has no letter or digit. For example, `filter d/&` may show an empty list instead of the documented validation error. Include at least one letter or digit in each value. If an accidental symbol-only filter changes the displayed list, use `list` to show all active employees again. Employee records and undo/redo history are unchanged.
+5. **Non-breaking spaces in commands:** A non-breaking space copied from formatted text is not treated as an ordinary space before or directly after a command word (including after `list`), or between parameters. This can cause the command to fail with an error. In `filter d/Sales r/Account Manager`, a non-breaking space before `r/` can instead silently show no employees even when a matching employee exists. Delete and retype the spaces using the spacebar. Non-breaking spaces between `find` search keywords are supported.
 
 --------------------------------------------------------------------------------------------------------------------
 
