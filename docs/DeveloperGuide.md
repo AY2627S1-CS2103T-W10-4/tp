@@ -19,6 +19,14 @@
   [JUnit 5](https://github.com/junit-team/junit5) for testing and [MarkBind](https://markbind.org/) with
   [PlantUML](https://plantuml.com/) for this documentation site and its diagrams.
 
+**Notable uses of AI:**
+
+* Claude Code (Anthropic) was used by Dylan as an AI assistant throughout the project, for writing and revising code
+  and tests, testing the product, reviewing teammates' pull requests, drafting documentation and pull-request text,
+  and preparing releases.
+* The AI-assisted work was directed by the author, who ran the product and approved each change before it was merged
+  or posted. The author remains responsible for all of it.
+
 --------------------------------------------------------------------------------------------------------------------
 
 ## **Setting up, getting started**
