@@ -292,7 +292,7 @@ and checkpoint restoration are handled separately by `LogicManager`, as describe
 values and invalid IDs, and appends command-specific usage to parse errors. `manager` requires both `id/` and
 `m/`; the other four commands accept only `id/`.
 
-`ReportingCommandSupport.find()` searches the complete roster by case-insensitive ID, independently of the
+`EmployeeCommandSupport.find()` searches the complete roster by case-insensitive ID, independently of the
 displayed list. `ManagerCommand` creates a replacement employee, resolves the manager, then calls
 `model.setEmployee`; relationship validation failures become `CommandException`s. `UnassignManagerCommand`
 replaces the employee with `withManager(null)`, succeeding even if no manager was assigned. `AddCommand` and
@@ -1037,31 +1037,31 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 | `* * *` | First-time user | Be shown the correct command format when I mistype something | Correct my mistake without looking up the syntax |
 | `* *` | Beginner user | Undo commands | Easily restore a correct state after I made a mistake |
 | `* * *` | Beginner user | View the information I have about an employee | Answer questions concerning that employee |
-| `*` | Expert user | Compare department sizes | Understand how employees are distributed across the organisation |
-| `*` | Expert user | View an employee’s relation to other employees | Understand how they fit into the organisation |
-| `*` | Expert user | View an overall workforce summary | Understand the state of the workforce without checking employees one by one |
-| `*` | Expert user | Record who an employee reports to | Understand the company’s reporting structure |
-| `*` | Expert user | Update who an employee reports to | Keep records correct after a reorganisation or resignation |
+| `* *` | Expert user | Compare department sizes | Understand how employees are distributed across the organisation |
+| `* *` | Expert user | View an employee’s relation to other employees | Understand how they fit into the organisation |
+| `* *` | Expert user | View an overall workforce summary | Understand the state of the workforce without checking employees one by one |
+| `* *` | Expert user | Record who an employee reports to | Understand the company’s reporting structure |
+| `* *` | Expert user | Update who an employee reports to | Keep records correct after a reorganisation or resignation |
 | `* * *` | Long-time user | Easily search up contact details with the commands | Save time instead of using traditional address / contact books |
 | `* *` | Long-time user | Import a validated CSV batch without overwriting existing IDs | Add employee records efficiently without leaving a partially imported roster |
 | `* *` | HR administrator | Export all active and archived employees, including reporting relationships, to CSV | Review the complete roster in a spreadsheet application |
 | `* * *` | Careful user | Save a separate JSON backup of the complete employee roster | Retain a snapshot I can restore after an unwanted change |
 | `* * *` | Careful user | Restore a validated JSON backup and undo the replacement during the same session | Recover the complete roster without losing the ability to reverse a mistaken restore |
 | `* *` | Long-time user | Filter employees by search criteria | Gather specific organisation-wide data efficiently |
-| `* * *` | Basic user | Add an employee's information | the app reflects my company's workforce |
+| `* * *` | Basic user | Add an employee's information | keep the app aligned with my company's workforce |
 | `* * *` | Basic user | List all active employees with their details in stored order | Review the current workforce in one place |
 | `* *` | HR administrator | Return to the complete active list after searching, filtering, sorting or viewing archived records | Continue reviewing the workforce without changing employee data |
 | `* * *` | Basic user | Delete an active or archived employee by ID, even when hidden by a search | Remove the intended record without changing my view |
 | `* *` | Careful user | Undo a deletion and its reporting changes during the same session | Recover a mistakenly deleted employee and their relationships |
 | `* * *` | Basic user | Find an employee by name | quickly retrieve their information without browsing the whole list |
-| `* * *` | Basic user | Have my data saved automatically after every change | I don't lose records if the app closes unexpectedly |
+| `* * *` | Basic user | Have my data saved automatically after every change | avoid losing records if the app closes unexpectedly |
 | `* * *` | Basic user | Exit the application with a command | close it safely knowing my data is saved |
 | `* *` | Basic user | Edit an employee's details | keep records accurate when someone's role or contact info changes |
 | `* *` | Busy user | Filter employees using multiple criteria at once (e.g. department and role) | narrow down results faster than one field at a time |
 | `* *` | Busy user | View an entire team's roster with one command | prepare for a team meeting without assembling the list myself |
-| `*` | Busy user | Sort employees by a chosen field (e.g. name or department) | scan records in the order that's useful to me |
-| `*` | Long-time user | Identify employees who share a phone number or email with another employee | find and correct data-entry mistakes |
-| `*` | Long-time user | Count employees by department | quickly see the size of each team |
+| `* *` | Busy user | Sort employees by a chosen field (e.g. name or department) | scan records in the order that's useful to me |
+| `* *` | Long-time user | Identify employees who share a phone number or email with another employee | find and correct data-entry mistakes |
+| `* *` | Long-time user | Count employees by department | quickly see the size of each team |
 | `* *` | HR administrator | Archive an employee while retaining their details and reporting relationships | Keep former employees' records outside the active roster |
 | `* *` | HR administrator | List archived employees and restore one by ID | Bring an employee back without re-entering their information |
 | `* *` | HR administrator | Retain my search and sort order when archiving or restoring employees | Continue reviewing the same group of records |
@@ -1315,6 +1315,103 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 * 2a. No active employee shares a phone number or an email.
 
   * 2a1. HuntR displays `No data-quality issues found.`
+
+    Use case ends.
+
+**Use case: Maintain a reporting relationship**
+
+**MSS**
+
+1. User requests to assign an existing employee as another employee's manager using `manager`.
+2. HuntR finds both employees in the complete roster and validates that the relationship does not create self-reporting or a cycle.
+3. HuntR assigns the manager and saves the updated records.
+4. HuntR confirms the stored employee and manager IDs.
+
+    Use case ends.
+
+**Extensions**
+
+* 1a. User requests to remove an employee's manager using `unassign-manager`.
+
+  * 1a1. HuntR removes the assignment, saves the updated records and confirms the employee ID. The command also succeeds when no manager was assigned.
+
+    Use case ends.
+
+* 2a. Either employee ID does not exist, the employee would report to themselves, or the assignment would create a cycle.
+
+  * 2a1. HuntR reports the problem and leaves the records unchanged.
+
+    Use case resumes at step 1.
+
+* 3a. HuntR is unable to save the updated records.
+
+  * 3a1. HuntR restores the previous relationship, history and view, and reports the save error.
+
+    Use case ends.
+
+**Use case: View reporting relationships**
+
+**MSS**
+
+1. User requests a reporting view for an employee using `team`, `org` or `chain`.
+2. HuntR finds the employee in the complete roster and obtains the requested relationships.
+3. HuntR displays the related active and archived employees in the current sort order and describes them in the result box.
+
+    Use case ends.
+
+**Extensions**
+
+* 1a. User uses `team`.
+
+  * 1a1. HuntR selects the employee, their manager if assigned, and their direct reports.
+
+    Use case resumes at step 3.
+
+* 1b. User uses `org`.
+
+  * 1b1. HuntR selects all direct and indirect reports, excluding the target employee.
+
+    Use case resumes at step 3.
+
+* 1c. User uses `chain`.
+
+  * 1c1. HuntR selects the managers from the immediate manager to the root, excluding the target employee.
+
+    Use case resumes at step 3.
+
+* 2a. No employee has the specified ID.
+
+  * 2a1. HuntR reports that the employee was not found and leaves the current view unchanged.
+
+    Use case resumes at step 1.
+
+**Use case: Navigate employee change history**
+
+**MSS**
+
+1. User requests to reverse the most recent employee-data change using `undo`.
+2. HuntR restores the preceding employee state while preserving the current view and sort order.
+3. HuntR saves the restored state and confirms that the undo succeeded.
+
+    Use case ends.
+
+**Extensions**
+
+* 1a. User requests to reapply the most recently undone change using `redo`.
+
+  * 1a1. HuntR restores the next employee state, preserves the current view and sort order, saves it and confirms that the redo succeeded.
+
+    Use case ends.
+
+* 1b. No undo or redo state is available for the requested direction.
+
+  * 1b1. HuntR reports that there are no more commands to undo or redo. Records and the current view remain unchanged.
+
+    Use case ends.
+
+* 3a. HuntR is unable to save the restored state.
+
+  * 3a1. HuntR restores the employee records, history and view from before the request, and reports the save error.
 
     Use case ends.
 
