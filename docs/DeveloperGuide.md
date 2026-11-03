@@ -26,6 +26,9 @@
   and preparing releases.
 * The AI-assisted work was directed by the author, who ran the product and approved each change before it was merged
   or posted. The author remains responsible for all of it.
+* Other team members used Codex (OpenAI) as an AI assistant throughout the project, for similar tasks such as writing
+  and revising code and tests, reviewing pull requests and drafting documentation. Each member remains responsible
+  for their own work.
 
 --------------------------------------------------------------------------------------------------------------------
 
